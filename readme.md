@@ -2,6 +2,7 @@
 
 ![](https://img.shields.io/gitlab/pipeline-status/arcnode-io/edp-api?branch=main&logo=gitlab)
 ![](https://gitlab.com/arcnode-io/edp-api/badges/main/coverage.svg)
+![](https://img.shields.io/badge/ty_checked-gray?logo=astral)
 ![](https://img.shields.io/badge/3.13-gray?logo=python)
 ![](https://img.shields.io/badge/web_framework-fastapi-27a699)
 
@@ -13,7 +14,7 @@
 
 The pipeline is stateless and deterministic. Same input → same artifacts.
 
-Authoritative spec: [`~/arcnode-docs/ems_provisioning_spec.md`](../../arcnode-docs/ems_provisioning_spec.md) §3. Sizing math: [`arcnode_sizing_engine_spec.md`](../../arcnode-docs/arcnode_sizing_engine_spec.md). BOM mapping: [`bom_generation_spec.md`](../../arcnode-docs/bom_generation_spec.md). Plate variant selection: [`interface_plate_spec.md`](../../arcnode-docs/interface_plate_spec.md).
+See [`arcnode`](https://gitlab.com/arcnode-io/arcnode) for the system-level overview.
 
 ## Sequence
 
@@ -51,4 +52,4 @@ edp_api -> platform_api: { status, edp_artifacts[] }
 | 5 | Communication Network Diagram | dxf | drawing_layer | EMS comms backbone |
 | 6 | Cable and Hose Schedule | xlsx | bom_layer | Lengths from standard range (1.0/1.5/2.0/3.0 m) |
 | 7 | Installation Graph | pdf | drawing_layer | Sequenced install steps |
-| 8 | Device Topology Manifest | json | comms_topology_service | Defines deployment_uuid, modules, devices, protocols, addresses. Consumed by `ems-device-api POST /provision`. |
+| 8 | Device Topology Manifest | json | comms_topology_service | Defines deployment_uuid, modules, devices, protocols, addresses. Consumed by `ems-device-api POST /topology`. |
