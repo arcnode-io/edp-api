@@ -1,0 +1,180 @@
+# profile -> pre-built assembly URLs
+# read by hardware_selector_service.py at startup
+# tiers: commercial | federal | dod
+# bess topologies: no_bess | ac | dc_ext | dc_int
+# 3 × 4 = 12 profiles
+
+profiles:
+
+  # ---------- commercial ----------
+
+  commercial_no_bess:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/commercial-ac/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/commercial-ac/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/commercial-ac/topology.yaml
+    grid_container: null   # no BESS -> no grid container
+    interface_plates:
+      - { id: CG,   step: s3://arcnode-artifacts/plates/CG/v1/plate.step,   dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,   pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: CD,   step: s3://arcnode-artifacts/plates/CD/v1/plate.step,   dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,   pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G, step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step, dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C, step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step, dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  commercial_ac:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/commercial-ac/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/commercial-ac/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/commercial-ac/topology.yaml
+    grid_container:
+      step: s3://arcnode-artifacts/assemblies/grid-container/commercial-ac/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/grid-container/commercial-ac/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/grid-container/commercial-ac/topology.yaml
+    interface_plates:
+      - { id: CG,    step: s3://arcnode-artifacts/plates/CG/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: BG-AC, step: s3://arcnode-artifacts/plates/BG-AC/v1/plate.step, dxf: s3://arcnode-artifacts/plates/BG-AC/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/BG-AC/v1/plate.pdf }
+      - { id: CD,    step: s3://arcnode-artifacts/plates/CD/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G,  step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C,  step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  commercial_dc_ext:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/commercial-dc/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/commercial-dc/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/commercial-dc/topology.yaml
+    grid_container:
+      step: s3://arcnode-artifacts/assemblies/grid-container/commercial-dc/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/grid-container/commercial-dc/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/grid-container/commercial-dc/topology.yaml
+    interface_plates:
+      - { id: CG,    step: s3://arcnode-artifacts/plates/CG/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: BG-DC, step: s3://arcnode-artifacts/plates/BG-DC/v1/plate.step, dxf: s3://arcnode-artifacts/plates/BG-DC/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/BG-DC/v1/plate.pdf }
+      - { id: CD,    step: s3://arcnode-artifacts/plates/CD/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G,  step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C,  step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  commercial_dc_int:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/commercial-dc/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/commercial-dc/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/commercial-dc/topology.yaml
+    grid_container:
+      step: s3://arcnode-artifacts/assemblies/grid-container/commercial-dc/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/grid-container/commercial-dc/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/grid-container/commercial-dc/topology.yaml
+    interface_plates:
+      - { id: CG,    step: s3://arcnode-artifacts/plates/CG/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: BG-DC, step: s3://arcnode-artifacts/plates/BG-DC/v1/plate.step, dxf: s3://arcnode-artifacts/plates/BG-DC/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/BG-DC/v1/plate.pdf }
+      - { id: CD,    step: s3://arcnode-artifacts/plates/CD/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G,  step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C,  step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  # ---------- federal ----------
+
+  federal_no_bess:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/federal-ac/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/federal-ac/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/federal-ac/topology.yaml
+    grid_container: null
+    interface_plates:
+      - { id: CG,   step: s3://arcnode-artifacts/plates/CG/v1/plate.step,   dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,   pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: CD,   step: s3://arcnode-artifacts/plates/CD/v1/plate.step,   dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,   pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G, step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step, dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C, step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step, dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  federal_ac:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/federal-ac/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/federal-ac/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/federal-ac/topology.yaml
+    grid_container:
+      step: s3://arcnode-artifacts/assemblies/grid-container/federal-ac/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/grid-container/federal-ac/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/grid-container/federal-ac/topology.yaml
+    interface_plates:
+      - { id: CG,    step: s3://arcnode-artifacts/plates/CG/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: BG-AC, step: s3://arcnode-artifacts/plates/BG-AC/v1/plate.step, dxf: s3://arcnode-artifacts/plates/BG-AC/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/BG-AC/v1/plate.pdf }
+      - { id: CD,    step: s3://arcnode-artifacts/plates/CD/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G,  step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C,  step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  federal_dc_ext:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/federal-dc/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/federal-dc/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/federal-dc/topology.yaml
+    grid_container:
+      step: s3://arcnode-artifacts/assemblies/grid-container/federal-dc/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/grid-container/federal-dc/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/grid-container/federal-dc/topology.yaml
+    interface_plates:
+      - { id: CG,    step: s3://arcnode-artifacts/plates/CG/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: BG-DC, step: s3://arcnode-artifacts/plates/BG-DC/v1/plate.step, dxf: s3://arcnode-artifacts/plates/BG-DC/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/BG-DC/v1/plate.pdf }
+      - { id: CD,    step: s3://arcnode-artifacts/plates/CD/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G,  step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C,  step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  federal_dc_int:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/federal-dc/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/federal-dc/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/federal-dc/topology.yaml
+    grid_container:
+      step: s3://arcnode-artifacts/assemblies/grid-container/federal-dc/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/grid-container/federal-dc/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/grid-container/federal-dc/topology.yaml
+    interface_plates:
+      - { id: CG,    step: s3://arcnode-artifacts/plates/CG/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: BG-DC, step: s3://arcnode-artifacts/plates/BG-DC/v1/plate.step, dxf: s3://arcnode-artifacts/plates/BG-DC/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/BG-DC/v1/plate.pdf }
+      - { id: CD,    step: s3://arcnode-artifacts/plates/CD/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G,  step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C,  step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  # ---------- dod (defense_forward) ----------
+
+  dod_no_bess:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/defense-ac/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/defense-ac/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/defense-ac/topology.yaml
+    grid_container: null
+    interface_plates:
+      - { id: CG,   step: s3://arcnode-artifacts/plates/CG/v1/plate.step,   dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,   pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: CD,   step: s3://arcnode-artifacts/plates/CD/v1/plate.step,   dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,   pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G, step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step, dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C, step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step, dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  dod_ac:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/defense-ac/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/defense-ac/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/defense-ac/topology.yaml
+    grid_container:
+      step: s3://arcnode-artifacts/assemblies/grid-container/defense-ac/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/grid-container/defense-ac/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/grid-container/defense-ac/topology.yaml
+    interface_plates:
+      - { id: CG,    step: s3://arcnode-artifacts/plates/CG/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: BG-AC, step: s3://arcnode-artifacts/plates/BG-AC/v1/plate.step, dxf: s3://arcnode-artifacts/plates/BG-AC/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/BG-AC/v1/plate.pdf }
+      - { id: CD,    step: s3://arcnode-artifacts/plates/CD/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G,  step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C,  step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  dod_dc_ext:
+    compute_container:
+      step: s3://arcnode-artifacts/assemblies/compute-container/defense-dc/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/compute-container/defense-dc/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/compute-container/defense-dc/topology.yaml
+    grid_container:
+      step: s3://arcnode-artifacts/assemblies/grid-container/defense-dc/assembly.step
+      glb:  s3://arcnode-artifacts/assemblies/grid-container/defense-dc/assembly.glb
+      topology_yaml: s3://arcnode-artifacts/assemblies/grid-container/defense-dc/topology.yaml
+    interface_plates:
+      - { id: CG,    step: s3://arcnode-artifacts/plates/CG/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CG/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CG/v1/plate.pdf }
+      - { id: BG-DC, step: s3://arcnode-artifacts/plates/BG-DC/v1/plate.step, dxf: s3://arcnode-artifacts/plates/BG-DC/v1/plate.dxf, pdf: s3://arcnode-artifacts/plates/BG-DC/v1/plate.pdf }
+      - { id: CD,    step: s3://arcnode-artifacts/plates/CD/v1/plate.step,    dxf: s3://arcnode-artifacts/plates/CD/v1/plate.dxf,    pdf: s3://arcnode-artifacts/plates/CD/v1/plate.pdf }
+      - { id: EX-G,  step: s3://arcnode-artifacts/plates/EX-G/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-G/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-G/v1/plate.pdf }
+      - { id: EX-C,  step: s3://arcnode-artifacts/plates/EX-C/v1/plate.step,  dxf: s3://arcnode-artifacts/plates/EX-C/v1/plate.dxf,  pdf: s3://arcnode-artifacts/plates/EX-C/v1/plate.pdf }
+
+  # dod_dc_int intentionally absent — CATL-integrated PCS not DoD-procurable.
+  # ConfiguratorPayload validator rejects this combination at ingress.

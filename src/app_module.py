@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from src.app_controller import AppController
 from src.call_api.call_api_module import CallApiModule
 from src.config import load_config, LogLevel
+from src.hardware_selector.hardware_selector_module import HardwareSelectorModule
+from src.jobs.jobs_module import JobsModule
+from src.module_resolver.module_resolver_module import ModuleResolverModule
 from pydantic_settings import BaseSettings
 from ipaddress import IPv4Address
 
@@ -31,11 +34,18 @@ class AppModule:
         )
 
     def import_module(self, app: FastAPI) -> None:
-        """Register basic routes (app_controller, call_api)."""
+        """Register routes for app, call_api, and jobs."""
         app_controller = AppController()
         call_api = CallApiModule()
+        resolver_module = ModuleResolverModule()
+        selector_module = HardwareSelectorModule()
+        jobs = JobsModule(
+            resolver_module=resolver_module,
+            selector_module=selector_module,
+        )
         app.include_router(app_controller.router)
         app.include_router(call_api.router)
+        app.include_router(jobs.router)
 
     def create_app(self) -> FastAPI:
         """Create and configure the basic FastAPI application."""

@@ -6,7 +6,7 @@ dependencies = [
     "classy-fastapi>=0.6.1",
     "fastapi>=0.116.1",
     "httpx>=0.28.1",
-    "pydantic>=2.11.7",
+    "pydantic[email]>=2.11.7",
     "pydantic-settings>=2.6.0",
     "pyyaml>=6.0.2",
     "uvicorn>=0.34.0",
@@ -47,3 +47,7 @@ commit = "bash -c 'uv run poe checks && uv run poe cover && uv run poe review &&
 
 [tool.coverage.run]
 omit = ["*/test_*.py", "tests/*"]
+
+[tool.deptry.per_rule_ignores]
+# Reason: pytest is a dev-only import allowed in colocated `test_*.py` files under src/.
+DEP004 = ["pytest"]
