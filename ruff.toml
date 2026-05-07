@@ -55,3 +55,7 @@ ignore = [
 [lint.pylint]
 max-args = 5
 max-statements = 30
+
+[lint.per-file-ignores]
+"**/test_*.py" = ["D103", "S106", "ANN", "ARG"]
+"tests/**/*.py" = ["D103", "S106", "ANN", "ARG"]
