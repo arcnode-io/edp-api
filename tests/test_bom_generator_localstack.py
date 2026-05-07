@@ -61,6 +61,7 @@ def seeded_bucket(s3_client) -> str:
                     "bom": f"s3://{BUCKET}/assemblies/compute-container/commercial-ac/bom.yaml",
                     "step": f"s3://{BUCKET}/assemblies/compute-container/commercial-ac/assembly.step",
                     "glb": f"s3://{BUCKET}/assemblies/compute-container/commercial-ac/assembly.glb",
+                    "topology_yaml": f"s3://{BUCKET}/assemblies/compute-container/commercial-ac/topology.yaml",
                 }
             }
         },
@@ -121,6 +122,33 @@ def seeded_bucket(s3_client) -> str:
                     {"equipment_id": "CMP-RACK-001", "qty": 1},
                 ],
                 "plates": [{"id": "CG", "version": "v1", "qty": 1}],
+            }
+        ),
+    )
+
+    # topology.yaml for DTM (step 6.6) — single Redfish device for E2E
+    s3_client.put_object(
+        Bucket=BUCKET,
+        Key="assemblies/compute-container/commercial-ac/topology.yaml",
+        Body=yaml.safe_dump(
+            {
+                "devices": [
+                    {
+                        "device_type": "gpu_node",
+                        "description": "HGX B200 #1",
+                        "host": "mock-redfish-server",
+                        "port": 8443,
+                        "protocol_config": {
+                            "protocol": "redfish",
+                            "username": "arcnode",
+                            "password_secret_ref": "secrets/redfish/test",
+                            "service_root": "/redfish/v1",
+                            "resource_maps": [
+                                {"name": "power", "uri": "/Chassis/1/Power"}
+                            ],
+                        },
+                    }
+                ]
             }
         ),
     )
@@ -188,3 +216,53 @@ def test_upload_bom_json_to_localstack(
     fetched = json.loads(body)
     assert fetched["profile"] == "commercial_ac"
     assert any(li["part_number"] == "ARC-PLT-CG-001" for li in fetched["line_items"])
+
+
+def test_dtm_generator_against_localstack(
+    monkeypatch, localstack_endpoint: str, seeded_bucket: str
+) -> None:
+    """Step 6.6: dtm_generator fetches manifest + topology.yaml from S3.
+
+    Same manifest pipeline as bom_generator, second consumer per ADR-006.
+    """
+    from src.dtm.dtm_generator_service import DtmGeneratorService
+    from src.shared.enums import (
+        BessCoupling,
+        ClimateZone,
+        DeploymentProfile,
+        EmsTarget,
+        GpuVariant,
+        SourcingTier,
+    )
+    from src.shared.schemas.dtm import EmsMode, ProtocolKind
+    from src.shared.schemas.module_resolution import ModuleResolution
+
+    # arrange
+    monkeypatch.setenv("S3_ENDPOINT_URL", localstack_endpoint)
+    client = ManifestClient(manifest_url=f"s3://{seeded_bucket}/manifest.yaml")
+    service = DtmGeneratorService(client)
+    resolution = ModuleResolution(
+        deployment_id=uuid4(),
+        deployment_profile=DeploymentProfile.COMMERCIAL_AC,
+        compute_container_count=2,
+        grid_container_present=False,  # fixture has no grid
+        bess_coupling=BessCoupling.NONE,
+        bess_capacity_mwh=0.0,
+        sourcing_tier=SourcingTier.COMMERCIAL,
+        ems_target=EmsTarget.AWS_STANDARD,
+        gpu_variant=GpuVariant.B200,
+        gpu_count=14,
+        climate_zone=ClimateZone.TEMPERATE,
+    )
+
+    # act
+    dtm = service.generate(profile="commercial_ac", resolution=resolution)
+
+    # assert — Q9-C-equivalent for DTM
+    assert dtm.ems_mode == EmsMode.SIM
+    expected_modules = 2  # 2 compute containers, no grid
+    assert len(dtm.modules) == expected_modules
+    expected_devices = 2  # 1 device per topology x 2 containers
+    assert len(dtm.devices) == expected_devices
+    gpu_node = next(d for d in dtm.devices if d.device_type == "gpu_node")
+    assert gpu_node.protocol_config.protocol == ProtocolKind.REDFISH
