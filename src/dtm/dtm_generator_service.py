@@ -133,6 +133,7 @@ class DtmGeneratorService:
                 port=spec.port,
                 protocol_config=spec.protocol_config,
                 description=spec.description,
+                blocking=spec.blocking,
             )
             for spec in topology.devices
         ]

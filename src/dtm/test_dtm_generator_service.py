@@ -20,7 +20,7 @@ from src.shared.enums import (
     GpuVariant,
     SourcingTier,
 )
-from src.shared.schemas.dtm import EmsMode, ProtocolKind
+from src.shared.schemas.dtm import BlockingKind, EmsMode, ProtocolKind
 from src.shared.schemas.module_resolution import ModuleResolution
 
 DEPLOYMENT_ID: UUID = UUID("12345678-1234-1234-1234-123456789abc")
@@ -246,3 +246,44 @@ def test_modbus_protocol_carries_through() -> None:
     # assert
     bms = next(d for d in actual.devices if d.device_type == "bms")
     assert bms.protocol_config.protocol == ProtocolKind.MODBUS_TCP
+
+
+def test_device_inherits_default_blocking() -> None:
+    # arrange — topology yaml omits blocking; spec default applies
+    service = DtmGeneratorService(_make_client())
+    # act
+    actual = service.generate(profile="commercial_ac", resolution=_resolution())
+    # assert
+    bms = next(d for d in actual.devices if d.device_type == "bms")
+    assert bms.blocking == [BlockingKind.LIVE_MODE]
+
+
+def test_device_inherits_explicit_blocking_from_topology() -> None:
+    # arrange — topology yaml declares blocking=[]; generator carries it through
+    client = MagicMock()
+    client.fetch_manifest.return_value = _manifest(with_grid=False)
+
+    monitoring_only_topology = {
+        "devices": [
+            {
+                "device_type": "monitor",
+                "description": "monitoring-only device",
+                "host": "10.0.0.5",
+                "port": 502,
+                "protocol_config": _modbus_bms_topology()["devices"][0][
+                    "protocol_config"
+                ],
+                "blocking": [],
+            }
+        ]
+    }
+    client.fetch_topology_yaml.return_value = monitoring_only_topology
+    service = DtmGeneratorService(client)
+    # act
+    actual = service.generate(
+        profile="commercial_ac",
+        resolution=_resolution(coupling=BessCoupling.NONE, bess_mwh=0.0),
+    )
+    # assert
+    monitor = next(d for d in actual.devices if d.device_type == "monitor")
+    assert monitor.blocking == []

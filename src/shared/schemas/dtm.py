@@ -1,10 +1,53 @@
-"""Device Topology Manifest — what edp-api emits, what ems-device-api revises."""
+"""Device Topology Manifest — what edp-api emits, what ems-device-api revises.
+
+Top-level schema; protocol-level types live in dtm_protocols.py.
+This module re-exports the protocol surface so existing imports keep working.
+"""
 
 from enum import StrEnum
-from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, computed_field, model_validator
+
+from src.shared.schemas.dtm_protocols import (
+    PROVISIONED_AT_COMMISSIONING,
+    CanopenGwConfig,
+    Dnp3TcpConfig,
+    ModbusTcpConfig,
+    OidMap,
+    PdoMap,
+    PointMap,
+    ProtocolConfig,
+    ProtocolKind,
+    ProvisionedInt,
+    RedfishConfig,
+    RedfishResourceMap,
+    SnmpConfig,
+    SnmpV3Creds,
+)
+
+__all__ = [
+    "PROVISIONED_AT_COMMISSIONING",
+    "BlockingKind",
+    "CanopenGwConfig",
+    "Device",
+    "Dnp3TcpConfig",
+    "Dtm",
+    "EmsMode",
+    "ModbusTcpConfig",
+    "Module",
+    "OidMap",
+    "PdoMap",
+    "PointMap",
+    "ProtocolConfig",
+    "ProtocolKind",
+    "ProvisionedInt",
+    "RedfishConfig",
+    "RedfishResourceMap",
+    "SizingParams",
+    "SnmpConfig",
+    "SnmpV3Creds",
+]
 
 
 class EmsMode(StrEnum):
@@ -14,104 +57,15 @@ class EmsMode(StrEnum):
     LIVE = "live"
 
 
-class ProtocolKind(StrEnum):
-    """Supported on-the-wire protocols. Ethernet TCP only at MVP."""
+class BlockingKind(StrEnum):
+    """What unresolved placeholders on a device block.
 
-    MODBUS_TCP = "modbus_tcp"
-    DNP3_TCP = "dnp3_tcp"
-    SNMP = "snmp"
-    CANOPEN_GW = "canopen_gw"
-    REDFISH = "redfish"
+    LIVE_MODE: device must be fully provisioned before site flips to live.
+    COMMISSIONING_COMPLETE: device must be provisioned for site sign-off.
+    """
 
-
-class PointMap(BaseModel):
-    """Modbus / DNP3 register slot."""
-
-    name: str
-    function_code: int  # modbus FC: 3=holding, 4=input
-    start_address: int
-    count: int
-
-
-class OidMap(BaseModel):
-    """SNMP OID slot."""
-
-    name: str
-    oid: str
-
-
-class PdoMap(BaseModel):
-    """CANopen PDO mapping."""
-
-    name: str
-    cob_id: int
-    byte_offset: int
-    byte_length: int
-
-
-class RedfishResourceMap(BaseModel):
-    """Redfish resource path slot."""
-
-    name: str
-    uri: str
-
-
-class SnmpV3Creds(BaseModel):
-    """SNMPv3 user + auth/priv algorithms."""
-
-    user: str
-    auth_proto: str  # SHA256, SHA512
-    priv_proto: str  # AES128, AES256
-
-
-class ModbusTcpConfig(BaseModel):
-    """Per-device Modbus TCP binding."""
-
-    protocol: Literal[ProtocolKind.MODBUS_TCP]
-    unit_id: int
-    point_maps: list[PointMap]
-
-
-class Dnp3TcpConfig(BaseModel):
-    """Per-device DNP3 TCP binding."""
-
-    protocol: Literal[ProtocolKind.DNP3_TCP]
-    master_addr: int
-    outstation_addr: int
-    point_maps: list[PointMap]
-
-
-class SnmpConfig(BaseModel):
-    """Per-device SNMP v3 binding."""
-
-    protocol: Literal[ProtocolKind.SNMP]
-    creds: SnmpV3Creds
-    oid_maps: list[OidMap]
-
-
-class CanopenGwConfig(BaseModel):
-    """Per-device CANopen-over-Ethernet gateway binding."""
-
-    protocol: Literal[ProtocolKind.CANOPEN_GW]
-    gateway_vendor: str
-    node_id: int
-    pdo_maps: list[PdoMap]
-
-
-class RedfishConfig(BaseModel):
-    """Per-device Redfish binding."""
-
-    protocol: Literal[ProtocolKind.REDFISH]
-    username: str
-    password_secret_ref: str
-    service_root: str = "/redfish/v1"
-    resource_maps: list[RedfishResourceMap]
-
-
-ProtocolConfig = Annotated[
-    ModbusTcpConfig | Dnp3TcpConfig | SnmpConfig | CanopenGwConfig | RedfishConfig,
-    Field(discriminator="protocol"),
-]
+    LIVE_MODE = "live_mode"
+    COMMISSIONING_COMPLETE = "commissioning_complete"
 
 
 class SizingParams(BaseModel):
@@ -131,6 +85,20 @@ class Module(BaseModel):
     description: str
 
 
+def _contains_sentinel(value: object) -> bool:
+    """Recursively scan declared model fields for the placeholder sentinel."""
+    if isinstance(value, str):
+        return value == PROVISIONED_AT_COMMISSIONING
+    if isinstance(value, BaseModel):
+        return any(
+            _contains_sentinel(getattr(value, name))
+            for name in type(value).model_fields
+        )
+    if isinstance(value, list):
+        return any(_contains_sentinel(v) for v in value)
+    return False
+
+
 class Device(BaseModel):
     """One physical device inside a Module."""
 
@@ -138,9 +106,29 @@ class Device(BaseModel):
     device_type: str
     module_id: str  # FK -> Module.module_id
     host: str
-    port: int
+    port: ProvisionedInt
     protocol_config: ProtocolConfig
     description: str
+    # Reason: defaults to [LIVE_MODE] — most devices block site live transition
+    # until the utility provisions them. Topology authors override to [] for
+    # monitoring-only devices, or add COMMISSIONING_COMPLETE for sign-off-blocking.
+    blocking: list[BlockingKind] = Field(
+        default_factory=lambda: [BlockingKind.LIVE_MODE]
+    )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def has_placeholders(self) -> bool:
+        """True iff any declared field (incl. nested protocol_config) holds the sentinel."""
+        return any(
+            _contains_sentinel(getattr(self, name)) for name in type(self).model_fields
+        )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def mode(self) -> EmsMode:
+        """LIVE iff fully provisioned; SIM while any placeholder remains."""
+        return EmsMode.SIM if self.has_placeholders else EmsMode.LIVE
 
 
 class Dtm(BaseModel):
@@ -162,3 +150,9 @@ class Dtm(BaseModel):
                     f"device {d.device_uuid}: module_id {d.module_id!r} not in modules"
                 )
         return self
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def pending_devices(self) -> list[Device]:
+        """Devices still carrying utility-assigned placeholder values."""
+        return [d for d in self.devices if d.has_placeholders]

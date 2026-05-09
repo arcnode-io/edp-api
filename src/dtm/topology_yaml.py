@@ -3,9 +3,9 @@
 Lives in `edp-module-assemblies` repo; fetched by URL from `hardware_selector_map.yaml`.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from src.shared.schemas.dtm import ProtocolConfig
+from src.shared.schemas.dtm import BlockingKind, ProtocolConfig, ProvisionedInt
 
 
 class TopologyDeviceSpec(BaseModel):
@@ -14,8 +14,13 @@ class TopologyDeviceSpec(BaseModel):
     device_type: str
     description: str
     host: str
-    port: int
+    port: ProvisionedInt
     protocol_config: ProtocolConfig
+    # Reason: defaults to [LIVE_MODE] — assembly authors override only when a
+    # device is monitoring-only or also blocks commissioning sign-off.
+    blocking: list[BlockingKind] = Field(
+        default_factory=lambda: [BlockingKind.LIVE_MODE]
+    )
 
 
 class TopologyYaml(BaseModel):
