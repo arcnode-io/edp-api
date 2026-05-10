@@ -162,3 +162,27 @@ measurements:
     # Act / Assert
     with pytest.raises(TemplateLoadError, match="duplicate template slug"):
         loader.load_catalog()
+
+
+def test_load_catalog_rejects_unresolved_contains(tmp_path: Path) -> None:
+    # Arrange — module references a leaf that doesn't exist
+    (tmp_path / "leaf").mkdir()
+    (tmp_path / "module").mkdir()
+    _write_revenue_meter(tmp_path / "leaf")
+    (tmp_path / "module" / "broken_module.yaml").write_text("""
+template: broken_module
+kind: module
+description: refs a leaf that doesn't exist
+contains:
+  - template: nonexistent_leaf
+    qty: 1
+measurements:
+  rollup:
+    unit: watts
+    type: float
+    publisher: line_controller
+""".lstrip())
+    loader = TemplateLoader(root=tmp_path)
+    # Act / Assert
+    with pytest.raises(TemplateLoadError, match="not in catalog"):
+        loader.load_catalog()

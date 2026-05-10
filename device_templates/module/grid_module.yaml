@@ -28,5 +28,6 @@ measurements:
   interconnect_state:
     unit: none
     type: enum
+    poll_rate_hz: 0.5
     values: { 0: OPEN, 1: CLOSED, 2: TRIPPED }
     publisher: line_controller

@@ -38,7 +38,19 @@ class TemplateLoader:
                         f"{path} conflicts with prior file"
                     )
                 catalog[tpl.template] = tpl
+        self._check_contains_refs(catalog)
         return catalog
+
+    @staticmethod
+    def _check_contains_refs(catalog: dict[str, DeviceTemplate]) -> None:
+        """Assert every module's contains[].template resolves to a catalog key."""
+        for tpl in catalog.values():
+            for entry in tpl.contains:
+                if entry.template not in catalog:
+                    raise TemplateLoadError(
+                        f"template {tpl.template!r}: "
+                        f"contains[].template {entry.template!r} not in catalog"
+                    )
 
     @staticmethod
     def _load_file(path: Path) -> DeviceTemplate:
