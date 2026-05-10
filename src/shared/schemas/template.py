@@ -95,12 +95,21 @@ class Measurement(BaseModel):
     poll_rate_hz: float | None = None
     display_name_default: str | None = None
     iec_61850_ref: str | None = None
-    values: dict[int, str] | None = None  # required for type=enum
+    values: dict[int, str] | None = None
     binding: Binding | None = None
     publisher: Publisher | None = None
 
     @model_validator(mode="after")
-    def exactly_one_source(self) -> "Measurement":
+    def _values_enum_constraint(self) -> "Measurement":
+        """values required iff type=enum."""
+        if self.type == "enum" and self.values is None:
+            raise ValueError("type=enum requires values")
+        if self.type != "enum" and self.values is not None:
+            raise ValueError("values forbidden for non-enum type")
+        return self
+
+    @model_validator(mode="after")
+    def _binding_xor_publisher(self) -> "Measurement":
         """Each measurement MUST have exactly one of binding or publisher."""
         has_binding = self.binding is not None
         has_publisher = self.publisher is not None
@@ -125,7 +134,7 @@ class Command(BaseModel):
     fanout: Fanout | None = None
 
     @model_validator(mode="after")
-    def exactly_one_source(self) -> "Command":
+    def _binding_xor_fanout(self) -> "Command":
         """Each command MUST have exactly one of binding or fanout."""
         has_binding = self.binding is not None
         has_fanout = self.fanout is not None
@@ -167,16 +176,27 @@ class DeviceTemplate(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def equipment_id_matches_kind(self) -> "DeviceTemplate":
-        """Leaves require equipment_id; modules forbid it."""
-        if self.kind == TemplateKind.LEAF and self.equipment_id is None:
-            raise ValueError(
-                f"template {self.template!r}: equipment_id required for kind=leaf"
-            )
-        if self.kind == TemplateKind.MODULE and self.equipment_id is not None:
-            raise ValueError(
-                f"template {self.template!r}: equipment_id forbidden for kind=module"
-            )
+    def kind_field_consistency(self) -> "DeviceTemplate":
+        """Gate all kind-conditional fields: equipment_id, vendor, model, contains."""
+        t = self.template
+        if self.kind == TemplateKind.LEAF:
+            if self.equipment_id is None:
+                raise ValueError(f"template {t!r}: equipment_id required for kind=leaf")
+            if self.vendor is None:
+                raise ValueError(f"template {t!r}: vendor required for kind=leaf")
+            if self.model is None:
+                raise ValueError(f"template {t!r}: model required for kind=leaf")
+            if len(self.contains) > 0:
+                raise ValueError(f"template {t!r}: contains forbidden for kind=leaf")
+        if self.kind == TemplateKind.MODULE:
+            if self.equipment_id is not None:
+                raise ValueError(
+                    f"template {t!r}: equipment_id forbidden for kind=module"
+                )
+            if self.vendor is not None:
+                raise ValueError(f"template {t!r}: vendor forbidden for kind=module")
+            if self.model is not None:
+                raise ValueError(f"template {t!r}: model forbidden for kind=module")
         return self
 
     @model_validator(mode="after")

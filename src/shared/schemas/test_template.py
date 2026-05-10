@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from src.shared.schemas.template import (
+    CanopenBinding,
     Command,
     ContainsEntry,
     DeviceTemplate,
@@ -54,14 +55,15 @@ def test_binding_dnp3_tcp() -> None:
     # Arrange / Act
     b = Dnp3Binding(protocol="dnp3_tcp", point_index=10, point_type="analog_input")
     # Assert
-    assert b.protocol == "dnp3_tcp"
+    assert b.point_index == 10
+    assert b.point_type == "analog_input"
 
 
 def test_binding_snmp() -> None:
     # Arrange / Act
     b = SnmpBinding(protocol="snmp", oid="1.3.6.1.4.1.1718.4.1.3.3.1.7")
     # Assert
-    assert b.protocol == "snmp"
+    assert b.oid == "1.3.6.1.4.1.1718.4.1.3.3.1.7"
 
 
 def test_binding_redfish() -> None:
@@ -72,7 +74,18 @@ def test_binding_redfish() -> None:
         json_pointer="/PowerControl/0/PowerConsumedWatts",
     )
     # Assert
-    assert b.protocol == "redfish"
+    assert b.uri == "/Chassis/1/Power"
+    assert b.json_pointer == "/PowerControl/0/PowerConsumedWatts"
+
+
+def test_binding_canopen() -> None:
+    # Arrange / Act
+    b = CanopenBinding(
+        protocol="canopen_gw", cob_id=0x180, byte_offset=0, byte_length=2
+    )
+    # Assert
+    assert b.cob_id == 0x180
+    assert b.byte_length == 2
 
 
 def _modbus_binding() -> ModbusBinding:
@@ -253,6 +266,8 @@ def test_device_template_must_declare_measurements_or_commands() -> None:
             template="empty",
             kind=TemplateKind.LEAF,
             equipment_id="GRD-MTR-001",
+            vendor="Acme",
+            model="X1",
             description="test",
         )
 
@@ -269,3 +284,107 @@ def test_template_slug_format_rejected() -> None:
                 "v": Measurement(unit="volts", type="float", binding=_modbus_binding())
             },
         )
+
+
+def test_device_template_leaf_requires_vendor_and_model() -> None:
+    # Arrange / Act / Assert — vendor missing
+    with pytest.raises(ValidationError, match="vendor required"):
+        DeviceTemplate(
+            template="revenue_meter",
+            kind=TemplateKind.LEAF,
+            equipment_id="GRD-MTR-001",
+            model="ION9000",
+            description="test",
+            measurements={
+                "v": Measurement(unit="volts", type="float", binding=_modbus_binding())
+            },
+        )
+    # model missing
+    with pytest.raises(ValidationError, match="model required"):
+        DeviceTemplate(
+            template="revenue_meter",
+            kind=TemplateKind.LEAF,
+            equipment_id="GRD-MTR-001",
+            vendor="Schneider",
+            description="test",
+            measurements={
+                "v": Measurement(unit="volts", type="float", binding=_modbus_binding())
+            },
+        )
+
+
+def test_device_template_module_rejects_vendor_and_model() -> None:
+    # Arrange / Act / Assert — vendor present on module
+    with pytest.raises(ValidationError, match="vendor forbidden"):
+        DeviceTemplate(
+            template="bess_module",
+            kind=TemplateKind.MODULE,
+            vendor="Acme",
+            description="test",
+            measurements={
+                "soc": Measurement(
+                    unit="percent", type="float", publisher=Publisher.LINE_CONTROLLER
+                )
+            },
+        )
+    # model present on module
+    with pytest.raises(ValidationError, match="model forbidden"):
+        DeviceTemplate(
+            template="bess_module",
+            kind=TemplateKind.MODULE,
+            model="X1",
+            description="test",
+            measurements={
+                "soc": Measurement(
+                    unit="percent", type="float", publisher=Publisher.LINE_CONTROLLER
+                )
+            },
+        )
+
+
+def test_device_template_leaf_rejects_contains() -> None:
+    # Arrange / Act / Assert
+    with pytest.raises(ValidationError, match="contains forbidden"):
+        DeviceTemplate(
+            template="revenue_meter",
+            kind=TemplateKind.LEAF,
+            equipment_id="GRD-MTR-001",
+            vendor="Schneider",
+            model="ION9000",
+            description="test",
+            contains=[ContainsEntry(template="sub_module", qty=1)],
+            measurements={
+                "v": Measurement(unit="volts", type="float", binding=_modbus_binding())
+            },
+        )
+
+
+def test_measurement_enum_requires_values() -> None:
+    # Arrange / Act / Assert
+    with pytest.raises(ValidationError, match="type=enum requires values"):
+        Measurement(unit="none", type="enum", binding=_modbus_binding())
+
+
+def test_measurement_non_enum_rejects_values() -> None:
+    # Arrange / Act / Assert
+    with pytest.raises(ValidationError, match="values forbidden for non-enum type"):
+        Measurement(
+            unit="volts",
+            type="float",
+            values={1: "HIGH", 2: "LOW"},
+            binding=_modbus_binding(),
+        )
+
+
+def test_measurement_binding_dict_dispatches_to_modbus() -> None:
+    # Arrange / Act — validate from dict so discriminator resolves protocol → ModbusBinding
+    m = Measurement.model_validate(
+        {
+            "unit": "volts",
+            "type": "float",
+            "binding": {"protocol": "modbus_tcp", "function_code": 4, "address": 100},
+        }
+    )
+    # Assert
+    assert isinstance(m.binding, ModbusBinding)
+    assert m.binding.function_code == 4
