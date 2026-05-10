@@ -126,7 +126,7 @@ def seeded_bucket(s3_client) -> str:
         ),
     )
 
-    # topology.yaml for DTM (step 6.6) — single Redfish device for E2E
+    # topology.yaml for DTM — new canonical shape (template + connection)
     s3_client.put_object(
         Bucket=BUCKET,
         Key="assemblies/compute-container/commercial-ac/topology.yaml",
@@ -134,21 +134,15 @@ def seeded_bucket(s3_client) -> str:
             {
                 "devices": [
                     {
-                        "device_type": "gpu_node",
+                        "template": "gpu_node",
                         "description": "HGX B200 #1",
-                        "host": "mock-redfish-server",
-                        "port": 8443,
-                        "protocol_config": {
-                            "protocol": "redfish",
-                            "username": "arcnode",
-                            "password_secret_ref": "secrets/redfish/test",
-                            "service_root": "/redfish/v1",
-                            "resource_maps": [
-                                {"name": "power", "uri": "/Chassis/1/Power"}
-                            ],
+                        "connection": {
+                            "host": "mock-redfish-server",
+                            "port": 8443,
                         },
                     }
-                ]
+                ],
+                "buses": [],
             }
         ),
     )
@@ -221,11 +215,14 @@ def test_upload_bom_json_to_localstack(
 def test_dtm_generator_against_localstack(
     monkeypatch, localstack_endpoint: str, seeded_bucket: str
 ) -> None:
-    """Step 6.6: dtm_generator fetches manifest + topology.yaml from S3.
+    """dtm_generator fetches manifest + topology.yaml from S3 (canonical Dtm shape).
 
     Same manifest pipeline as bom_generator, second consumer per ADR-006.
     """
+    from pathlib import Path
+
     from src.dtm.dtm_generator_service import DtmGeneratorService
+    from src.dtm.template_loader import TemplateLoader
     from src.shared.enums import (
         BessCoupling,
         ClimateZone,
@@ -234,13 +231,16 @@ def test_dtm_generator_against_localstack(
         GpuVariant,
         SourcingTier,
     )
-    from src.shared.schemas.dtm import EmsMode, ProtocolKind
+    from src.shared.schemas.dtm import EmsMode
     from src.shared.schemas.module_resolution import ModuleResolution
+    from src.shared.schemas.template import TemplateKind
 
     # arrange
     monkeypatch.setenv("S3_ENDPOINT_URL", localstack_endpoint)
     client = ManifestClient(manifest_url=f"s3://{seeded_bucket}/manifest.yaml")
-    service = DtmGeneratorService(client)
+    repo_root = Path(__file__).resolve().parents[1]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    service = DtmGeneratorService(client, template_catalog=catalog)
     resolution = ModuleResolution(
         deployment_id=uuid4(),
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
@@ -258,11 +258,18 @@ def test_dtm_generator_against_localstack(
     # act
     dtm = service.generate(profile="commercial_ac", resolution=resolution)
 
-    # assert — Q9-C-equivalent for DTM
+    # assert — Q9-C-equivalent for DTM (canonical Dtm shape)
     assert dtm.ems_mode == EmsMode.SIM
-    expected_modules = 2  # 2 compute containers, no grid
-    assert len(dtm.modules) == expected_modules
-    expected_devices = 2  # 1 device per topology x 2 containers
-    assert len(dtm.devices) == expected_devices
-    gpu_node = next(d for d in dtm.devices if d.device_type == "gpu_node")
-    assert gpu_node.protocol_config.protocol == ProtocolKind.REDFISH
+    # 2 compute_module devices (one per container), no grid
+    module_devices = [
+        d
+        for d in dtm.devices.values()
+        if dtm.templates_used[d.template].kind == TemplateKind.MODULE
+    ]
+    assert len(module_devices) == 2
+    # 2 leaf gpu_node devices (1 per topology x 2 containers)
+    gpu_devices = [d for d in dtm.devices.values() if d.template == "gpu_node"]
+    assert len(gpu_devices) == 2
+    # verify gpu_node is in templates_used and is a leaf
+    assert "gpu_node" in dtm.templates_used
+    assert dtm.templates_used["gpu_node"].kind == TemplateKind.LEAF
