@@ -1,0 +1,35 @@
+template: compute_module
+kind: module
+description: Compute container aggregation — utilization rollups
+
+contains:
+  - template: gpu_node
+    qty: scalable
+  - template: cdu
+    qty: 1
+  - template: network_switch
+    qty: scalable
+  - template: pdu
+    qty: scalable
+
+measurements:
+  total_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Module Total Power"
+    publisher: line_controller
+
+  total_thermal_load:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Module Thermal Load"
+    publisher: line_controller
+
+  pue:
+    unit: none
+    type: float
+    poll_rate_hz: 0.1
+    display_name_default: "Power Usage Effectiveness"
+    publisher: analyst

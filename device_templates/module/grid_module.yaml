@@ -1,0 +1,32 @@
+template: grid_module
+kind: module
+description: Grid container aggregation — interconnect rollups
+
+contains:
+  - template: switchgear
+    qty: 1
+  - template: revenue_meter
+    qty: 1
+  - template: protective_relay
+    qty: 1
+
+measurements:
+  net_active_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Net Active Power"
+    publisher: line_controller
+
+  grid_frequency:
+    unit: hertz
+    type: float
+    poll_rate_hz: 10
+    display_name_default: "Grid Frequency"
+    publisher: line_controller
+
+  interconnect_state:
+    unit: none
+    type: enum
+    values: { 0: OPEN, 1: CLOSED, 2: TRIPPED }
+    publisher: line_controller

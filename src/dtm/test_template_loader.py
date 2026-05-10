@@ -110,7 +110,7 @@ def test_load_real_catalog_includes_bess_module() -> None:
     assert fanout is not None and fanout.value == "line_controller"
 
 
-def test_load_real_catalog_has_expected_size_after_task_5() -> None:
+def test_load_real_catalog_size() -> None:
     # Arrange
     repo_root = Path(__file__).resolve().parents[2]
     loader = TemplateLoader(root=repo_root / "device_templates")
@@ -119,8 +119,25 @@ def test_load_real_catalog_has_expected_size_after_task_5() -> None:
     # Assert
     leaves = [t for t in catalog.values() if t.kind.value == "leaf"]
     modules = [t for t in catalog.values() if t.kind.value == "module"]
-    assert len(leaves) == 9  # revenue_meter + 8 from Task 5
-    assert len(modules) == 1  # bess_module
+    assert len(leaves) == 9
+    assert len(modules) == 3
+
+
+def test_load_real_catalog_includes_compute_and_grid_modules() -> None:
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    loader = TemplateLoader(root=repo_root / "device_templates")
+    # Act
+    catalog = loader.load_catalog()
+    # Assert
+    assert "compute_module" in catalog
+    assert "grid_module" in catalog
+    cm = catalog["compute_module"]
+    gm = catalog["grid_module"]
+    assert cm.kind.value == "module"
+    assert gm.kind.value == "module"
+    assert any(c.template == "gpu_node" for c in cm.contains)
+    assert any(c.template == "switchgear" for c in gm.contains)
 
 
 def test_load_catalog_rejects_duplicate_slug(tmp_path: Path) -> None:
