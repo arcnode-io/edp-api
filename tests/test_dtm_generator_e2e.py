@@ -32,7 +32,10 @@ from src.shared.schemas.dtm import EmsMode
 from src.shared.schemas.module_resolution import ModuleResolution
 
 # Reason: e2e covers the cross-repo contract; skip when assemblies repo absent.
-_ASSEMBLIES_DIR = Path("/home/resister/arcnode/edp-module-assemblies/assemblies")
+# parents[0]=tests/, parents[1]=edp-api/, parents[2]=arcnode/
+_ASSEMBLIES_DIR = (
+    Path(__file__).resolve().parents[2] / "edp-module-assemblies/assemblies"
+)
 _skip_if_no_assemblies = pytest.mark.skipif(
     not _ASSEMBLIES_DIR.is_dir(),
     reason="sibling edp-module-assemblies checkout required",

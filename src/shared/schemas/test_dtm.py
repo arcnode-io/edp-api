@@ -35,7 +35,9 @@ def _revenue_meter_template() -> DeviceTemplate:
         model="ION9000",
         description="t",
         measurements={
-            "voltage_a": Measurement(unit="volts", type="float", binding=_modbus_binding())
+            "voltage_a": Measurement(
+                unit="volts", type="float", binding=_modbus_binding()
+            )
         },
     )
 
@@ -85,7 +87,7 @@ def test_device_id_must_be_snake_case_slug() -> None:
     # Arrange / Act / Assert
     with pytest.raises(ValidationError, match="slug"):
         Device(
-            device_id="RevenueMeter-1",     # invalid slug
+            device_id="RevenueMeter-1",  # invalid slug
             template="revenue_meter",
             connection=_connection(),
         )

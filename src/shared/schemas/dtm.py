@@ -10,7 +10,14 @@ import re
 from typing import Final
 from uuid import UUID
 
-from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 from src.shared.schemas.dtm_primitives import (
     PROVISIONED_AT_COMMISSIONING,
@@ -46,11 +53,13 @@ _SLUG_RE: Final = re.compile(r"^[a-z][a-z0-9_]{0,62}[a-z0-9]$")
 class Device(BaseModel):
     """One device instance — leaf or module per its template's kind."""
 
-    device_id: str                              # snake_case slug per ADR §9
-    template: str                               # ref into Dtm.templates_used
-    parent: str | None = None                  # FK to another Device.device_id
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: str  # snake_case slug per ADR §9
+    template: str  # ref into Dtm.templates_used
+    parent: str | None = None  # FK to another Device.device_id
     display_name: str | None = None
-    connection: Connection | None = None       # required for gateway-bound leaves
+    connection: Connection | None = None  # required for gateway-bound leaves
     # Reason: defaults to [LIVE_MODE] — most devices block site live transition
     # until the utility provisions them. Topology authors override to [] for
     # monitoring-only devices, or add COMMISSIONING_COMPLETE for sign-off-blocking.
@@ -87,6 +96,8 @@ class Device(BaseModel):
 
 class Dtm(BaseModel):
     """Top-level DTM. SIM at edp-api emit; ems-device-api flips to LIVE."""
+
+    model_config = ConfigDict(extra="forbid")
 
     deployment_uuid: UUID
     ems_mode: EmsMode = EmsMode.SIM

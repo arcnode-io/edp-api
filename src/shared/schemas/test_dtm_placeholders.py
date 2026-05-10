@@ -32,7 +32,9 @@ def _revenue_meter_template() -> DeviceTemplate:
         model="ION9000",
         description="t",
         measurements={
-            "voltage_a": Measurement(unit="volts", type="float", binding=_modbus_binding())
+            "voltage_a": Measurement(
+                unit="volts", type="float", binding=_modbus_binding()
+            )
         },
     )
 
@@ -77,9 +79,7 @@ def test_device_with_no_placeholders_is_live() -> None:
 
 def test_device_with_sentinel_host_is_sim() -> None:
     # Arrange / Act
-    device = _device(
-        connection=Connection(host=PROVISIONED_AT_COMMISSIONING, port=502)
-    )
+    device = _device(connection=Connection(host=PROVISIONED_AT_COMMISSIONING, port=502))
     # Assert
     assert device.has_placeholders is True
     assert device.mode == EmsMode.SIM

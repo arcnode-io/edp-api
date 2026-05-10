@@ -25,7 +25,7 @@ def test_topology_device_spec_minimal() -> None:
     # Assert
     assert spec.template == "revenue_meter"
     assert spec.connection.host == "mock-modbus-server"
-    assert spec.blocking == [BlockingKind.LIVE_MODE]   # default
+    assert spec.blocking == [BlockingKind.LIVE_MODE]  # default
 
 
 def test_topology_connection_accepts_sentinel_port() -> None:
@@ -88,4 +88,16 @@ def test_topology_bus_type_rejected_outside_dc_ac() -> None:
     with pytest.raises(ValidationError):
         TopologyBusSpec.model_validate(
             {"bus_id": "x", "type": "dontknow", "members": []}
+        )
+
+
+def test_topology_device_spec_rejects_unknown_field() -> None:
+    # Arrange / Act / Assert — typo `tempate` should fail clearly
+    with pytest.raises(ValidationError, match="extra"):
+        TopologyDeviceSpec.model_validate(
+            {
+                "tempate": "revenue_meter",  # typo
+                "description": "x",
+                "connection": {"host": "h", "port": 1},
+            }
         )

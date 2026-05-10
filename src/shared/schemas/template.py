@@ -11,7 +11,7 @@ import re
 from enum import StrEnum
 from typing import Final, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from src.shared.schemas.template_protocols import (
     Binding,
@@ -65,6 +65,8 @@ class Measurement(BaseModel):
     """One channel a device emits. Either bound to a protocol or
     published by line-controller/analyst."""
 
+    model_config = ConfigDict(extra="forbid")
+
     unit: str  # ADR-002 §3 enum-locked vocabulary
     type: Literal["float", "bool", "enum"]
     poll_rate_hz: float | None = None
@@ -100,6 +102,8 @@ class Command(BaseModel):
     """One channel a device receives. Either bound to a protocol or
     fanned out by line-controller."""
 
+    model_config = ConfigDict(extra="forbid")
+
     verb: Literal["set", "reset", "clear", "start", "stop", "enable", "disable"]
     target: str
     unit: str
@@ -124,12 +128,16 @@ class Command(BaseModel):
 class ContainsEntry(BaseModel):
     """Reference to a child template inside a module's contains[]."""
 
+    model_config = ConfigDict(extra="forbid")
+
     template: str
     qty: Literal["scalable"] | int = "scalable"
 
 
 class DeviceTemplate(BaseModel):
     """One device template — leaf (1:1 with equipment_id) or module (aggregation)."""
+
+    model_config = ConfigDict(extra="forbid")
 
     template: str  # ADR-002 §9 slug
     kind: TemplateKind

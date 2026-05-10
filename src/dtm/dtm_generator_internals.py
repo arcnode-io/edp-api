@@ -41,7 +41,6 @@ def emit_container(
     manifest: Manifest,
     asm_type: str,
     variant: str,
-    instance_index: int,
     devices: dict[str, Device],
     buses: list[Bus],
     slug_counter: dict[str, int],
@@ -49,7 +48,7 @@ def emit_container(
 ) -> None:
     """Emit a module Device + its leaf children into devices/buses/counters."""
     module_template = _MODULE_TEMPLATE_BY_ASSEMBLY_TYPE[asm_type]
-    module_slug = f"{module_template}_{instance_index}"
+    module_slug = assign_slug(module_template, slug_counter)
     devices[module_slug] = Device(
         device_id=module_slug,
         template=module_template,

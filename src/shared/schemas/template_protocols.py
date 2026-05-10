@@ -6,11 +6,13 @@ Owns the 5 per-measurement binding models and the Binding discriminated-union al
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ModbusBinding(BaseModel):
     """Modbus TCP per-measurement register slot."""
+
+    model_config = ConfigDict(extra="forbid")
 
     protocol: Literal["modbus_tcp"]
     function_code: int  # 3=holding, 4=input, 6=write_single
@@ -24,6 +26,8 @@ class ModbusBinding(BaseModel):
 class Dnp3Binding(BaseModel):
     """DNP3 per-measurement point reference."""
 
+    model_config = ConfigDict(extra="forbid")
+
     protocol: Literal["dnp3_tcp"]
     point_index: int
     point_type: Literal[
@@ -34,12 +38,16 @@ class Dnp3Binding(BaseModel):
 class SnmpBinding(BaseModel):
     """SNMP per-measurement OID."""
 
+    model_config = ConfigDict(extra="forbid")
+
     protocol: Literal["snmp"]
     oid: str
 
 
 class RedfishBinding(BaseModel):
     """Redfish per-measurement resource path + JSON pointer."""
+
+    model_config = ConfigDict(extra="forbid")
 
     protocol: Literal["redfish"]
     uri: str
@@ -48,6 +56,8 @@ class RedfishBinding(BaseModel):
 
 class CanopenBinding(BaseModel):
     """CANopen-over-Ethernet per-measurement PDO mapping."""
+
+    model_config = ConfigDict(extra="forbid")
 
     protocol: Literal["canopen_gw"]
     cob_id: int

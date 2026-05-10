@@ -54,13 +54,12 @@ class DtmGeneratorService:
         slug_counter: dict[str, int] = {}
         by_template: dict[str, list[str]] = {}
 
-        for i in range(resolution.compute_container_count):
+        for _ in range(resolution.compute_container_count):
             emit_container(
                 client=self._client,
                 manifest=manifest,
                 asm_type="compute_container",
                 variant=prof.compute_container,
-                instance_index=i + 1,
                 devices=devices,
                 buses=buses,
                 slug_counter=slug_counter,
@@ -73,7 +72,6 @@ class DtmGeneratorService:
                 manifest=manifest,
                 asm_type="grid_container",
                 variant=prof.grid_container,
-                instance_index=1,
                 devices=devices,
                 buses=buses,
                 slug_counter=slug_counter,
