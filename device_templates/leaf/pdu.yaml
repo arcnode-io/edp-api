@@ -1,0 +1,41 @@
+template: pdu
+kind: leaf
+equipment_id: CMP-PDU-001
+vendor: Server Technology (Legrand)
+model: PRO3X C3W36RL
+description: Server Tech PRO3X 0U vertical intelligent rack PDU (415V 3ph 60A, 36 outlets, Xerus) via SNMP
+
+measurements:
+  # oid_maps: input_current
+  input_current:
+    unit: amps
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Input Current"
+    binding:
+      protocol: snmp
+      oid: 1.3.6.1.4.1.1718.4.1.3.3.1.7
+
+  # oid_maps: input_voltage
+  input_voltage:
+    unit: volts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Input Voltage"
+    binding:
+      protocol: snmp
+      oid: 1.3.6.1.4.1.1718.4.1.3.3.1.6
+
+  # oid_maps: outlet_state — per-outlet switched state table row
+  outlet_state:
+    unit: none
+    type: enum
+    poll_rate_hz: 0.5
+    display_name_default: "Outlet State"
+    values:
+      0: "OFF"
+      1: "ON"
+      2: CYCLING
+    binding:
+      protocol: snmp
+      oid: 1.3.6.1.4.1.1718.4.1.8.5.1.2

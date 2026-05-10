@@ -110,6 +110,19 @@ def test_load_real_catalog_includes_bess_module() -> None:
     assert fanout is not None and fanout.value == "line_controller"
 
 
+def test_load_real_catalog_has_expected_size_after_task_5() -> None:
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    loader = TemplateLoader(root=repo_root / "device_templates")
+    # Act
+    catalog = loader.load_catalog()
+    # Assert
+    leaves = [t for t in catalog.values() if t.kind.value == "leaf"]
+    modules = [t for t in catalog.values() if t.kind.value == "module"]
+    assert len(leaves) == 9  # revenue_meter + 8 from Task 5
+    assert len(modules) == 1  # bess_module
+
+
 def test_load_catalog_rejects_duplicate_slug(tmp_path: Path) -> None:
     # Arrange — two files claiming the same slug
     (tmp_path / "leaf").mkdir()

@@ -1,0 +1,91 @@
+template: protective_relay
+kind: leaf
+equipment_id: GRD-RLY-001
+vendor: Schweitzer Engineering Laboratories (SEL)
+model: SEL-351-7
+description: SEL-351-7 feeder protection relay (overcurrent, voltage, frequency, synchrocheck) via DNP3 TCP
+
+measurements:
+  # topology: phase_currents, FC=4, start_address=0, count=3 → analog_input point indices 0-2
+  phase_a_current:
+    unit: amps
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Phase A Current"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 0
+      point_type: analog_input
+
+  phase_b_current:
+    unit: amps
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Phase B Current"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 1
+      point_type: analog_input
+
+  phase_c_current:
+    unit: amps
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Phase C Current"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 2
+      point_type: analog_input
+
+  # topology: line_voltages, FC=4, start_address=10, count=3 → analog_input point indices 10-12
+  line_voltage_ab:
+    unit: volts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Line Voltage A-B"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 10
+      point_type: analog_input
+
+  line_voltage_bc:
+    unit: volts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Line Voltage B-C"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 11
+      point_type: analog_input
+
+  line_voltage_ca:
+    unit: volts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Line Voltage C-A"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 12
+      point_type: analog_input
+
+  # topology: trip_status, FC=3, start_address=100 → binary_input point index 100
+  trip_status:
+    unit: none
+    type: bool
+    poll_rate_hz: 1
+    display_name_default: "Trip Status"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 100
+      point_type: binary_input
+
+  # topology: ground_fault, FC=3, start_address=110 → binary_input point index 110
+  ground_fault:
+    unit: none
+    type: bool
+    poll_rate_hz: 1
+    display_name_default: "Ground Fault"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 110
+      point_type: binary_input

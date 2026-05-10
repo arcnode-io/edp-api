@@ -1,0 +1,70 @@
+template: gpu_node
+kind: leaf
+equipment_id: CMP-NODE-001
+vendor: Supermicro (Super Micro Computer Inc.)
+model: SYS-421GE-NBRT-LCC
+description: 4U liquid-cooled HGX B200 GPU server (8× NVIDIA B200 SXM) with Redfish BMC
+
+measurements:
+  # resource_maps: power → /Chassis/{N}/Power
+  power_consumed:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Power Consumed"
+    binding:
+      protocol: redfish
+      uri: /Chassis/1/Power
+      json_pointer: /PowerControl/0/PowerConsumedWatts
+
+  power_limit:
+    unit: watts
+    type: float
+    poll_rate_hz: 0.1
+    display_name_default: "Power Limit"
+    binding:
+      protocol: redfish
+      uri: /Chassis/1/Power
+      json_pointer: /PowerControl/0/PowerLimit/LimitInWatts
+
+  # resource_maps: thermal → /Chassis/{N}/Thermal
+  inlet_temp:
+    unit: celsius
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Inlet Temperature"
+    binding:
+      protocol: redfish
+      uri: /Chassis/1/Thermal
+      json_pointer: /Temperatures/0/ReadingCelsius
+
+  exhaust_temp:
+    unit: celsius
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Exhaust Temperature"
+    binding:
+      protocol: redfish
+      uri: /Chassis/1/Thermal
+      json_pointer: /Temperatures/1/ReadingCelsius
+
+  fan_speed:
+    unit: percent
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Fan Speed"
+    binding:
+      protocol: redfish
+      uri: /Chassis/1/Thermal
+      json_pointer: /Fans/0/Reading
+
+  # resource_maps: gpus → /Chassis/{N}/Processors
+  gpu_power_watts:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "GPU Total Power"
+    binding:
+      protocol: redfish
+      uri: /Chassis/1/Processors
+      json_pointer: /Members/0/Oem/Nvidia/TotalPowerWatts

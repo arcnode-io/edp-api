@@ -1,0 +1,109 @@
+template: dc_external
+kind: leaf
+equipment_id: EXT-DC-001
+vendor: Güntner (Güntner U.S. LLC)
+model: GFD Series (V-shape, ECM fans, fluid cooler)
+description: Güntner GFD outdoor V-shape dry cooler with EC fan motors via Modbus TCP
+
+# Reason: No commercial-ac topology entry — dry cooler is facility-side on the primary
+# coolant loop. Protocol is bacnet_mstp (primary) or modbus_rtu (per-fan).
+# DTM v1 schema only models modbus_tcp and modbus bindings; no BACnet MSTP or RTU enum.
+# Using Modbus TCP via RS-485/TCP gateway as the v1 integration path.
+# Placeholder addresses 0-based; verify against Güntner GFD manual at commissioning.
+
+measurements:
+  leaving_fluid_temp:
+    unit: celsius
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Leaving Fluid Temperature"
+    binding:
+      protocol: modbus_tcp
+      function_code: 4
+      address: 0
+      data_type: int16
+      word_order: high_low
+      scale: 0.1
+
+  entering_fluid_temp:
+    unit: celsius
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Entering Fluid Temperature"
+    binding:
+      protocol: modbus_tcp
+      function_code: 4
+      address: 1
+      data_type: int16
+      word_order: high_low
+      scale: 0.1
+
+  ambient_temp:
+    unit: celsius
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Ambient Air Temperature"
+    binding:
+      protocol: modbus_tcp
+      function_code: 4
+      address: 2
+      data_type: int16
+      word_order: high_low
+      scale: 0.1
+
+  fan_1_speed:
+    unit: percent
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Fan 1 Speed"
+    binding:
+      protocol: modbus_tcp
+      function_code: 4
+      address: 10
+      data_type: uint16
+      word_order: high_low
+      scale: 0.1
+
+  fan_2_speed:
+    unit: percent
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Fan 2 Speed"
+    binding:
+      protocol: modbus_tcp
+      function_code: 4
+      address: 11
+      data_type: uint16
+      word_order: high_low
+      scale: 0.1
+
+  unit_state:
+    unit: none
+    type: enum
+    poll_rate_hz: 0.5
+    display_name_default: "Unit Operating State"
+    values:
+      0: "OFF"
+      1: RUNNING
+      2: FAULT
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 20
+      data_type: uint16
+      word_order: high_low
+
+commands:
+  set_leaving_fluid_temp:
+    verb: set
+    target: leaving_fluid_temp
+    unit: celsius
+    payload: float
+    display_name_default: "Set Leaving Fluid Temperature Setpoint"
+    binding:
+      protocol: modbus_tcp
+      function_code: 6
+      address: 30
+      data_type: int16
+      word_order: high_low
+      scale: 0.1

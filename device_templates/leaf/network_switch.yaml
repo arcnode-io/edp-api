@@ -1,0 +1,63 @@
+template: network_switch
+kind: leaf
+equipment_id: CMP-SWITCH-001
+vendor: NVIDIA (Mellanox)
+model: Spectrum-X SN5600
+description: NVIDIA Spectrum-X SN5600 64-port 800GbE ToR switch with Redfish telemetry
+
+measurements:
+  # resource_maps: thermal → /Chassis/SW1/Thermal
+  inlet_temp:
+    unit: celsius
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Inlet Temperature"
+    binding:
+      protocol: redfish
+      uri: /Chassis/SW1/Thermal
+      json_pointer: /Temperatures/0/ReadingCelsius
+
+  asic_temp:
+    unit: celsius
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "ASIC Temperature"
+    binding:
+      protocol: redfish
+      uri: /Chassis/SW1/Thermal
+      json_pointer: /Temperatures/1/ReadingCelsius
+
+  fan_speed:
+    unit: percent
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Fan Speed"
+    binding:
+      protocol: redfish
+      uri: /Chassis/SW1/Thermal
+      json_pointer: /Fans/0/Reading
+
+  # resource_maps: ports → /Fabric/SW1/Ports
+  active_port_count:
+    unit: none
+    type: float
+    poll_rate_hz: 0.1
+    display_name_default: "Active Port Count"
+    binding:
+      protocol: redfish
+      uri: /Fabric/SW1/Ports
+      json_pointer: /Members@odata.count
+
+  port_link_status:
+    unit: none
+    type: enum
+    poll_rate_hz: 0.5
+    display_name_default: "Uplink Port Status"
+    values:
+      0: DOWN
+      1: UP
+      2: TESTING
+    binding:
+      protocol: redfish
+      uri: /Fabric/SW1/Ports
+      json_pointer: /Members/0/LinkStatus

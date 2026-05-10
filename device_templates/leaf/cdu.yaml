@@ -1,0 +1,63 @@
+template: cdu
+kind: leaf
+equipment_id: CMP-CDU-001
+vendor: Motivair (a Schneider Electric company)
+model: MCDU-10 (19" model)
+description: Motivair MCDU-10 210kW rack-mount liquid-to-liquid CDU with Redfish supervisory control
+
+measurements:
+  # resource_maps: thermal → /Chassis/CDU/Thermal
+  supply_temp:
+    unit: celsius
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Coolant Supply Temperature"
+    binding:
+      protocol: redfish
+      uri: /Chassis/CDU/Thermal
+      json_pointer: /Temperatures/0/ReadingCelsius
+
+  return_temp:
+    unit: celsius
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Coolant Return Temperature"
+    binding:
+      protocol: redfish
+      uri: /Chassis/CDU/Thermal
+      json_pointer: /Temperatures/1/ReadingCelsius
+
+  # resource_maps: pumps → /Chassis/CDU/Pumps
+  pump_flow_rate:
+    unit: liters_per_minute
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Pump Flow Rate"
+    binding:
+      protocol: redfish
+      uri: /Chassis/CDU/Pumps
+      json_pointer: /Members/0/FlowLitersPerMinute
+
+  pump_speed:
+    unit: percent
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Pump Speed"
+    binding:
+      protocol: redfish
+      uri: /Chassis/CDU/Pumps
+      json_pointer: /Members/0/SpeedPercent
+
+  pump_state:
+    unit: none
+    type: enum
+    poll_rate_hz: 0.5
+    display_name_default: "Pump State"
+    values:
+      0: STOPPED
+      1: RUNNING
+      2: FAULT
+    binding:
+      protocol: redfish
+      uri: /Chassis/CDU/Pumps
+      json_pointer: /Members/0/Status/State

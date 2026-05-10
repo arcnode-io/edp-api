@@ -1,0 +1,122 @@
+template: bess
+kind: leaf
+equipment_id: EXT-BESS-001
+vendor: Tesla
+model: Megapack 2 XL (PN 1848844-XX-Y)
+description: Tesla Megapack 2 XL 4 MWh AC-coupled BESS with grid-forming inverter via Modbus TCP
+
+# Reason: No commercial-ac topology entry for BESS (customer-supplied equipment per ADR-001).
+# Register addresses are placeholder (0-based) — actual map is gated by Tesla sales.
+# Addresses follow common BESS Modbus conventions; must be verified at commissioning.
+
+measurements:
+  state_of_charge:
+    unit: percent
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "State of Charge"
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 0
+      data_type: uint16
+      word_order: high_low
+      scale: 0.1
+
+  active_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Active Power (+ discharge, - charge)"
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 10
+      data_type: int32
+      word_order: high_low
+      scale: 1.0
+
+  reactive_power:
+    unit: vars
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Reactive Power"
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 12
+      data_type: int32
+      word_order: high_low
+      scale: 1.0
+
+  ac_voltage:
+    unit: volts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "AC Bus Voltage"
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 20
+      data_type: uint16
+      word_order: high_low
+      scale: 0.1
+
+  frequency:
+    unit: hertz
+    type: float
+    poll_rate_hz: 10
+    display_name_default: "AC Frequency"
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 22
+      data_type: uint16
+      word_order: high_low
+      scale: 0.01
+
+  energy_discharged:
+    unit: watt_hours
+    type: float
+    poll_rate_hz: 0.1
+    display_name_default: "Energy Discharged"
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 30
+      data_type: int32
+      word_order: high_low
+      scale: 1.0
+
+  operating_state:
+    unit: none
+    type: enum
+    poll_rate_hz: 1
+    display_name_default: "Operating State"
+    values:
+      0: STANDBY
+      1: CHARGING
+      2: DISCHARGING
+      3: FAULT
+      4: OFFLINE
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 40
+      data_type: uint16
+      word_order: high_low
+
+commands:
+  set_active_power:
+    verb: set
+    target: active_power
+    unit: watts
+    payload: float
+    display_name_default: "Set Active Power Setpoint"
+    binding:
+      protocol: modbus_tcp
+      function_code: 6
+      address: 50
+      data_type: int32
+      word_order: high_low
+      scale: 1.0
