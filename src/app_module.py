@@ -1,12 +1,16 @@
+from ipaddress import IPv4Address
+from pathlib import Path
+
 from fastapi import FastAPI
+from pydantic_settings import BaseSettings
+
 from src.app_controller import AppController
 from src.call_api.call_api_module import CallApiModule
-from src.config import load_config, LogLevel
+from src.config import LogLevel, load_config
+from src.dtm.template_loader import TemplateLoader
 from src.hardware_selector.hardware_selector_module import HardwareSelectorModule
 from src.jobs.jobs_module import JobsModule
 from src.module_resolver.module_resolver_module import ModuleResolverModule
-from pydantic_settings import BaseSettings
-from ipaddress import IPv4Address
 
 
 class Settings(BaseSettings):  # type: ignore[explicit-any]  # upstream: pydantic-settings PRs #557/#559 reverted Any fix
@@ -51,4 +55,10 @@ class AppModule:
         """Create and configure the basic FastAPI application."""
         app = FastAPI()
         self.import_module(app)
+        # Reason: device-template catalog loaded once at startup; process exits
+        # on TemplateLoadError so drift surfaces before any DTM emit.
+        repo_root = Path(__file__).resolve().parents[1]
+        app.state.template_catalog = TemplateLoader(
+            root=repo_root / "device_templates"
+        ).load_catalog()
         return app
