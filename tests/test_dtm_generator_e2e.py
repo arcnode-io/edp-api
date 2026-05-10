@@ -1,9 +1,15 @@
-"""End-to-end DTM generation against real device_templates/ and assemblies/ topologies."""
+"""End-to-end DTM generation against real device_templates/ and assemblies/ topologies.
+
+Skipped when the sibling `edp-module-assemblies` checkout isn't available
+(e.g. CI without a multi-repo checkout). Local dev with both repos under
+`~/arcnode/` runs the full pipeline.
+"""
 
 from pathlib import Path
 from unittest.mock import MagicMock
 from uuid import UUID
 
+import pytest
 import yaml
 
 from src.bom_generator.manifest_models import (
@@ -24,6 +30,13 @@ from src.shared.enums import (
 )
 from src.shared.schemas.dtm import EmsMode
 from src.shared.schemas.module_resolution import ModuleResolution
+
+# Reason: e2e covers the cross-repo contract; skip when assemblies repo absent.
+_ASSEMBLIES_DIR = Path("/home/resister/arcnode/edp-module-assemblies/assemblies")
+_skip_if_no_assemblies = pytest.mark.skipif(
+    not _ASSEMBLIES_DIR.is_dir(),
+    reason="sibling edp-module-assemblies checkout required",
+)
 
 
 def _client_against_real_assemblies() -> MagicMock:
@@ -59,7 +72,7 @@ def _client_against_real_assemblies() -> MagicMock:
         },
     )
 
-    asm = Path("/home/resister/arcnode/edp-module-assemblies/assemblies")
+    asm = _ASSEMBLIES_DIR
 
     def fetch(url: str) -> dict:  # type: ignore[type-arg]
         if "compute-container" in url:
@@ -92,6 +105,7 @@ def _resolution() -> ModuleResolution:
     )
 
 
+@_skip_if_no_assemblies
 def test_e2e_commercial_ac_dtm_validates() -> None:
     # Arrange
     repo_root = Path(__file__).resolve().parents[1]
@@ -129,6 +143,7 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
     assert "protective_relay_1" in member_ids
 
 
+@_skip_if_no_assemblies
 def test_e2e_pending_devices_empty_when_topology_has_no_sentinels() -> None:
     # Arrange
     repo_root = Path(__file__).resolve().parents[1]
