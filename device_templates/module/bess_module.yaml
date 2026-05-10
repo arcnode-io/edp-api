@@ -1,0 +1,45 @@
+template: bess_module
+kind: module
+description: BESS module aggregation — published rollups + setpoint fanout
+
+contains:
+  - template: bess_rack
+    qty: scalable
+
+measurements:
+  state_of_charge:
+    unit: percent
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Module State of Charge"
+    publisher: line_controller
+
+  active_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Module Active Power"
+    publisher: line_controller
+
+  reactive_power:
+    unit: vars
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Module Reactive Power"
+    publisher: line_controller
+
+commands:
+  set_active_power:
+    verb: set
+    target: active_power
+    unit: watts
+    payload: float
+    display_name_default: "Set Active Power"
+    fanout: line_controller
+
+  set_reactive_power:
+    verb: set
+    target: reactive_power
+    unit: vars
+    payload: float
+    fanout: line_controller

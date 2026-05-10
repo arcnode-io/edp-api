@@ -92,6 +92,24 @@ def test_load_real_catalog_includes_revenue_meter() -> None:
     assert "kwh_delivered" in rm.measurements
 
 
+def test_load_real_catalog_includes_bess_module() -> None:
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    loader = TemplateLoader(root=repo_root / "device_templates")
+    # Act
+    catalog = loader.load_catalog()
+    # Assert
+    assert "bess_module" in catalog
+    m = catalog["bess_module"]
+    assert m.kind.value == "module"
+    assert m.equipment_id is None
+    assert m.contains[0].template == "bess_rack"
+    pub = m.measurements["state_of_charge"].publisher
+    assert pub is not None and pub.value == "line_controller"
+    fanout = m.commands["set_active_power"].fanout
+    assert fanout is not None and fanout.value == "line_controller"
+
+
 def test_load_catalog_rejects_duplicate_slug(tmp_path: Path) -> None:
     # Arrange — two files claiming the same slug
     (tmp_path / "leaf").mkdir()
