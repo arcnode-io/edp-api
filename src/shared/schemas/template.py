@@ -3,13 +3,40 @@
 Templates own per-measurement protocol bindings (Modbus FC, DNP3 addrs,
 SNMP OIDs). DTMs reference templates by slug; per-instance Devices contribute
 deployment specifics (host, port, parent, display_name).
+Protocol-level binding types live in template_protocols.py.
+This module re-exports the protocol surface so existing imports keep working.
 """
 
 import re
 from enum import StrEnum
-from typing import Annotated, Final, Literal
+from typing import Final, Literal
 
 from pydantic import BaseModel, Field, model_validator
+
+from src.shared.schemas.template_protocols import (
+    Binding,
+    CanopenBinding,
+    Dnp3Binding,
+    ModbusBinding,
+    RedfishBinding,
+    SnmpBinding,
+)
+
+__all__ = [
+    "Binding",
+    "CanopenBinding",
+    "Command",
+    "ContainsEntry",
+    "DeviceTemplate",
+    "Dnp3Binding",
+    "Fanout",
+    "Measurement",
+    "ModbusBinding",
+    "Publisher",
+    "RedfishBinding",
+    "SnmpBinding",
+    "TemplateKind",
+]
 
 _SLUG_RE: Final = re.compile(r"^[a-z][a-z0-9_]{0,62}[a-z0-9]$")
 
@@ -32,58 +59,6 @@ class Fanout(StrEnum):
     """Who handles a command that has no direct binding (fans out to children)."""
 
     LINE_CONTROLLER = "line_controller"
-
-
-class ModbusBinding(BaseModel):
-    """Modbus TCP per-measurement register slot."""
-
-    protocol: Literal["modbus_tcp"]
-    function_code: int  # 3=holding, 4=input, 6=write_single
-    address: int
-    data_type: Literal["int16", "uint16", "int32", "uint32", "float32"] = "int16"
-    word_order: Literal["high_low", "low_high"] = "high_low"
-    scale: float = 1.0
-    offset: float = 0.0
-
-
-class Dnp3Binding(BaseModel):
-    """DNP3 per-measurement point reference."""
-
-    protocol: Literal["dnp3_tcp"]
-    point_index: int
-    point_type: Literal[
-        "analog_input", "binary_input", "analog_output", "binary_output", "counter"
-    ]
-
-
-class SnmpBinding(BaseModel):
-    """SNMP per-measurement OID."""
-
-    protocol: Literal["snmp"]
-    oid: str
-
-
-class RedfishBinding(BaseModel):
-    """Redfish per-measurement resource path + JSON pointer."""
-
-    protocol: Literal["redfish"]
-    uri: str
-    json_pointer: str | None = None
-
-
-class CanopenBinding(BaseModel):
-    """CANopen-over-Ethernet per-measurement PDO mapping."""
-
-    protocol: Literal["canopen_gw"]
-    cob_id: int
-    byte_offset: int
-    byte_length: int
-
-
-Binding = Annotated[
-    ModbusBinding | Dnp3Binding | SnmpBinding | RedfishBinding | CanopenBinding,
-    Field(discriminator="protocol"),
-]
 
 
 class Measurement(BaseModel):
