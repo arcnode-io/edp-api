@@ -1,0 +1,142 @@
+"""End-to-end DTM generation against real device_templates/ and assemblies/ topologies."""
+
+from pathlib import Path
+from unittest.mock import MagicMock
+from uuid import UUID
+
+import yaml
+
+from src.bom_generator.manifest_models import (
+    AssemblyVariant,
+    Manifest,
+    PlateUrls,
+    ProfileAssemblies,
+)
+from src.dtm.dtm_generator_service import DtmGeneratorService
+from src.dtm.template_loader import TemplateLoader
+from src.shared.enums import (
+    BessCoupling,
+    ClimateZone,
+    DeploymentProfile,
+    EmsTarget,
+    GpuVariant,
+    SourcingTier,
+)
+from src.shared.schemas.dtm import EmsMode
+from src.shared.schemas.module_resolution import ModuleResolution
+
+
+def _client_against_real_assemblies() -> MagicMock:
+    """Mocked manifest client returning the actual edp-module-assemblies topology.yamls."""
+    client = MagicMock()
+    client.fetch_manifest.return_value = Manifest(
+        version="0.1.0",
+        assemblies={
+            "compute_container": {
+                "commercial-ac": AssemblyVariant(
+                    bom="s3://test/compute-container/commercial-ac/bom.yaml",
+                    step="s3://test/compute-container/commercial-ac/assembly.step",
+                    glb="s3://test/compute-container/commercial-ac/assembly.glb",
+                    topology_yaml="s3://test/compute-container/commercial-ac/topology.yaml",
+                )
+            },
+            "grid_container": {
+                "commercial-ac": AssemblyVariant(
+                    bom="s3://test/grid-container/commercial-ac/bom.yaml",
+                    step="s3://test/grid-container/commercial-ac/assembly.step",
+                    glb="s3://test/grid-container/commercial-ac/assembly.glb",
+                    topology_yaml="s3://test/grid-container/commercial-ac/topology.yaml",
+                )
+            },
+        },
+        plates={"CG": PlateUrls(spec="s3://test/CG.yaml", step="s3://test/CG.step")},
+        profiles={
+            "commercial_ac": ProfileAssemblies(
+                compute_container="commercial-ac",
+                grid_container="commercial-ac",
+                interface_plates=["CG"],
+            )
+        },
+    )
+
+    asm = Path("/home/resister/arcnode/edp-module-assemblies/assemblies")
+
+    def fetch(url: str) -> dict:  # type: ignore[type-arg]
+        if "compute-container" in url:
+            return yaml.safe_load(
+                (asm / "compute-container/commercial-ac/topology.yaml").read_text()
+            )
+        if "grid-container" in url:
+            return yaml.safe_load(
+                (asm / "grid-container/commercial-ac/topology.yaml").read_text()
+            )
+        raise ValueError(url)
+
+    client.fetch_topology_yaml.side_effect = fetch
+    return client
+
+
+def _resolution() -> ModuleResolution:
+    return ModuleResolution(
+        deployment_id=UUID("12345678-1234-1234-1234-123456789abc"),
+        deployment_profile=DeploymentProfile.COMMERCIAL_AC,
+        compute_container_count=1,
+        grid_container_present=True,
+        bess_coupling=BessCoupling.AC_COUPLED,
+        bess_capacity_mwh=5.0,
+        sourcing_tier=SourcingTier.COMMERCIAL,
+        ems_target=EmsTarget.AWS_STANDARD,
+        gpu_variant=GpuVariant.H100_SXM,
+        gpu_count=56,
+        climate_zone=ClimateZone.TEMPERATE,
+    )
+
+
+def test_e2e_commercial_ac_dtm_validates() -> None:
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[1]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    service = DtmGeneratorService(
+        _client_against_real_assemblies(), template_catalog=catalog
+    )
+    # Act
+    dtm = service.generate(profile="commercial_ac", resolution=_resolution())
+    # Assert — top-level shape
+    assert dtm.ems_mode == EmsMode.SIM
+    # Module Devices exist
+    assert "compute_module_1" in dtm.devices
+    assert "grid_module_1" in dtm.devices
+    # Compute leaves: 7 gpu_nodes + 1 cdu + 1 network_switch + 4 pdus = 13
+    compute_descendants = [
+        s for s, d in dtm.devices.items() if d.parent == "compute_module_1"
+    ]
+    assert len(compute_descendants) == 13
+    # Grid leaves: 3 (switchgear, revenue_meter, protective_relay)
+    grid_descendants = [
+        s for s, d in dtm.devices.items() if d.parent == "grid_module_1"
+    ]
+    assert len(grid_descendants) == 3
+    # Templates used
+    assert "gpu_node" in dtm.templates_used
+    assert "compute_module" in dtm.templates_used
+    assert "grid_module" in dtm.templates_used
+    # Buses: 1 ac_main from grid topology
+    assert any(b.bus_id == "ac_main" for b in dtm.buses)
+    bus = next(b for b in dtm.buses if b.bus_id == "ac_main")
+    member_ids = {m.device_id for m in bus.members}
+    assert "switchgear_1" in member_ids
+    assert "revenue_meter_1" in member_ids
+    assert "protective_relay_1" in member_ids
+
+
+def test_e2e_pending_devices_empty_when_topology_has_no_sentinels() -> None:
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[1]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    service = DtmGeneratorService(
+        _client_against_real_assemblies(), template_catalog=catalog
+    )
+    # Act
+    dtm = service.generate(profile="commercial_ac", resolution=_resolution())
+    # Assert
+    assert dtm.pending_devices == []
