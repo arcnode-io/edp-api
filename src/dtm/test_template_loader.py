@@ -79,6 +79,19 @@ description: empty
         loader.load_catalog()
 
 
+def test_load_real_catalog_includes_revenue_meter() -> None:
+    # Arrange — real device_templates/ at repo root
+    repo_root = Path(__file__).resolve().parents[2]
+    loader = TemplateLoader(root=repo_root / "device_templates")
+    # Act
+    catalog = loader.load_catalog()
+    # Assert
+    assert "revenue_meter" in catalog
+    rm = catalog["revenue_meter"]
+    assert rm.equipment_id == "GRD-MTR-001"
+    assert "kwh_delivered" in rm.measurements
+
+
 def test_load_catalog_rejects_duplicate_slug(tmp_path: Path) -> None:
     # Arrange — two files claiming the same slug
     (tmp_path / "leaf").mkdir()
