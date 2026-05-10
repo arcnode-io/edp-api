@@ -5,15 +5,12 @@ device_templates/ at startup, validates every YAML, and panics on the
 first failure. Catalog is keyed by template slug.
 """
 
-import logging
 from pathlib import Path
 
 import yaml
 from pydantic import ValidationError
 
 from src.shared.schemas.template import DeviceTemplate
-
-logger = logging.getLogger(__name__)
 
 
 class TemplateLoadError(Exception):
