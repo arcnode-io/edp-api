@@ -1,125 +1,79 @@
 """Device Topology Manifest — what edp-api emits, what ems-device-api revises.
 
-Top-level schema; protocol-level types live in dtm_protocols.py.
-This module re-exports the protocol surface so existing imports keep working.
+Canonical shape per ADR-002 §7: parent-chain Devices keyed by snake_case slug,
+embedded templates_used map, buses[] with type=dc|ac, three referential-integrity
+validators. Primitive types live in dtm_primitives.py (file-size split).
+This module re-exports the full public surface so all imports stay stable.
 """
 
-from enum import StrEnum
+import re
+from typing import Final
 from uuid import UUID
 
-from pydantic import BaseModel, Field, computed_field, model_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
-from src.shared.schemas.dtm_protocols import (
+from src.shared.schemas.dtm_primitives import (
     PROVISIONED_AT_COMMISSIONING,
-    CanopenGwConfig,
-    Dnp3TcpConfig,
-    ModbusTcpConfig,
-    OidMap,
-    PdoMap,
-    PointMap,
-    ProtocolConfig,
-    ProtocolKind,
+    BlockingKind,
+    Bus,
+    BusMember,
+    Connection,
+    EmsMode,
     ProvisionedInt,
-    RedfishConfig,
-    RedfishResourceMap,
-    SnmpConfig,
-    SnmpV3Creds,
+    SizingParams,
+    _contains_sentinel,
 )
+from src.shared.schemas.template import DeviceTemplate, Measurement
 
 __all__ = [
     "PROVISIONED_AT_COMMISSIONING",
     "BlockingKind",
-    "CanopenGwConfig",
+    "Bus",
+    "BusMember",
+    "Connection",
     "Device",
-    "Dnp3TcpConfig",
+    "DeviceTemplate",
     "Dtm",
     "EmsMode",
-    "ModbusTcpConfig",
-    "Module",
-    "OidMap",
-    "PdoMap",
-    "PointMap",
-    "ProtocolConfig",
-    "ProtocolKind",
+    "Measurement",
     "ProvisionedInt",
-    "RedfishConfig",
-    "RedfishResourceMap",
     "SizingParams",
-    "SnmpConfig",
-    "SnmpV3Creds",
 ]
 
-
-class EmsMode(StrEnum):
-    """EMS execution mode. SIM on initial emit; ems-device-api flips to LIVE."""
-
-    SIM = "sim"
-    LIVE = "live"
-
-
-class BlockingKind(StrEnum):
-    """What unresolved placeholders on a device block.
-
-    LIVE_MODE: device must be fully provisioned before site flips to live.
-    COMMISSIONING_COMPLETE: device must be provisioned for site sign-off.
-    """
-
-    LIVE_MODE = "live_mode"
-    COMMISSIONING_COMPLETE = "commissioning_complete"
-
-
-class SizingParams(BaseModel):
-    """Aggregate sizing for the deployment — drives EMS bookkeeping."""
-
-    P_compute_total_kW: float
-    E_BESS_total_kWh: float
-    T_coolant_setpoint_C: float
-
-
-class Module(BaseModel):
-    """One container instance."""
-
-    module_id: str
-    module_type: str
-    container_position: str
-    description: str
-
-
-def _contains_sentinel(value: object) -> bool:
-    """Recursively scan declared model fields for the placeholder sentinel."""
-    if isinstance(value, str):
-        return value == PROVISIONED_AT_COMMISSIONING
-    if isinstance(value, BaseModel):
-        return any(
-            _contains_sentinel(getattr(value, name))
-            for name in type(value).model_fields
-        )
-    if isinstance(value, list):
-        return any(_contains_sentinel(v) for v in value)
-    return False
+_SLUG_RE: Final = re.compile(r"^[a-z][a-z0-9_]{0,62}[a-z0-9]$")
 
 
 class Device(BaseModel):
-    """One physical device inside a Module."""
+    """One device instance — leaf or module per its template's kind."""
 
-    device_uuid: UUID
-    device_type: str
-    module_id: str  # FK -> Module.module_id
-    host: str
-    port: ProvisionedInt
-    protocol_config: ProtocolConfig
-    description: str
+    device_id: str                              # snake_case slug per ADR §9
+    template: str                               # ref into Dtm.templates_used
+    parent: str | None = None                  # FK to another Device.device_id
+    display_name: str | None = None
+    connection: Connection | None = None       # required for gateway-bound leaves
     # Reason: defaults to [LIVE_MODE] — most devices block site live transition
     # until the utility provisions them. Topology authors override to [] for
     # monitoring-only devices, or add COMMISSIONING_COMPLETE for sign-off-blocking.
     blocking: list[BlockingKind] = Field(
         default_factory=lambda: [BlockingKind.LIVE_MODE]
     )
+    extra_measurements: dict[str, Measurement] | None = None  # ADR §7 escape hatch
+
+    @field_validator("device_id")
+    @classmethod
+    def device_id_slug(cls, v: str) -> str:
+        """device_id must be a snake_case slug per ADR-002 §9."""
+        if not _SLUG_RE.match(v):
+            raise ValueError(
+                f"device_id {v!r} is not a valid slug — "
+                "must match ^[a-z][a-z0-9_]{{0,62}}[a-z0-9]$"
+            )
+        return v
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def has_placeholders(self) -> bool:
-        """True iff any declared field (incl. nested protocol_config) holds the sentinel."""
+        """True iff any declared field (incl. nested connection) holds the sentinel."""
         return any(
             _contains_sentinel(getattr(self, name)) for name in type(self).model_fields
         )
@@ -136,23 +90,47 @@ class Dtm(BaseModel):
 
     deployment_uuid: UUID
     ems_mode: EmsMode = EmsMode.SIM
+    sizing_ref: str | None = None
     sizing_params: SizingParams
-    modules: list[Module]
-    devices: list[Device]
+    devices: dict[str, Device]
+    buses: list[Bus]
+    templates_used: dict[str, DeviceTemplate]
 
     @model_validator(mode="after")
-    def fk_modules(self) -> "Dtm":
-        """Every Device.module_id must reference an existing Module.module_id."""
-        ids = {m.module_id for m in self.modules}
-        for d in self.devices:
-            if d.module_id not in ids:
+    def parent_chain_resolves(self) -> "Dtm":
+        """Every device.parent must be null or a key in devices."""
+        for dev in self.devices.values():
+            if dev.parent is not None and dev.parent not in self.devices:
                 raise ValueError(
-                    f"device {d.device_uuid}: module_id {d.module_id!r} not in modules"
+                    f"device {dev.device_id!r}: parent {dev.parent!r} not found in devices"
                 )
+        return self
+
+    @model_validator(mode="after")
+    def template_refs_resolve(self) -> "Dtm":
+        """Every device.template must be a key in templates_used."""
+        for dev in self.devices.values():
+            if dev.template not in self.templates_used:
+                raise ValueError(
+                    f"device {dev.device_id!r}: template {dev.template!r} "
+                    "not found in templates_used"
+                )
+        return self
+
+    @model_validator(mode="after")
+    def bus_members_resolve(self) -> "Dtm":
+        """Every bus member device_id must be a key in devices."""
+        for bus in self.buses:
+            for member in bus.members:
+                if member.device_id not in self.devices:
+                    raise ValueError(
+                        f"bus {bus.bus_id!r}: bus member {member.device_id!r} "
+                        "not found in devices"
+                    )
         return self
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def pending_devices(self) -> list[Device]:
         """Devices still carrying utility-assigned placeholder values."""
-        return [d for d in self.devices if d.has_placeholders]
+        return [d for d in self.devices.values() if d.has_placeholders]

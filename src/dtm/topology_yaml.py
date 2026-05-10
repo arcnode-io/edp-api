@@ -9,8 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from src.shared.schemas.dtm import BlockingKind
-from src.shared.schemas.dtm_protocols import ProvisionedInt
+from src.shared.schemas.dtm import BlockingKind, ProvisionedInt
 
 
 class TopologyConnectionSpec(BaseModel):
