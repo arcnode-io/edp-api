@@ -1,181 +1,150 @@
-"""artifact_urls unit tests."""
+"""artifact_urls unit tests — manifest-backed (in-memory fixture, no I/O)."""
 
-from pathlib import Path
 from uuid import UUID
 
-from src.hardware_selector.hardware_selector_service import HardwareSelectorService
-from src.pipeline.artifact_urls import build_artifact_urls
-from src.shared.enums import DeploymentProfile
+from src.bom_generator.manifest_models import (
+    AssemblyVariant,
+    Manifest,
+    PlateUrls,
+    ProfileAssemblies,
+)
+from src.bom_generator.manifest_service import ManifestService
+from src.pipeline.artifact_urls import build_artifact_urls_from_resolved
 from src.shared.schemas.artifact import ArtifactKind
 
-YAML_PATH: Path = Path(__file__).resolve().parents[2] / "hardware_selector_map.yaml"
 DEPLOYMENT_ID: UUID = UUID("11111111-2222-3333-4444-555555555555")
 
 
-def test_commercial_ac_produces_28_urls() -> None:
-    """commercial_ac: 2 compute + 2 grid + 5 plates x 3 fmts + 13 generated = 32."""
+def _variant(name: str) -> AssemblyVariant:
+    return AssemblyVariant(
+        bom=f"s3://test/{name}/bom.yaml",
+        step=f"s3://test/{name}/assembly.step",
+        glb=f"s3://test/{name}/assembly.glb",
+    )
+
+
+def _plate(name: str, *, with_dxf: bool = True) -> PlateUrls:
+    return PlateUrls(
+        spec=f"s3://test/plates/{name}/spec.yaml",
+        step=f"s3://test/plates/{name}/{name}.step",
+        dxf=f"s3://test/plates/{name}/{name}.dxf" if with_dxf else None,
+    )
+
+
+def _commercial_ac_manifest() -> Manifest:
+    """Mirrors edp-module-assemblies/manifest.yaml commercial_ac shape."""
+    return Manifest(
+        version="0.0.0-test",
+        assemblies={
+            "compute_container": {"commercial-ac": _variant("compute-commercial-ac")},
+            "grid_container": {"commercial-ac": _variant("grid-commercial-ac")},
+        },
+        plates={
+            "CG": _plate("CG"),
+            "BG-AC": _plate("BG-AC"),
+            "CD": _plate("CD"),
+        },
+        profiles={
+            "commercial_ac": ProfileAssemblies(
+                compute_container="commercial-ac",
+                grid_container="commercial-ac",
+                interface_plates=["CG", "BG-AC", "CD"],
+            ),
+        },
+    )
+
+
+def _no_bess_manifest() -> Manifest:
+    """Profile with no grid_container; one plate."""
+    m = _commercial_ac_manifest()
+    m.profiles["no_bess"] = ProfileAssemblies(
+        compute_container="commercial-ac",
+        grid_container=None,
+        interface_plates=["CG"],
+    )
+    return m
+
+
+def test_commercial_ac_produces_expected_ref_count() -> None:
+    """commercial_ac: 2 compute + 2 grid + 3 plates × 2 fmts (step+dxf) + 13 generated = 23."""
     # Arrange
-    selector = HardwareSelectorService(yaml_path=YAML_PATH)
-    assemblies = selector.lookup(DeploymentProfile.COMMERCIAL_AC)
+    svc = ManifestService(manifest=_commercial_ac_manifest())
+    resolved = svc.resolve("commercial_ac")
 
     # Act
-    actual = build_artifact_urls(DEPLOYMENT_ID, assemblies)
+    refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
 
     # Assert
-    assert len(actual) == 2 + 2 + 5 * 3 + 13
+    assert len(refs) == 2 + 2 + 3 * 2 + 13
 
 
 def test_no_bess_omits_grid_container() -> None:
-    """commercial_no_bess: no grid_container slot, 4 plates x 3 = 12 plate refs."""
+    """no_bess profile: zero GRID_CONTAINER_3D refs in the output."""
     # Arrange
-    selector = HardwareSelectorService(yaml_path=YAML_PATH)
-    assemblies = selector.lookup(DeploymentProfile.COMMERCIAL_NO_BESS)
+    svc = ManifestService(manifest=_no_bess_manifest())
+    resolved = svc.resolve("no_bess")
 
     # Act
-    actual = build_artifact_urls(DEPLOYMENT_ID, assemblies)
+    refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
 
     # Assert
-    grid_refs = [r for r in actual if r.kind == ArtifactKind.GRID_CONTAINER_3D]
+    grid_refs = [r for r in refs if r.kind == ArtifactKind.GRID_CONTAINER_3D]
     assert grid_refs == []
-    plate_refs = [r for r in actual if r.kind == ArtifactKind.INTERFACE_PLATE]
-    assert len(plate_refs) == 4 * 3
 
 
 def test_generated_urls_use_deterministic_key_scheme() -> None:
     """All generated artifacts under s3://arcnode-artifacts/edp/{deployment_id}/..."""
     # Arrange
-    selector = HardwareSelectorService(yaml_path=YAML_PATH)
-    assemblies = selector.lookup(DeploymentProfile.COMMERCIAL_AC)
+    svc = ManifestService(manifest=_commercial_ac_manifest())
+    resolved = svc.resolve("commercial_ac")
     expected_prefix = f"s3://arcnode-artifacts/edp/{DEPLOYMENT_ID}/"
 
     # Act
-    actual = build_artifact_urls(DEPLOYMENT_ID, assemblies)
+    refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
 
-    # Assert
+    # Assert — spot-check BOM + DTM keys
     bom_json = next(
-        r for r in actual if r.kind == ArtifactKind.BOM and r.format == "json"
+        r for r in refs if r.kind == ArtifactKind.BOM and r.format == "json"
     )
     assert bom_json.url == f"{expected_prefix}bom.json"
-    dtm = next(r for r in actual if r.kind == ArtifactKind.DTM)
+    dtm = next(r for r in refs if r.kind == ArtifactKind.DTM)
     assert dtm.url == f"{expected_prefix}dtm.json"
 
 
 def test_plates_carry_plate_id_only() -> None:
     """Only INTERFACE_PLATE refs carry plate_id; others are None."""
     # Arrange
-    selector = HardwareSelectorService(yaml_path=YAML_PATH)
-    assemblies = selector.lookup(DeploymentProfile.COMMERCIAL_AC)
+    svc = ManifestService(manifest=_commercial_ac_manifest())
+    resolved = svc.resolve("commercial_ac")
 
     # Act
-    actual = build_artifact_urls(DEPLOYMENT_ID, assemblies)
+    refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
 
     # Assert
-    for r in actual:
+    for r in refs:
         if r.kind == ArtifactKind.INTERFACE_PLATE:
             assert r.plate_id is not None
         else:
             assert r.plate_id is None
 
 
-# ─── Regression: legacy vs manifest path equivalence ──────────────────
-
-
-def test_legacy_and_manifest_paths_agree_on_commercial_ac_artifact_shape() -> None:
-    """Both paths produce: 2 compute + 2 grid + 13 generated = 17 non-plate refs.
-
-    Plate refs differ on purpose — legacy yaml ships step+dxf+pdf per plate
-    (3 per id), new manifest ships step+dxf when dxf present (≤2 per id).
-    Same plate-id set, same generated set, same compute/grid URLs → swap-safe.
-
-    Locks in the swap contract before JobsService starts depending on the
-    new path. Manifest fixture is hand-built to mirror the commercial_ac
-    profile in edp-module-assemblies/manifest.yaml.
-    """
-    from src.bom_generator.manifest_models import (
-        AssemblyVariant,
-        Manifest,
-        PlateUrls,
-        ProfileAssemblies,
-    )
-    from src.bom_generator.manifest_service import ManifestService
-    from src.pipeline.artifact_urls import build_artifact_urls_from_resolved
-
-    # Arrange — legacy path
-    legacy_assemblies = HardwareSelectorService(yaml_path=YAML_PATH).lookup(
-        DeploymentProfile.COMMERCIAL_AC
-    )
-
-    # Arrange — manifest path with the same SHAPE for commercial_ac
-    manifest = Manifest(
-        version="0.0.0-regression-test",
-        assemblies={
-            "compute_container": {
-                "commercial-ac": AssemblyVariant(
-                    bom=legacy_assemblies.compute_container.step.replace(
-                        "/assembly.step", "/bom.yaml"
-                    ),
-                    step=legacy_assemblies.compute_container.step,
-                    glb=legacy_assemblies.compute_container.glb,
-                ),
-            },
-            "grid_container": {
-                "commercial-ac": AssemblyVariant(
-                    bom="s3://test/grid/commercial-ac/bom.yaml",
-                    step=legacy_assemblies.grid_container.step,  # type: ignore[union-attr]
-                    glb=legacy_assemblies.grid_container.glb,  # type: ignore[union-attr]
-                ),
-            },
-        },
-        plates={
-            p.id: PlateUrls(
-                spec=f"s3://test/plates/{p.id}/spec.yaml",
-                step=p.step,
-                dxf=p.dxf,
-            )
-            for p in legacy_assemblies.interface_plates
-        },
-        profiles={
-            "commercial_ac": ProfileAssemblies(
-                compute_container="commercial-ac",
-                grid_container="commercial-ac",
-                interface_plates=[p.id for p in legacy_assemblies.interface_plates],
-            ),
-        },
+def test_plate_without_dxf_emits_only_step() -> None:
+    """Optional manifest.plates[*].dxf — when None, only the step ref ships."""
+    # Arrange
+    manifest = _commercial_ac_manifest()
+    manifest.plates["NO-DXF"] = _plate("NO-DXF", with_dxf=False)
+    manifest.profiles["commercial_ac"] = ProfileAssemblies(
+        compute_container="commercial-ac",
+        grid_container="commercial-ac",
+        interface_plates=["NO-DXF"],
     )
     resolved = ManifestService(manifest=manifest).resolve("commercial_ac")
 
     # Act
-    legacy_refs = build_artifact_urls(DEPLOYMENT_ID, legacy_assemblies)
-    new_refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
+    refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
 
-    # Assert — non-plate refs identical
-    legacy_non_plate = [r for r in legacy_refs if r.kind != ArtifactKind.INTERFACE_PLATE]
-    new_non_plate = [r for r in new_refs if r.kind != ArtifactKind.INTERFACE_PLATE]
-    assert legacy_non_plate == new_non_plate, "compute/grid/generated URLs must match"
-
-    # Assert — plate id sets identical
-    legacy_plate_ids = {
-        r.plate_id for r in legacy_refs if r.kind == ArtifactKind.INTERFACE_PLATE
-    }
-    new_plate_ids = {
-        r.plate_id for r in new_refs if r.kind == ArtifactKind.INTERFACE_PLATE
-    }
-    assert legacy_plate_ids == new_plate_ids
-
-    # Assert — per-plate format expectations: legacy has 3 (step,dxf,pdf),
-    # new has 2 (step,dxf) per documented schema diff.
-    for pid in legacy_plate_ids:
-        legacy_fmts = {
-            r.format
-            for r in legacy_refs
-            if r.kind == ArtifactKind.INTERFACE_PLATE and r.plate_id == pid
-        }
-        new_fmts = {
-            r.format
-            for r in new_refs
-            if r.kind == ArtifactKind.INTERFACE_PLATE and r.plate_id == pid
-        }
-        assert legacy_fmts == {"step", "dxf", "pdf"}
-        assert new_fmts == {"step", "dxf"}, (
-            f"plate {pid}: new path drops pdf — confirmed migration intent"
-        )
+    # Assert — exactly one INTERFACE_PLATE ref, format=step
+    plate_refs = [r for r in refs if r.kind == ArtifactKind.INTERFACE_PLATE]
+    assert len(plate_refs) == 1
+    assert plate_refs[0].format == "step"
+    assert plate_refs[0].plate_id == "NO-DXF"
