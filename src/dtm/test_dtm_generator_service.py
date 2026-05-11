@@ -95,4 +95,4 @@ def test_generate_unknown_profile_raises() -> None:
     service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
     # Act / Assert
     with pytest.raises(ValueError, match="not in manifest"):
-        service.generate(profile="dod_dc_int", resolution=_resolution())
+        service.generate(profile="defense_dc_int", resolution=_resolution())

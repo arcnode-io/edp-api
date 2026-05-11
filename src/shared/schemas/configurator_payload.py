@@ -62,14 +62,23 @@ class ConfiguratorPayload(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def dod_excludes_dc_integrated_pcs(self) -> "ConfiguratorPayload":
-        """Reject defense_forward + dc_integrated_pcs (CATL exclusion)."""
-        # Reason: integrated DC PCS is CATL-only; CATL excluded from DoD procurement.
+    def federal_excludes_dc_integrated_pcs(self) -> "ConfiguratorPayload":
+        """Reject sovereign_government / defense_forward + dc_integrated_pcs.
+
+        Reason: integrated DC PCS is CATL-only; CATL excluded from federal-
+        civilian + DoD procurement. Both deployment contexts resolve to the
+        same hardware variants (DEFENSE_*) so the constraint applies uniformly.
+        """
+        federal_contexts = {
+            DeploymentContext.SOVEREIGN_GOVERNMENT,
+            DeploymentContext.DEFENSE_FORWARD,
+        }
         if (
-            self.deployment_context == DeploymentContext.DEFENSE_FORWARD
+            self.deployment_context in federal_contexts
             and self.bess_coupling == BessCoupling.DC_INTEGRATED_PCS
         ):
             raise ValueError(
-                "defense_forward + dc_integrated_pcs is not procurable (CATL exclusion)"
+                f"{self.deployment_context.value} + dc_integrated_pcs "
+                "is not procurable (CATL exclusion)"
             )
         return self

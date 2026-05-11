@@ -91,47 +91,45 @@ _PROFILE_CASES: list[
         AwsPartition.STANDARD,
         DeploymentProfile.COMMERCIAL_DC_INT,
     ),
+    # Sovereign government — same hardware as defense_forward; SourcingTier
+    # distinguishes procurement path (federal_civilian vs dod_eligible).
     (
         DeploymentContext.SOVEREIGN_GOVERNMENT,
         BessCoupling.NONE,
         AwsPartition.GOVCLOUD,
-        DeploymentProfile.FEDERAL_NO_BESS,
+        DeploymentProfile.DEFENSE_NO_BESS,
     ),
     (
         DeploymentContext.SOVEREIGN_GOVERNMENT,
         BessCoupling.AC_COUPLED,
         AwsPartition.GOVCLOUD,
-        DeploymentProfile.FEDERAL_AC,
+        DeploymentProfile.DEFENSE_AC,
     ),
     (
         DeploymentContext.SOVEREIGN_GOVERNMENT,
         BessCoupling.DC_EXTERNAL_PCS,
         AwsPartition.GOVCLOUD,
-        DeploymentProfile.FEDERAL_DC_EXT,
+        DeploymentProfile.DEFENSE_DC_EXT,
     ),
-    (
-        DeploymentContext.SOVEREIGN_GOVERNMENT,
-        BessCoupling.DC_INTEGRATED_PCS,
-        AwsPartition.GOVCLOUD,
-        DeploymentProfile.FEDERAL_DC_INT,
-    ),
+    # (SOVEREIGN_GOVERNMENT, DC_INTEGRATED_PCS) intentionally absent —
+    # rejected at ConfiguratorPayload validator (CATL exclusion).
     (
         DeploymentContext.DEFENSE_FORWARD,
         BessCoupling.NONE,
         AwsPartition.NONE,
-        DeploymentProfile.DOD_NO_BESS,
+        DeploymentProfile.DEFENSE_NO_BESS,
     ),
     (
         DeploymentContext.DEFENSE_FORWARD,
         BessCoupling.AC_COUPLED,
         AwsPartition.NONE,
-        DeploymentProfile.DOD_AC,
+        DeploymentProfile.DEFENSE_AC,
     ),
     (
         DeploymentContext.DEFENSE_FORWARD,
         BessCoupling.DC_EXTERNAL_PCS,
         AwsPartition.NONE,
-        DeploymentProfile.DOD_DC_EXT,
+        DeploymentProfile.DEFENSE_DC_EXT,
     ),
 ]
 

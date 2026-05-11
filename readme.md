@@ -217,18 +217,19 @@ class EmsTarget(StrEnum):
 
 
 class DeploymentProfile(StrEnum):
-    # 11 profiles. dod_dc_int excluded — CATL-integrated PCS not DoD-procurable.
+    # 7 profiles — mirrors edp-module-assemblies/manifest_profiles.yaml.
+    # defense_dc_int excluded: CATL-integrated PCS not procurable for any
+    # federal/defense customer (sovereign_government + defense_forward
+    # both rejected at validator). Hardware variants are commercial vs
+    # defense only; SourcingTier tracks the federal_civilian vs
+    # dod_eligible procurement-path distinction separately.
     COMMERCIAL_NO_BESS = "commercial_no_bess"
     COMMERCIAL_AC      = "commercial_ac"
     COMMERCIAL_DC_EXT  = "commercial_dc_ext"
-    COMMERCIAL_DC_INT  = "commercial_dc_int"   # CATL — flag in notes upstream
-    FEDERAL_NO_BESS    = "federal_no_bess"
-    FEDERAL_AC         = "federal_ac"
-    FEDERAL_DC_EXT     = "federal_dc_ext"
-    FEDERAL_DC_INT     = "federal_dc_int"
-    DOD_NO_BESS        = "dod_no_bess"
-    DOD_AC             = "dod_ac"
-    DOD_DC_EXT         = "dod_dc_ext"
+    COMMERCIAL_DC_INT  = "commercial_dc_int"   # CATL — commercial only
+    DEFENSE_NO_BESS    = "defense_no_bess"
+    DEFENSE_AC         = "defense_ac"
+    DEFENSE_DC_EXT     = "defense_dc_ext"
 
 
 # === Schemas ===
@@ -306,13 +307,13 @@ class ModuleResolution(BaseModel):
 # | commercial           | ac_coupled         | commercial_ac         |
 # | commercial           | dc_external_pcs    | commercial_dc_ext     |
 # | commercial           | dc_integrated_pcs  | commercial_dc_int     |
-# | sovereign_government | none               | federal_no_bess       |
-# | sovereign_government | ac_coupled         | federal_ac            |
-# | sovereign_government | dc_external_pcs    | federal_dc_ext        |
-# | sovereign_government | dc_integrated_pcs  | federal_dc_int        |
-# | defense_forward      | none               | dod_no_bess           |
-# | defense_forward      | ac_coupled         | dod_ac                |
-# | defense_forward      | dc_external_pcs    | dod_dc_ext            |
+# | sovereign_government | none               | defense_no_bess       |
+# | sovereign_government | ac_coupled         | defense_ac            |
+# | sovereign_government | dc_external_pcs    | defense_dc_ext        |
+# | sovereign_government | dc_integrated_pcs  | INVALID — reject 422  |
+# | defense_forward      | none               | defense_no_bess       |
+# | defense_forward      | ac_coupled         | defense_ac            |
+# | defense_forward      | dc_external_pcs    | defense_dc_ext        |
 # | defense_forward      | dc_integrated_pcs  | INVALID — reject 422  |
 #
 # (deployment_context) -> SourcingTier   1:1

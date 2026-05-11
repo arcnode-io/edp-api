@@ -86,16 +86,22 @@ class EmsTarget(StrEnum):
 
 
 class DeploymentProfile(StrEnum):
-    """11 profiles. dod_dc_int excluded — CATL-integrated PCS not DoD-procurable."""
+    """7 profiles — mirrors edp-module-assemblies/manifest_profiles.yaml exactly.
+
+    `defense_dc_int` excluded: CATL-integrated PCS isn't procurable for any
+    federal/defense customer. Hardware build variants are commercial vs
+    defense only — sourcing tier (procurement path) is tracked separately
+    by SourcingTier.
+
+    Adding a profile here without a corresponding entry in
+    edp-module-assemblies/manifest_profiles.yaml will surface as a
+    KeyError at JobsService.create — fail-fast at intake.
+    """
 
     COMMERCIAL_NO_BESS = "commercial_no_bess"
     COMMERCIAL_AC = "commercial_ac"
     COMMERCIAL_DC_EXT = "commercial_dc_ext"
     COMMERCIAL_DC_INT = "commercial_dc_int"
-    FEDERAL_NO_BESS = "federal_no_bess"
-    FEDERAL_AC = "federal_ac"
-    FEDERAL_DC_EXT = "federal_dc_ext"
-    FEDERAL_DC_INT = "federal_dc_int"
-    DOD_NO_BESS = "dod_no_bess"
-    DOD_AC = "dod_ac"
-    DOD_DC_EXT = "dod_dc_ext"
+    DEFENSE_NO_BESS = "defense_no_bess"
+    DEFENSE_AC = "defense_ac"
+    DEFENSE_DC_EXT = "defense_dc_ext"

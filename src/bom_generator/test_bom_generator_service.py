@@ -180,8 +180,8 @@ def test_generate_raises_for_unknown_profile() -> None:
     client = _make_mock_client(_make_manifest())
     service = BomGeneratorService(client)
     # act / assert
-    with pytest.raises(ValueError, match="dod_dc_int"):
-        service.generate(deployment_id=uuid4(), profile="dod_dc_int")
+    with pytest.raises(ValueError, match="defense_dc_int"):
+        service.generate(deployment_id=uuid4(), profile="defense_dc_int")
 
 
 def test_serialize_bom_emits_valid_json() -> None:

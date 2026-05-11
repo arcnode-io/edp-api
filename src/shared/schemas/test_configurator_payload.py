@@ -107,7 +107,7 @@ def test_rejects_standard_partition_for_federal() -> None:
         ConfiguratorPayload(**kw)
 
 
-def test_rejects_dod_dc_integrated_pcs() -> None:
+def test_rejects_defense_forward_dc_integrated_pcs() -> None:
     """defense_forward + dc_integrated_pcs -> ValidationError (CATL exclusion)."""
     # Arrange
     kw = _kwargs(
@@ -115,6 +115,25 @@ def test_rejects_dod_dc_integrated_pcs() -> None:
         coupling=BessCoupling.DC_INTEGRATED_PCS,
         capacity_mwh=5.0,
         partition=AwsPartition.NONE,
+    )
+
+    # Act / Assert
+    with pytest.raises(ValidationError, match="CATL exclusion"):
+        ConfiguratorPayload(**kw)
+
+
+def test_rejects_sovereign_government_dc_integrated_pcs() -> None:
+    """sovereign_government + dc_integrated_pcs -> same CATL exclusion as defense.
+
+    Both contexts resolve to the same DEFENSE_* hardware variants, so the
+    no-CATL constraint applies uniformly.
+    """
+    # Arrange
+    kw = _kwargs(
+        context=DeploymentContext.SOVEREIGN_GOVERNMENT,
+        coupling=BessCoupling.DC_INTEGRATED_PCS,
+        capacity_mwh=5.0,
+        partition=AwsPartition.GOVCLOUD,
     )
 
     # Act / Assert
