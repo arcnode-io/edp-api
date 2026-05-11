@@ -99,6 +99,10 @@ class Dtm(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    # Hardcoded at edp-api emit time. ems-device-api owns subsequent bumps
+    # (per-device CRUD, template revs, etc.) once the deployment is running
+    # and edp-api is no longer in the loop.
+    version: str = "1.0.0"
     deployment_uuid: UUID
     ems_mode: EmsMode = EmsMode.SIM
     sizing_ref: str | None = None
