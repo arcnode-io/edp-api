@@ -5,10 +5,10 @@ from fastapi import FastAPI
 from pydantic_settings import BaseSettings
 
 from src.app_controller import AppController
+from src.bom_generator.manifest_module import ManifestModule
 from src.call_api.call_api_module import CallApiModule
 from src.config import LogLevel, load_config
 from src.dtm.template_loader import TemplateLoader
-from src.hardware_selector.hardware_selector_module import HardwareSelectorModule
 from src.jobs.jobs_module import JobsModule
 from src.module_resolver.module_resolver_module import ModuleResolverModule
 
@@ -21,12 +21,22 @@ class Settings(BaseSettings):  # type: ignore[explicit-any]  # upstream: pydanti
     host: IPv4Address
     e2e: bool
     reload: bool
+    manifest_url: str
 
 
 class AppModule:
-    """Module for creating basic FastAPI applications."""
+    """Module for creating basic FastAPI applications.
 
-    def __init__(self) -> None:
+    `manifest_module_override` lets tests inject a stub-loaded ManifestModule
+    so app startup doesn't require S3. Production (None) constructs a real
+    ManifestModule that fetches the manifest from `cfg.manifest_url`.
+    """
+
+    def __init__(
+        self,
+        *,
+        manifest_module_override: ManifestModule | None = None,
+    ) -> None:
         """Initialize the app module with settings."""
         config = load_config()
         self.settings = Settings(
@@ -35,17 +45,21 @@ class AppModule:
             host=config.host,
             e2e=config.e2e,
             reload=config.reload,
+            manifest_url=config.manifest_url,
         )
+        self._manifest_module_override = manifest_module_override
 
     def import_module(self, app: FastAPI) -> None:
         """Register routes for app, call_api, and jobs."""
         app_controller = AppController()
         call_api = CallApiModule()
         resolver_module = ModuleResolverModule()
-        selector_module = HardwareSelectorModule()
+        manifest_module = self._manifest_module_override or ManifestModule(
+            manifest_url=self.settings.manifest_url
+        )
         jobs = JobsModule(
             resolver_module=resolver_module,
-            selector_module=selector_module,
+            manifest_module=manifest_module,
         )
         app.include_router(app_controller.router)
         app.include_router(call_api.router)

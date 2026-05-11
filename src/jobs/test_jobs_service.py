@@ -1,11 +1,16 @@
-"""JobsService unit tests."""
+"""JobsService unit tests — manifest-backed (in-memory fixture, no I/O)."""
 
-from pathlib import Path
 from uuid import UUID
 
 import pytest
 
-from src.hardware_selector.hardware_selector_service import HardwareSelectorService
+from src.bom_generator.manifest_models import (
+    AssemblyVariant,
+    Manifest,
+    PlateUrls,
+    ProfileAssemblies,
+)
+from src.bom_generator.manifest_service import ManifestService
 from src.jobs.job_store import JobStore
 from src.jobs.jobs_service import JobsService
 from src.module_resolver.module_resolver_service import ModuleResolverService
@@ -22,16 +27,67 @@ from src.shared.enums import (
 from src.shared.schemas.artifact import JobStatus
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 
-YAML_PATH: Path = Path(__file__).resolve().parents[2] / "hardware_selector_map.yaml"
 DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000077")
+
+
+def _commercial_ac_manifest() -> Manifest:
+    """Hand-built Manifest covering the commercial_ac profile.
+
+    Sufficient for the test_jobs_service suite, which only exercises the
+    commercial_ac happy path. Other profiles aren't needed here — wider
+    profile coverage is exercised in test_artifact_urls.py.
+    """
+    return Manifest(
+        version="0.0.0-test",
+        assemblies={
+            "compute_container": {
+                "commercial-ac": AssemblyVariant(
+                    bom="s3://test/compute/commercial-ac/bom.yaml",
+                    step="s3://test/compute/commercial-ac/assembly.step",
+                    glb="s3://test/compute/commercial-ac/assembly.glb",
+                ),
+            },
+            "grid_container": {
+                "commercial-ac": AssemblyVariant(
+                    bom="s3://test/grid/commercial-ac/bom.yaml",
+                    step="s3://test/grid/commercial-ac/assembly.step",
+                    glb="s3://test/grid/commercial-ac/assembly.glb",
+                ),
+            },
+        },
+        plates={
+            "CG": PlateUrls(
+                spec="s3://test/plates/CG/spec.yaml",
+                step="s3://test/plates/CG/CG.step",
+                dxf="s3://test/plates/CG/CG.dxf",
+            ),
+            "BG-AC": PlateUrls(
+                spec="s3://test/plates/BG-AC/spec.yaml",
+                step="s3://test/plates/BG-AC/BG-AC.step",
+                dxf="s3://test/plates/BG-AC/BG-AC.dxf",
+            ),
+            "CD": PlateUrls(
+                spec="s3://test/plates/CD/spec.yaml",
+                step="s3://test/plates/CD/CD.step",
+                dxf="s3://test/plates/CD/CD.dxf",
+            ),
+        },
+        profiles={
+            "commercial_ac": ProfileAssemblies(
+                compute_container="commercial-ac",
+                grid_container="commercial-ac",
+                interface_plates=["CG", "BG-AC", "CD"],
+            ),
+        },
+    )
 
 
 @pytest.fixture
 def service() -> JobsService:
-    """Real resolver + selector + fresh in-memory store."""
+    """Real resolver + in-memory ManifestService + fresh in-memory store."""
     return JobsService(
         resolver=ModuleResolverService(),
-        selector=HardwareSelectorService(yaml_path=YAML_PATH),
+        manifest=ManifestService(manifest=_commercial_ac_manifest()),
         store=JobStore(),
     )
 

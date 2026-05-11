@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 
 from src.app_module import AppModule
+from tests.manifest_fixture import commercial_ac_manifest_module
 
 
 def _payload(deployment_id: UUID) -> dict[str, Any]:
@@ -30,7 +31,12 @@ def _payload(deployment_id: UUID) -> dict[str, Any]:
 
 
 def _client() -> TestClient:
-    return TestClient(AppModule().create_app())
+    """TestClient backed by AppModule with stub manifest (no S3 fetch)."""
+    return TestClient(
+        AppModule(
+            manifest_module_override=commercial_ac_manifest_module()
+        ).create_app()
+    )
 
 
 def test_post_then_get_roundtrip() -> None:

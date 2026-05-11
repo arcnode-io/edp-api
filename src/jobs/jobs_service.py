@@ -1,17 +1,17 @@
 """JobsService — creates jobs and queries their state.
 
-Composes ModuleResolverService + HardwareSelectorService + artifact_urls to
+Composes ModuleResolverService + ManifestService + artifact_urls to
 produce the up-front URL list returned in the 202. The actual artifact bytes
 are written by the pipeline (FastAPI BackgroundTask) — not yet wired.
 """
 
 from uuid import UUID, uuid4
 
-from src.hardware_selector.hardware_selector_service import HardwareSelectorService
+from src.bom_generator.manifest_service import ManifestService
 from src.jobs.job_record import JobRecord
 from src.jobs.job_store import JobStore
 from src.module_resolver.module_resolver_service import ModuleResolverService
-from src.pipeline.artifact_urls import build_artifact_urls
+from src.pipeline.artifact_urls import build_artifact_urls_from_resolved
 from src.shared.schemas.artifact import JobCreated, JobResult, JobStatus
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 
@@ -23,18 +23,18 @@ class JobsService:
         self,
         *,
         resolver: ModuleResolverService,
-        selector: HardwareSelectorService,
+        manifest: ManifestService,
         store: JobStore,
     ) -> None:
         self._resolver = resolver
-        self._selector = selector
+        self._manifest = manifest
         self._store = store
 
     def create(self, payload: ConfiguratorPayload) -> JobCreated:
         """Resolve, build URLs, store as RUNNING, return the 202 body."""
         resolution = self._resolver.resolve(payload)
-        assemblies = self._selector.lookup(resolution.deployment_profile)
-        urls = build_artifact_urls(payload.deployment_id, assemblies)
+        resolved = self._manifest.resolve(resolution.deployment_profile.value)
+        urls = build_artifact_urls_from_resolved(payload.deployment_id, resolved)
         job_id = uuid4()
         self._store.put(
             JobRecord(job_id=job_id, status=JobStatus.RUNNING, edp_artifact_urls=urls)
