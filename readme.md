@@ -22,7 +22,7 @@ See [`platform-api`](https://gitlab.com/arcnode-io/platform-api) for platform ap
 DTM = stitched from two sources:
 
 1. **`ConfiguratorPayload` -> `ModuleResolution`** — profile, container counts, sizing.
-2. **Per-assembly topology yaml** (lives in `edp-module-assemblies` repo, fetched by URL from `hardware_selector_map.yaml`) — device list per assembly: `device_type`, `protocol_config`, `host`, `port`, `description`. Authoritative for SIM-mode network coords.
+2. **Per-assembly topology yaml** (lives in `edp-module-assemblies` repo, fetched by URL from the manifest resolved by `ManifestService`) — device list per assembly: `device_type`, `protocol_config`, `host`, `port`, `description`. Authoritative for SIM-mode network coords.
 
 `dtm_generator` instantiates the topology N times (one per container instance), assigns `module_id` + `device_uuid = uuid5(deployment_id, ...)` for determinism, emits `Dtm` with `ems_mode=SIM`. ems-device-api owns LIVE flips (rewrites `host`/`port` on commissioning, increments `dtm_version`).
 
@@ -52,7 +52,7 @@ DTM is self-describing in both modes — EMS reads `(host, port)` and polls. No 
 participant platform_api
 participant edp_api
 participant module_resolver
-participant hardware_selector
+participant manifest_service
 participant bom_generator
 participant dtm_generator
 participant drawing_generator
@@ -65,8 +65,8 @@ edp_api -> platform_api: 202 { job_id, status_url, edp_artifact_urls[] }
 edp_api -> module_resolver: ConfiguratorPayload
 module_resolver -> edp_api: ModuleResolution
 
-edp_api -> hardware_selector: select(profile)
-hardware_selector -> edp_api: { compute_container, grid_container, interface_plates[] } urls
+edp_api -> manifest_service: resolve(profile)
+manifest_service -> edp_api: ResolvedProfile { compute, grid, plates[] } urls
 
 edp_api -> bom_generator: ModuleResolution
 bom_generator -> artifact_s3: bom.json + bom.xlsx
@@ -117,9 +117,11 @@ src/
 │   ├── dtm_generator_service.py     # ModuleResolution → dtm.json
 │   ├── dtm_models.py                # Dtm, Module, Device, ProtocolConfig discriminated union
 │   └── dtm_module.py
-├── hardware_selector/
-│   ├── hardware_selector_service.py # reads ../../hardware_selector_map.yaml at startup
-│   └── hardware_selector_module.py
+├── bom_generator/
+│   ├── manifest_service.py          # caches manifest from S3, resolves profile→URLs
+│   ├── manifest_module.py
+│   ├── manifest_client.py           # S3 fetch wrapper
+│   └── manifest_models.py           # Pydantic mirror of edp-module-assemblies/manifest.yaml
 ├── shared/
 │   ├── schemas/
 │   │   ├── configurator_payload.py
@@ -514,9 +516,11 @@ URLs are pure functions of `ConfiguratorPayload` — known at POST time, returne
 Example: `s3://arcnode-artifacts/edp/{uuid}/plate_cg.step`
 
 
-## Hardware Selector Maps
+## Manifest
 
-Profile -> assembly URLs lives at top-level [`hardware_selector_map.yaml`](hardware_selector_map.yaml). 11 profiles (`dod_dc_int` excluded — CATL exclusion). Loaded by `hardware_selector_service.py` at startup.
+Profile → assembly URLs lives in `edp-module-assemblies` repo as `manifest.yaml`, published to S3. Fetched by `ManifestClient` from `cfg.manifest_url`, cached in-memory by `ManifestService` at startup. Resolution: `service.resolve(profile_str)` returns a `ResolvedProfile` with concrete `AssemblyVariant` (compute, optional grid) and `list[ResolvedPlate]` — no further manifest navigation downstream.
+
+The DeploymentProfile enum still has 11 entries, but the manifest currently only ships 6 profiles (`commercial_*`, `defense_*`, `no_bess`). `federal_*` profiles + `dod_*↔defense_*` rename are open architectural items between edp-api and edp-module-assemblies.
 
 ## Config
 

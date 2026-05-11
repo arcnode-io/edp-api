@@ -1,8 +1,8 @@
 """ManifestService — resolves deployment profile → asset URLs from a cached Manifest.
 
-Built to replace `hardware_selector` (deprecated). Source of truth for assembly
-+ plate URLs is now the manifest published to S3 by edp-module-assemblies; this
-service holds an in-memory copy and serves profile lookups synchronously.
+Source of truth for assembly + plate URLs is the manifest published to S3
+by edp-module-assemblies; this service holds an in-memory copy and serves
+profile lookups synchronously.
 
 Two construction paths:
 - `ManifestService(manifest=...)` — pure, for unit tests with in-memory fixtures.
