@@ -56,10 +56,12 @@ def test_post_then_get_roundtrip() -> None:
     # Act — GET
     got = client.get(created["status_url"])
 
-    # Assert — 200 + same urls
+    # Assert — 200 + same urls. Status is "complete" because FastAPI's
+    # BackgroundTask runs after the POST response ships and before the next
+    # request; with the stub manifest the pipeline finishes synchronously.
     assert got.status_code == 200, got.text
     body = got.json()
-    assert body["status"] == "running"
+    assert body["status"] == "complete", body
     assert body["edp_artifact_urls"] == created["edp_artifact_urls"]
 
 

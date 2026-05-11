@@ -3,7 +3,7 @@
 from uuid import UUID
 
 from classy_fastapi import Routable, get, post
-from fastapi import HTTPException, status
+from fastapi import BackgroundTasks, HTTPException, status
 
 from src.jobs.jobs_service import JobsService
 from src.shared.schemas.artifact import JobCreated, JobResult
@@ -23,9 +23,18 @@ class JobsController(Routable):
         status_code=status.HTTP_202_ACCEPTED,
         tags=["Jobs"],
     )
-    async def create(self, payload: ConfiguratorPayload) -> JobCreated:
-        """Submit a configurator payload; receive deterministic URLs + job_id."""
-        return self._service.create(payload)
+    async def create(
+        self, payload: ConfiguratorPayload, background_tasks: BackgroundTasks
+    ) -> JobCreated:
+        """Submit a configurator payload; receive deterministic URLs + job_id.
+
+        Pipeline runs as a FastAPI BackgroundTask after the 202 ships, so
+        the client gets URLs synchronously and polls GET /jobs/{id} for
+        terminal state.
+        """
+        created = self._service.create(payload)
+        background_tasks.add_task(self._service.execute, created.job_id)
+        return created
 
     @get(
         "/edp-api/jobs/{job_id}",

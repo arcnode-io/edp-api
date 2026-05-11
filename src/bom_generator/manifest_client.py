@@ -79,3 +79,8 @@ class ManifestClient:
         """Upload generated bom.json to S3."""
         bucket, key = _split_s3_url(target_url)
         self._s3.put_object(Bucket=bucket, Key=key, Body=bom_json_bytes)
+
+    def upload_bytes(self, content: bytes, target_url: str) -> None:
+        """Generic put_object for any artifact: DTM JSON, stub-empty bytes, etc."""
+        bucket, key = _split_s3_url(target_url)
+        self._s3.put_object(Bucket=bucket, Key=key, Body=content)

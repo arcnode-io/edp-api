@@ -57,22 +57,26 @@ class AppModule:
         manifest_module = self._manifest_module_override or ManifestModule(
             manifest_url=self.settings.manifest_url
         )
+        # Catalog loaded here (not in create_app) so JobsModule's pipeline
+        # can hand it to DtmGeneratorService at wiring time. Process exits
+        # on TemplateLoadError so drift surfaces before any DTM emit.
+        repo_root = Path(__file__).resolve().parents[1]
+        template_catalog = TemplateLoader(
+            root=repo_root / "device_templates"
+        ).load_catalog()
         jobs = JobsModule(
             resolver_module=resolver_module,
             manifest_module=manifest_module,
+            template_catalog=template_catalog,
         )
         app.include_router(app_controller.router)
         app.include_router(call_api.router)
         app.include_router(jobs.router)
+        # Stash on app.state too — existing tests assert on it.
+        app.state.template_catalog = template_catalog
 
     def create_app(self) -> FastAPI:
         """Create and configure the basic FastAPI application."""
         app = FastAPI()
         self.import_module(app)
-        # Reason: device-template catalog loaded once at startup; process exits
-        # on TemplateLoadError so drift surfaces before any DTM emit.
-        repo_root = Path(__file__).resolve().parents[1]
-        app.state.template_catalog = TemplateLoader(
-            root=repo_root / "device_templates"
-        ).load_catalog()
         return app

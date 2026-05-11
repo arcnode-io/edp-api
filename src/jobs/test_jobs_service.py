@@ -82,12 +82,24 @@ def _commercial_ac_manifest() -> Manifest:
     )
 
 
+class _NullPipeline:
+    """No-op pipeline for create()/get() tests — execute() isn't exercised here.
+
+    Pipeline behavior is covered by src/pipeline/test_pipeline_service.py;
+    this stub keeps JobsService construction tests focused on create/get.
+    """
+
+    def run(self, **_: object) -> None:  # noqa: D401
+        return None
+
+
 @pytest.fixture
 def service() -> JobsService:
-    """Real resolver + in-memory ManifestService + fresh in-memory store."""
+    """Real resolver + in-memory ManifestService + null pipeline + fresh store."""
     return JobsService(
         resolver=ModuleResolverService(),
         manifest=ManifestService(manifest=_commercial_ac_manifest()),
+        pipeline=_NullPipeline(),  # type: ignore[arg-type]
         store=JobStore(),
     )
 
