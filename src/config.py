@@ -23,6 +23,7 @@ class Config(BaseModel):  # noqa: D101
     host: IPv4Address
     e2e: bool
     reload: bool
+    manifest_url: str  # s3://... — edp-module-assemblies publishes the manifest here
 
 
 class _ConfigMap(BaseModel):
