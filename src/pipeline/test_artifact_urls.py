@@ -66,7 +66,7 @@ def _commercial_no_bess_manifest() -> Manifest:
 
 
 def test_commercial_ac_produces_expected_ref_count() -> None:
-    """commercial_ac: 2 compute + 2 grid + 3 plates × 2 fmts (step+dxf) + 13 generated = 23."""
+    """commercial_ac: 2 compute + 2 grid + 3 plates x 2 fmts (step+dxf) + 13 generated = 23."""
     # Arrange
     svc = ManifestService(manifest=_commercial_ac_manifest())
     resolved = svc.resolve("commercial_ac")

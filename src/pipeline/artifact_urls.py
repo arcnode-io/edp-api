@@ -48,9 +48,7 @@ def _grid_container(variant: AssemblyVariant) -> list[ArtifactRef]:
         ArtifactRef(
             kind=ArtifactKind.GRID_CONTAINER_3D, format="step", url=variant.step
         ),
-        ArtifactRef(
-            kind=ArtifactKind.GRID_CONTAINER_3D, format="glb", url=variant.glb
-        ),
+        ArtifactRef(kind=ArtifactKind.GRID_CONTAINER_3D, format="glb", url=variant.glb),
     ]
 
 

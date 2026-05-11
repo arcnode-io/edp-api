@@ -63,7 +63,9 @@ class ManifestService:
         than silently producing partial artifact lists.
         """
         prof = self._manifest.profiles[profile]
-        compute = self._manifest.assemblies[_COMPUTE_ASSEMBLY_KEY][prof.compute_container]
+        compute = self._manifest.assemblies[_COMPUTE_ASSEMBLY_KEY][
+            prof.compute_container
+        ]
         grid = (
             self._manifest.assemblies[_GRID_ASSEMBLY_KEY][prof.grid_container]
             if prof.grid_container is not None

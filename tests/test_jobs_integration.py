@@ -33,9 +33,7 @@ def _payload(deployment_id: UUID) -> dict[str, Any]:
 def _client() -> TestClient:
     """TestClient backed by AppModule with stub manifest (no S3 fetch)."""
     return TestClient(
-        AppModule(
-            manifest_module_override=commercial_ac_manifest_module()
-        ).create_app()
+        AppModule(manifest_module_override=commercial_ac_manifest_module()).create_app()
     )
 
 

@@ -1,7 +1,10 @@
 """ManifestService unit tests — in-memory Manifest fixture, no I/O."""
 
+from typing import cast
+
 import pytest
 
+from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import (
     AssemblyVariant,
     Manifest,
@@ -157,8 +160,8 @@ def test_from_client_fetches_once() -> None:
             fetch_count += 1
             return manifest
 
-    # Act
-    svc = ManifestService.from_client(_StubClient())  # type: ignore[arg-type]
+    # Act — _StubClient duck-types ManifestClient (only fetch_manifest used).
+    svc = ManifestService.from_client(cast(ManifestClient, _StubClient()))
     svc.resolve("commercial_ac")
     svc.resolve("commercial_no_bess")
     svc.resolve("defense_ac")
