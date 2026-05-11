@@ -1,12 +1,22 @@
 """Build the deterministic ArtifactRef[] list for a deployment.
 
-Pure fn: (deployment_id, ProfileAssemblies) -> list[ArtifactRef].
-Mixes generated URLs (deterministic s3 keys under edp/{deployment_id}/...)
-with selected URLs (from hardware_selector_map.yaml).
+Two parallel paths during the hardware_selector → manifest migration:
+- `build_artifact_urls(deployment_id, ProfileAssemblies)` — legacy, sourced
+  from hardware_selector_map.yaml (deprecated; will be removed).
+- `build_artifact_urls_from_resolved(deployment_id, ResolvedProfile)` — new,
+  sourced from the edp-module-assemblies manifest via ManifestService.
+
+Both produce the same set of "generated" deterministic-key refs (BOM, SLD,
+etc. under `edp/{deployment_id}/`). They differ slightly on plate refs:
+the manifest schema has step + optional dxf and no pdf for plates, while
+the legacy yaml had step + dxf + pdf. PDF for plates is dropped in the
+new path; if needed, generate it downstream as a pipeline artifact.
 """
 
 from uuid import UUID
 
+from src.bom_generator.manifest_models import AssemblyVariant
+from src.bom_generator.manifest_service import ResolvedPlate, ResolvedProfile
 from src.hardware_selector.hardware_selector_models import (
     AssemblyUrls,
     PlateUrls,
@@ -93,3 +103,71 @@ def _generated(deployment_id: UUID) -> list[ArtifactRef]:
         (ArtifactKind.DTM, "json", f"{base}/dtm.json"),
     ]
     return [ArtifactRef(kind=k, format=fmt, url=u) for k, fmt, u in pairs]
+
+
+# ─── New manifest-based path ───────────────────────────────────────────
+
+
+def build_artifact_urls_from_resolved(
+    deployment_id: UUID, resolved: ResolvedProfile
+) -> list[ArtifactRef]:
+    """Same shape as `build_artifact_urls`, but sourced from the new manifest.
+
+    Plate refs differ from the legacy path: the manifest schema has step +
+    optional dxf and no pdf for plates, so this fn emits step always, dxf
+    only if the manifest provides it, and never pdf for plates. Generated
+    refs are identical.
+    """
+    refs: list[ArtifactRef] = []
+    refs.extend(_compute_container_resolved(resolved.compute))
+    if resolved.grid is not None:
+        refs.extend(_grid_container_resolved(resolved.grid))
+    refs.extend(_interface_plates_resolved(resolved.plates))
+    refs.extend(_generated(deployment_id))
+    return refs
+
+
+def _compute_container_resolved(variant: AssemblyVariant) -> list[ArtifactRef]:
+    return [
+        ArtifactRef(
+            kind=ArtifactKind.COMPUTE_CONTAINER_3D, format="step", url=variant.step
+        ),
+        ArtifactRef(
+            kind=ArtifactKind.COMPUTE_CONTAINER_3D, format="glb", url=variant.glb
+        ),
+    ]
+
+
+def _grid_container_resolved(variant: AssemblyVariant) -> list[ArtifactRef]:
+    return [
+        ArtifactRef(
+            kind=ArtifactKind.GRID_CONTAINER_3D, format="step", url=variant.step
+        ),
+        ArtifactRef(
+            kind=ArtifactKind.GRID_CONTAINER_3D, format="glb", url=variant.glb
+        ),
+    ]
+
+
+def _interface_plates_resolved(plates: list[ResolvedPlate]) -> list[ArtifactRef]:
+    """Step (always) + dxf (when manifest provides). PDF dropped per new schema."""
+    refs: list[ArtifactRef] = []
+    for p in plates:
+        refs.append(
+            ArtifactRef(
+                kind=ArtifactKind.INTERFACE_PLATE,
+                format="step",
+                url=p.urls.step,
+                plate_id=p.plate_id,
+            )
+        )
+        if p.urls.dxf is not None:
+            refs.append(
+                ArtifactRef(
+                    kind=ArtifactKind.INTERFACE_PLATE,
+                    format="dxf",
+                    url=p.urls.dxf,
+                    plate_id=p.plate_id,
+                )
+            )
+    return refs
