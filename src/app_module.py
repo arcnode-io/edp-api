@@ -61,9 +61,18 @@ class AppModule:
         # can hand it to DtmGeneratorService at wiring time. Process exits
         # on TemplateLoadError so drift surfaces before any DTM emit.
         repo_root = Path(__file__).resolve().parents[1]
-        template_catalog = TemplateLoader(
-            root=repo_root / "device_templates"
-        ).load_catalog()
+        templates_root = repo_root / "device_templates"
+        if not templates_root.is_dir():
+            raise RuntimeError(
+                f"device_templates dir missing at {templates_root} — "
+                "Dockerfile must COPY it into the image"
+            )
+        template_catalog = TemplateLoader(root=templates_root).load_catalog()
+        if not template_catalog:
+            raise RuntimeError(
+                f"empty template catalog from {templates_root} — "
+                "no leaf/ or module/ YAML found"
+            )
         jobs = JobsModule(
             resolver_module=resolver_module,
             manifest_module=manifest_module,
