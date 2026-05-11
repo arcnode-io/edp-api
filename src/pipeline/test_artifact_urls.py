@@ -54,10 +54,10 @@ def _commercial_ac_manifest() -> Manifest:
     )
 
 
-def _no_bess_manifest() -> Manifest:
+def _commercial_no_bess_manifest() -> Manifest:
     """Profile with no grid_container; one plate."""
     m = _commercial_ac_manifest()
-    m.profiles["no_bess"] = ProfileAssemblies(
+    m.profiles["commercial_no_bess"] = ProfileAssemblies(
         compute_container="commercial-ac",
         grid_container=None,
         interface_plates=["CG"],
@@ -78,11 +78,11 @@ def test_commercial_ac_produces_expected_ref_count() -> None:
     assert len(refs) == 2 + 2 + 3 * 2 + 13
 
 
-def test_no_bess_omits_grid_container() -> None:
-    """no_bess profile: zero GRID_CONTAINER_3D refs in the output."""
+def test_commercial_no_bess_omits_grid_container() -> None:
+    """commercial_no_bess profile: zero GRID_CONTAINER_3D refs in the output."""
     # Arrange
-    svc = ManifestService(manifest=_no_bess_manifest())
-    resolved = svc.resolve("no_bess")
+    svc = ManifestService(manifest=_commercial_no_bess_manifest())
+    resolved = svc.resolve("commercial_no_bess")
 
     # Act
     refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)

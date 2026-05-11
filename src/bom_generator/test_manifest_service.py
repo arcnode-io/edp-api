@@ -57,7 +57,7 @@ def _manifest_fixture() -> Manifest:
                 grid_container="commercial-ac",
                 interface_plates=["CG", "BG-AC", "CD"],
             ),
-            "no_bess": ProfileAssemblies(
+            "commercial_no_bess": ProfileAssemblies(
                 compute_container="commercial-ac",
                 grid_container="no-bess",
                 interface_plates=["CG", "CD"],
@@ -160,7 +160,7 @@ def test_from_client_fetches_once() -> None:
     # Act
     svc = ManifestService.from_client(_StubClient())  # type: ignore[arg-type]
     svc.resolve("commercial_ac")
-    svc.resolve("no_bess")
+    svc.resolve("commercial_no_bess")
     svc.resolve("defense_ac")
 
     # Assert — three lookups, one fetch
