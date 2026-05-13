@@ -89,7 +89,7 @@ class _NullPipeline:
     this stub keeps JobsService construction tests focused on create/get.
     """
 
-    def run(self, **_: object) -> None:  # noqa: D401
+    def run(self, **_: object) -> None:
         return None
 
 
@@ -99,7 +99,7 @@ def service() -> JobsService:
     return JobsService(
         resolver=ModuleResolverService(),
         manifest=ManifestService(manifest=_commercial_ac_manifest()),
-        pipeline=_NullPipeline(),  # type: ignore[arg-type]
+        pipeline=_NullPipeline(),  # ty: ignore[invalid-argument-type]
         store=JobStore(),
     )
 

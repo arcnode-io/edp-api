@@ -3,7 +3,6 @@
 from src.bom_generator.bom_generator_service import BomGeneratorService
 from src.bom_generator.manifest_module import ManifestModule
 from src.dtm.dtm_generator_service import DtmGeneratorService
-from src.dtm.template_loader import TemplateLoader
 from src.jobs.job_store import JobStore
 from src.jobs.jobs_controller import JobsController
 from src.jobs.jobs_service import JobsService
@@ -28,7 +27,9 @@ class JobsModule:
         pipeline = PipelineService(
             client=client,
             bom_generator=BomGeneratorService(client),
-            dtm_generator=DtmGeneratorService(client, template_catalog=template_catalog),
+            dtm_generator=DtmGeneratorService(
+                client, template_catalog=template_catalog
+            ),
         )
         self.service = JobsService(
             resolver=resolver_module.service,

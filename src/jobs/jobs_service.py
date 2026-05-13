@@ -70,7 +70,7 @@ class JobsService:
                 resolution=record.resolution,
                 urls=record.edp_artifact_urls,
             )
-        except Exception as e:  # noqa: BLE001 — terminal-state catch-all
+        except Exception as e:
             logger.exception("pipeline failed for job %s", job_id)
             self._store.put(
                 record.model_copy(update={"status": JobStatus.FAILED, "error": str(e)})

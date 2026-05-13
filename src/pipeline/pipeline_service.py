@@ -63,7 +63,9 @@ class PipelineService:
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):
                 continue  # selected from catalog — already in S3
-            self._run_one(ref=ref, payload=payload, resolution=resolution, profile=profile)
+            self._run_one(
+                ref=ref, payload=payload, resolution=resolution, profile=profile
+            )
 
     def _run_one(
         self,
@@ -119,4 +121,4 @@ def _stub_body(ref: ArtifactRef) -> bytes:
     """
     if ref.format == "json":
         return json.dumps({"_stub": True, "kind": ref.kind.value}).encode("utf-8")
-    return f"% stub {ref.kind.value} ({ref.format}) — pipeline TODO\n".encode("utf-8")
+    return f"% stub {ref.kind.value} ({ref.format}) — pipeline TODO\n".encode()

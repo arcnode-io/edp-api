@@ -10,6 +10,8 @@ JobsModule + (future) BOM/DTM modules consume `module.service` and
 `module.client`.
 """
 
+from typing import cast
+
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
 from src.bom_generator.manifest_service import ManifestService
@@ -51,15 +53,15 @@ class ManifestModule:
     """Single point of DI for the edp-module-assemblies manifest."""
 
     def __init__(self, *, manifest_url: str) -> None:
-        self.client: ManifestClient | _StubManifestClient = ManifestClient(
-            manifest_url=manifest_url
-        )
+        self.client: ManifestClient = ManifestClient(manifest_url=manifest_url)
         self.service = ManifestService.from_client(self.client)
 
     @classmethod
     def from_manifest(cls, manifest: Manifest) -> "ManifestModule":
         """Bypass S3 fetch — for tests. Installs a stub client too."""
         instance = cls.__new__(cls)
-        instance.client = _StubManifestClient(manifest)
+        # _StubManifestClient is a duck-typed test double; runtime is fine,
+        # cast keeps ty happy in the production union-free path.
+        instance.client = cast(ManifestClient, _StubManifestClient(manifest))
         instance.service = ManifestService(manifest=manifest)
         return instance

@@ -151,9 +151,7 @@ def test_run_uploads_to_every_generated_url() -> None:
     pipeline.run(payload=payload, resolution=resolution, urls=urls)
 
     # Assert — every per-deployment URL was uploaded to exactly once.
-    expected = {
-        u.url for u in urls if u.url.startswith("s3://arcnode-artifacts/edp/")
-    }
+    expected = {u.url for u in urls if u.url.startswith("s3://arcnode-artifacts/edp/")}
     assert expected == set(client.uploads.keys()), (
         f"missing: {expected - set(client.uploads)}, "
         f"extra: {set(client.uploads) - expected}"
@@ -199,9 +197,7 @@ def test_bom_upload_is_real_bom_json() -> None:
 
     # Assert
     bom_url = next(
-        u.url
-        for u in urls
-        if u.kind == ArtifactKind.BOM and u.format == "json"
+        u.url for u in urls if u.kind == ArtifactKind.BOM and u.format == "json"
     )
     body = json.loads(client.uploads[bom_url])
     assert body["deployment_id"] == str(DEPLOYMENT_ID)
@@ -249,9 +245,7 @@ def test_unimplemented_kinds_get_stub_bytes() -> None:
 
     # Assert — pick one stub kind to verify the shape
     sld_dxf_url = next(
-        u.url
-        for u in urls
-        if u.kind == ArtifactKind.SLD and u.format == "dxf"
+        u.url for u in urls if u.kind == ArtifactKind.SLD and u.format == "dxf"
     )
     body = client.uploads[sld_dxf_url].decode("utf-8")
     assert "stub" in body.lower()
