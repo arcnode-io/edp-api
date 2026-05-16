@@ -3,8 +3,10 @@
 Templates own per-measurement protocol bindings (Modbus FC, DNP3 addrs,
 SNMP OIDs). DTMs reference templates by slug; per-instance Devices contribute
 deployment specifics (host, port, parent, display_name).
-Protocol-level binding types live in template_protocols.py.
-This module re-exports the protocol surface so existing imports keep working.
+Protocol-level binding types live in template_protocols.py; the Measurement
+channel + its Publisher live in measurement.py; range/threshold types live in
+measurement_ranges.py. This module re-exports the full surface so existing
+imports keep working.
 """
 
 import re
@@ -13,6 +15,8 @@ from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from src.shared.schemas.measurement import Measurement, Publisher
+from src.shared.schemas.measurement_ranges import Bounds, Thresholds
 from src.shared.schemas.template_protocols import (
     Binding,
     CanopenBinding,
@@ -24,6 +28,7 @@ from src.shared.schemas.template_protocols import (
 
 __all__ = [
     "Binding",
+    "Bounds",
     "CanopenBinding",
     "Command",
     "ContainsEntry",
@@ -36,6 +41,7 @@ __all__ = [
     "RedfishBinding",
     "SnmpBinding",
     "TemplateKind",
+    "Thresholds",
 ]
 
 _SLUG_RE: Final = re.compile(r"^[a-z][a-z0-9_]{0,62}[a-z0-9]$")
@@ -48,54 +54,10 @@ class TemplateKind(StrEnum):
     MODULE = "module"
 
 
-class Publisher(StrEnum):
-    """Who publishes a measurement that has no protocol binding (rollups)."""
-
-    LINE_CONTROLLER = "line_controller"
-    ANALYST = "analyst"
-
-
 class Fanout(StrEnum):
     """Who handles a command that has no direct binding (fans out to children)."""
 
     LINE_CONTROLLER = "line_controller"
-
-
-class Measurement(BaseModel):
-    """One channel a device emits. Either bound to a protocol or
-    published by line-controller/analyst."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    unit: str  # ADR-002 §3 enum-locked vocabulary
-    type: Literal["float", "bool", "enum"]
-    poll_rate_hz: float | None = None
-    display_name_default: str | None = None
-    iec_61850_ref: str | None = None
-    values: dict[int, str] | None = None
-    binding: Binding | None = None
-    publisher: Publisher | None = None
-
-    @model_validator(mode="after")
-    def _values_enum_constraint(self) -> "Measurement":
-        """values required iff type=enum."""
-        if self.type == "enum" and self.values is None:
-            raise ValueError("type=enum requires values")
-        if self.type != "enum" and self.values is not None:
-            raise ValueError("values forbidden for non-enum type")
-        return self
-
-    @model_validator(mode="after")
-    def _binding_xor_publisher(self) -> "Measurement":
-        """Each measurement MUST have exactly one of binding or publisher."""
-        has_binding = self.binding is not None
-        has_publisher = self.publisher is not None
-        if has_binding == has_publisher:
-            raise ValueError(
-                "measurement requires exactly one of `binding:` (gateway-bound) "
-                "or `publisher:` (derived/rollup)"
-            )
-        return self
 
 
 class Command(BaseModel):

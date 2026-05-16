@@ -22,6 +22,7 @@ class ArtifactKind(StrEnum):
     GRID_CONTAINER_3D = "grid_container_3d"
     INTERFACE_PLATE = "interface_plate"
     SLD = "sld"
+    SLD_HMI_SVG = "sld_hmi_svg"
     PID_COOLING = "pid_cooling"
     COMMS_DIAGRAM = "comms_diagram"
     CABLE_HOSE_SCHEDULE = "cable_hose_schedule"

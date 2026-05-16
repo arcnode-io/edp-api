@@ -1,11 +1,13 @@
 """Jobs HTTP integration tests against a real FastAPI TestClient."""
 
-from typing import Any
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
 from src.app_module import AppModule
+from src.bom_generator.manifest_module import ManifestModule, _StubManifestClient
+from src.shared.schemas.artifact import ArtifactKind
 from tests.manifest_fixture import commercial_ac_manifest_module
 
 
@@ -35,6 +37,13 @@ def _client() -> TestClient:
     return TestClient(
         AppModule(manifest_module_override=commercial_ac_manifest_module()).create_app()
     )
+
+
+def _client_with_uploads() -> tuple[TestClient, ManifestModule]:
+    """TestClient + ManifestModule (stub captures uploads on .client.uploads)."""
+    manifest_module = commercial_ac_manifest_module()
+    app = AppModule(manifest_module_override=manifest_module).create_app()
+    return TestClient(app), manifest_module
 
 
 def test_post_then_get_roundtrip() -> None:
@@ -76,6 +85,35 @@ def test_get_unknown_job_returns_404() -> None:
 
     # Assert
     assert response.status_code == 404
+
+
+def test_sld_hmi_svg_is_produced_and_uploaded() -> None:
+    """POST → BackgroundTask emits sld_hmi.svg to the deterministic S3 key."""
+    # Arrange
+    client, manifest_module = _client_with_uploads()
+    deployment_id = uuid4()
+
+    # Act — POST drives the pipeline through BackgroundTask before TestClient
+    # returns control, so the upload is captured by the time we inspect.
+    post = client.post("/edp-api/jobs", json=_payload(deployment_id))
+
+    # Assert
+    assert post.status_code == 202, post.text
+    created = post.json()
+    sld_hmi_url = next(
+        u["url"]
+        for u in created["edp_artifact_urls"]
+        if u["kind"] == ArtifactKind.SLD_HMI_SVG.value
+    )
+
+    # The deterministic key follows s3://arcnode-artifacts/edp/{id}/sld_hmi.svg
+    assert sld_hmi_url == f"s3://arcnode-artifacts/edp/{deployment_id}/sld_hmi.svg"
+
+    # Pipeline upload landed in the stub client; bytes are a real SVG.
+    stub = cast(_StubManifestClient, manifest_module.client)
+    body = stub.uploads[sld_hmi_url].decode("utf-8")
+    assert body.startswith("<?xml version=")
+    assert "<svg" in body and "</svg>" in body
 
 
 def test_post_rejects_invalid_payload() -> None:

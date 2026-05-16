@@ -84,6 +84,7 @@ def _generated(deployment_id: UUID) -> list[ArtifactRef]:
         (ArtifactKind.BOM, "xlsx", f"{base}/bom.xlsx"),
         (ArtifactKind.SLD, "dxf", f"{base}/sld.dxf"),
         (ArtifactKind.SLD, "pdf", f"{base}/sld.pdf"),
+        (ArtifactKind.SLD_HMI_SVG, "svg", f"{base}/sld_hmi.svg"),
         (ArtifactKind.PID_COOLING, "dxf", f"{base}/pid_cooling.dxf"),
         (ArtifactKind.PID_COOLING, "pdf", f"{base}/pid_cooling.pdf"),
         (ArtifactKind.COMMS_DIAGRAM, "dxf", f"{base}/comms.dxf"),

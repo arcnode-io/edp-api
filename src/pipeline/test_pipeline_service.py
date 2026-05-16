@@ -12,11 +12,12 @@ from src.bom_generator.manifest_models import (
     PlateUrls,
     ProfileAssemblies,
 )
+from src.bom_generator.manifest_service import ManifestService
+from src.drawing.sld_hmi_svg_service import SldHmiSvgService
 from src.dtm.dtm_generator_service import DtmGeneratorService
 from src.dtm.template_loader import TemplateLoader
-from src.pipeline.artifact_urls import build_artifact_urls_from_resolved
-from src.bom_generator.manifest_service import ManifestService
 from src.module_resolver.module_resolver_service import ModuleResolverService
+from src.pipeline.artifact_urls import build_artifact_urls_from_resolved
 from src.pipeline.pipeline_service import PipelineService
 from src.shared.enums import (
     AwsPartition,
@@ -132,6 +133,7 @@ def _build_pipeline(client: _RecordingClient) -> PipelineService:
         client=real_client,
         bom_generator=BomGeneratorService(real_client),
         dtm_generator=DtmGeneratorService(real_client, template_catalog=catalog),
+        sld_hmi_svg_service=SldHmiSvgService(),
     )
 
 
@@ -226,6 +228,28 @@ def test_dtm_upload_is_real_dtm_json() -> None:
     assert body["deployment_uuid"] == str(DEPLOYMENT_ID)
     assert body["version"] == "1.0.0"
     assert "devices" in body
+
+
+def test_sld_hmi_svg_upload_is_real_svg() -> None:
+    """SLD_HMI_SVG upload is a parseable SVG with HMI's data-* hooks."""
+    # Arrange
+    client = _RecordingClient(_commercial_ac_manifest())
+    pipeline = _build_pipeline(client)
+    payload = _payload()
+    resolution = ModuleResolverService().resolve(payload)
+    urls = build_artifact_urls_from_resolved(
+        DEPLOYMENT_ID,
+        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+    )
+
+    # Act
+    pipeline.run(payload=payload, resolution=resolution, urls=urls)
+
+    # Assert
+    svg_url = next(u.url for u in urls if u.kind == ArtifactKind.SLD_HMI_SVG)
+    body = client.uploads[svg_url].decode("utf-8")
+    assert body.startswith("<?xml version=")
+    assert 'data-comp="device-node"' in body or 'data-comp="bus"' in body
 
 
 def test_unimplemented_kinds_get_stub_bytes() -> None:

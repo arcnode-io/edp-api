@@ -23,10 +23,12 @@ from typing import Final
 
 from src.bom_generator.bom_generator_service import BomGeneratorService
 from src.bom_generator.manifest_client import ManifestClient
+from src.drawing.sld_hmi_svg_service import SldHmiSvgService
 from src.dtm.dtm_generator_service import DtmGeneratorService
 from src.shared.enums import DeploymentContext
 from src.shared.schemas.artifact import ArtifactKind, ArtifactRef
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
+from src.shared.schemas.dtm import Dtm
 from src.shared.schemas.module_resolution import ModuleResolution
 
 logger = logging.getLogger(__name__)
@@ -46,10 +48,12 @@ class PipelineService:
         client: ManifestClient,
         bom_generator: BomGeneratorService,
         dtm_generator: DtmGeneratorService,
+        sld_hmi_svg_service: SldHmiSvgService,
     ) -> None:
         self._client = client
         self._bom = bom_generator
         self._dtm = dtm_generator
+        self._sld_hmi = sld_hmi_svg_service
 
     def run(
         self,
@@ -60,11 +64,19 @@ class PipelineService:
     ) -> None:
         """Run the full generation pipeline. Raises on any per-artifact failure."""
         profile = resolution.deployment_profile.value
+        # Generate DTM once and share with every DTM-aware consumer (the DTM
+        # JSON upload + the SLD HMI SVG generator). Saves repeat S3 topology
+        # fetches and keeps device_uuids byte-identical across both artifacts.
+        dtm = self._dtm.generate(profile=profile, resolution=resolution)
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):
                 continue  # selected from catalog — already in S3
             self._run_one(
-                ref=ref, payload=payload, resolution=resolution, profile=profile
+                ref=ref,
+                payload=payload,
+                resolution=resolution,
+                profile=profile,
+                dtm=dtm,
             )
 
     def _run_one(
@@ -74,6 +86,7 @@ class PipelineService:
         payload: ConfiguratorPayload,
         resolution: ModuleResolution,
         profile: str,
+        dtm: Dtm,
     ) -> None:
         """Dispatch a single ArtifactRef to its generator (or stub)."""
         if ref.kind == ArtifactKind.BOM and ref.format == "json":
@@ -89,10 +102,12 @@ class PipelineService:
             )
             return
         if ref.kind == ArtifactKind.DTM:
-            dtm = self._dtm.generate(profile=profile, resolution=resolution)
             self._client.upload_bytes(
                 dtm.model_dump_json(indent=2).encode("utf-8"), ref.url
             )
+            return
+        if ref.kind == ArtifactKind.SLD_HMI_SVG:
+            self._client.upload_bytes(self._sld_hmi.generate(dtm), ref.url)
             return
         # Everything else: stub-empty bytes so downstream consumers (platform-api
         # archive, portal HTML) can fetch by URL. Real generators replace these

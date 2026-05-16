@@ -2,6 +2,7 @@
 
 from src.bom_generator.bom_generator_service import BomGeneratorService
 from src.bom_generator.manifest_module import ManifestModule
+from src.drawing.drawing_module import DrawingModule
 from src.dtm.dtm_generator_service import DtmGeneratorService
 from src.jobs.job_store import JobStore
 from src.jobs.jobs_controller import JobsController
@@ -24,12 +25,14 @@ class JobsModule:
         # Pipeline shares the manifest_module's underlying ManifestClient so
         # the in-memory Manifest cache is reused — no second S3 fetch.
         client = manifest_module.client
+        drawing = DrawingModule()
         pipeline = PipelineService(
             client=client,
             bom_generator=BomGeneratorService(client),
             dtm_generator=DtmGeneratorService(
                 client, template_catalog=template_catalog
             ),
+            sld_hmi_svg_service=drawing.sld_hmi_svg,
         )
         self.service = JobsService(
             resolver=resolver_module.service,

@@ -36,7 +36,8 @@ DTM is self-describing in both modes — EMS reads `(host, port)` and polls. No 
 | 2  | Compute Container 3D          | step + glb       | selected from artifact_s3. put by edp-module-assemblies                                       |
 | 3  | Grid Container 3D             | step + glb       | selected from artifact_s3 defense, commercial-dc, commercial-ac put by edp-module-assemblies  |
 | 4  | Interface Plates              | step + dxf + pdf | fetched from artifact_s3. put by edp-module-assemblies                                        |
-| 5  | Single Line Diagram           | dxf + pdf        | created by internal drawing_generator                                                         |
+| 5  | Single Line Diagram           | dxf + pdf        | created by internal drawing_generator (engineering deliverable)                               |
+| 5b | SLD HMI Runtime SVG           | svg              | created by internal drawing_generator (per deployment, with `device_id`-bound element IDs for HMI MQTT binding + animation; served by `ems-device-api` at `GET /topology/sld.svg`) |
 | 6  | P&ID — Cooling System         | dxf + pdf        | created by internal drawing_generator and put into artifact_s3                                |
 | 7  | Communication Network Diagram | dxf + pdf        | created by internal drawing_generator and put into artifact_s3                                |
 | 8  | Cable and Hose Schedule       | json + xlsx      | BomGenerator — derived from BOM lines + spec.yaml port/connection fields → artifact_s3        |
@@ -77,6 +78,7 @@ dtm_generator -> artifact_s3: dtm.json
 
 edp_api -> drawing_generator: ModuleResolution
 drawing_generator -> artifact_s3: sld.dxf + sld.pdf
+drawing_generator -> artifact_s3: sld_hmi.svg
 drawing_generator -> artifact_s3: pid.dxf + pid.pdf
 
 edp_api -> drawing_generator: ModuleResolution + dtm
@@ -339,6 +341,7 @@ class ArtifactKind(StrEnum):
     GRID_CONTAINER_3D    = "grid_container_3d"
     INTERFACE_PLATE      = "interface_plate"
     SLD                  = "sld"
+    SLD_HMI_SVG          = "sld_hmi_svg"
     PID_COOLING          = "pid_cooling"
     COMMS_DIAGRAM        = "comms_diagram"
     CABLE_HOSE_SCHEDULE  = "cable_hose_schedule"
@@ -508,6 +511,7 @@ URLs are pure functions of `ConfiguratorPayload` — known at POST time, returne
 | GRID_CONTAINER_3D    | `grid_container`           |
 | INTERFACE_PLATE      | `plate_{plate_id_lower}`   |
 | SLD                  | `sld`                      |
+| SLD_HMI_SVG          | `sld_hmi`                  |
 | PID_COOLING          | `pid_cooling`              |
 | COMMS_DIAGRAM        | `comms`                    |
 | CABLE_HOSE_SCHEDULE  | `cable_hose_schedule`      |
@@ -544,3 +548,9 @@ AWS_SECRET_ACCESS_KEY=
 ```
 
 Region + credentials read from boto3 default chain. Bucket hardcoded `arcnode-artifacts`.
+
+## Runtime Dependencies
+
+`graphviz` (`dot` binary) is required at runtime — used by the SLD HMI SVG generator for hierarchical layout. Production Dockerfile installs whatever Debian-slim ships (`apt install graphviz`); local dev = `pacman -S graphviz` / `apt install graphviz` / `brew install graphviz`. The HMI consumes the SVG by element id + `data-*` attributes, so layout-coordinate differences across `dot` versions don't break the runtime contract.
+
+Snapshot tests (`src/drawing/test_sld_hmi_svg_snapshots.py`) ARE byte-sensitive to `dot` major version. Dev + CI must align (currently `graphviz` 13.x); regenerate baselines with `uv run pytest src/drawing/test_sld_hmi_svg_snapshots.py --snapshot-update` and review the diff in the PR.
