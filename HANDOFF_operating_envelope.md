@@ -31,8 +31,9 @@ Producer repo `dlr-operating-envelope` (renamed from `dlr-utility-envelope`) doe
 | `ems-device-api` | `tests/seed.test.ts` | 1 | test |
 | `ems-device-api` | `tests/topology.test.ts` | 2 | test |
 | `ems-device-api` | `readme.md` L88, L94, L99, L102, L107 | 5 | sequence diagrams |
-| `edp-api` | `src/shared/schemas/measurement.py` | 3 | `Publisher.LINE_CONTROLLER` enum |
-| `edp-api` | `src/shared/schemas/template.py` | 3 | recheck |
+| `edp-api` | `src/shared/schemas/measurement.py` | 3 | `Publisher.LINE_CONTROLLER` enum + prose L4, L31 (`line-controller/analyst`) |
+| `edp-api` | `src/shared/schemas/template.py` | 3 + 2 prose (L65, L85: `line-controller`/`line-controller-handled`) |
+| `ems` | `system_adr.md` L41, L42 | 2 | prose in language-used section (`line-controller-pst`, `line-controller-dlr` → `dlr-pst-sim`, `dlr-operating-envelope`) |
 | `edp-api` | `src/shared/schemas/test_template.py` | 4 | tests |
 | `edp-api` | `src/shared/schemas/test_template_measurement_command.py` | 6 | tests |
 | `edp-api` | `device_templates/module/bess_module.yaml` | 5 | `publisher:`/`fanout:` |
@@ -44,9 +45,13 @@ Producer repo `dlr-operating-envelope` (renamed from `dlr-utility-envelope`) doe
 **Rename pattern:**
 
 ```
-"line_controller"   → "operating_envelope"
-LINE_CONTROLLER     → OPERATING_ENVELOPE
+"line_controller"   → "operating_envelope"     (snake_case enum value)
+LINE_CONTROLLER     → OPERATING_ENVELOPE       (enum identifier)
 Publisher.LINE_CONTROLLER → Publisher.OPERATING_ENVELOPE
+
+"line-controller"   → "operating-envelope"     (kebab in prose/docstrings)
+"line-controller-dlr"  → "dlr-operating-envelope"   (repo name in prose)
+"line-controller-pst"  → "dlr-pst-sim"               (repo name in prose)
 ```
 
 **AsyncAPI contract impact:** publisher value string changes. Channel paths + payload schemas unchanged. Consumers (`ems-industrial-gateway`, `ems-hmi`) parse `/asyncapi` at runtime; verify HMI doesn't hardcode `"line_controller"` for filter/display.
