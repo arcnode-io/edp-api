@@ -19,20 +19,20 @@ class JobsModule:
         *,
         resolver_module: ModuleResolverModule,
         manifest_module: ManifestModule,
+        drawing_module: DrawingModule,
         template_catalog: dict,
     ) -> None:
         self.store = JobStore()
         # Pipeline shares the manifest_module's underlying ManifestClient so
         # the in-memory Manifest cache is reused — no second S3 fetch.
         client = manifest_module.client
-        drawing = DrawingModule()
         pipeline = PipelineService(
             client=client,
             bom_generator=BomGeneratorService(client),
             dtm_generator=DtmGeneratorService(
                 client, template_catalog=template_catalog
             ),
-            sld_hmi_svg_service=drawing.sld_hmi_svg,
+            sld_hmi_svg_service=drawing_module.sld_hmi_svg,
         )
         self.service = JobsService(
             resolver=resolver_module.service,

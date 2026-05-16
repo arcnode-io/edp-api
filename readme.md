@@ -91,6 +91,17 @@ platform_api -> edp_api: GET /edp-api/jobs/{job_id}
 edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
 ```
 
+## SLD HMI SVG re-render endpoint
+
+`POST /edp-api/sld-hmi-svg` takes a `Dtm` JSON body and returns SVG bytes
+(`image/svg+xml`). Stateless and idempotent — same DTM in, same SVG out.
+
+Used by `ems-device-api` after applying runtime topology CRUD: device-api
+mutates its cached DTM (add/remove/update equipment), POSTs the updated
+DTM here, gets a fresh SVG back, and serves it at `GET /topology/sld.svg`
+without re-running the full EDP pipeline. Keeps the SVG-authoring logic in
+one place — device-api doesn't duplicate or mutate SVG bytes itself.
+
 
 ## Source Layout
 

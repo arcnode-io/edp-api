@@ -116,6 +116,65 @@ def test_sld_hmi_svg_is_produced_and_uploaded() -> None:
     assert "<svg" in body and "</svg>" in body
 
 
+def test_re_render_endpoint_returns_fresh_svg_for_runtime_dtm() -> None:
+    """POST /edp-api/sld-hmi-svg renders a Dtm body to SVG bytes.
+
+    Lets ems-device-api re-render after runtime CRUD without re-running the
+    full EDP pipeline; same authoring logic, no SVG-mutation duplication.
+    """
+    # Arrange — a tiny but valid Dtm body
+    client = _client()
+    dtm_body: dict[str, Any] = {
+        "version": "1.0.0",
+        "deployment_uuid": "00000000-0000-0000-0000-000000000aaa",
+        "ems_mode": "sim",
+        "sizing_params": {
+            "P_compute_total_kW": 10.0,
+            "E_BESS_total_kWh": 5000.0,
+            "T_coolant_setpoint_C": 30.0,
+        },
+        "devices": {
+            "bess_rack_1": {
+                "device_id": "bess_rack_1",
+                "template": "bess_rack",
+                "connection": {"host": "10.0.0.1", "port": 502, "unit_id": "1"},
+            }
+        },
+        "buses": [],
+        "templates_used": {
+            "bess_rack": {
+                "template": "bess_rack",
+                "kind": "leaf",
+                "equipment_id": "EXT-BESS-001",
+                "vendor": "Tesla",
+                "model": "Megapack",
+                "description": "test fixture",
+                "measurements": {
+                    "power": {
+                        "unit": "watts",
+                        "type": "float",
+                        "binding": {
+                            "protocol": "modbus_tcp",
+                            "function_code": 4,
+                            "address": 100,
+                        },
+                    }
+                },
+            }
+        },
+    }
+
+    # Act
+    response = client.post("/edp-api/sld-hmi-svg", json=dtm_body)
+
+    # Assert
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"] == "image/svg+xml"
+    body = response.text
+    assert body.startswith("<?xml version=")
+    assert 'id="bess_rack_1"' in body
+
+
 def test_post_rejects_invalid_payload() -> None:
     """Validator rejects defense_forward + dc_integrated_pcs (CATL exclusion)."""
     # Arrange

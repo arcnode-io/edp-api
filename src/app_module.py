@@ -8,6 +8,7 @@ from src.app_controller import AppController
 from src.bom_generator.manifest_module import ManifestModule
 from src.call_api.call_api_module import CallApiModule
 from src.config import LogLevel, load_config
+from src.drawing.drawing_module import DrawingModule
 from src.dtm.template_loader import TemplateLoader
 from src.jobs.jobs_module import JobsModule
 from src.module_resolver.module_resolver_module import ModuleResolverModule
@@ -73,14 +74,17 @@ class AppModule:
                 f"empty template catalog from {templates_root} — "
                 "no leaf/ or module/ YAML found"
             )
+        drawing_module = DrawingModule()
         jobs = JobsModule(
             resolver_module=resolver_module,
             manifest_module=manifest_module,
+            drawing_module=drawing_module,
             template_catalog=template_catalog,
         )
         app.include_router(app_controller.router)
         app.include_router(call_api.router)
         app.include_router(jobs.router)
+        app.include_router(drawing_module.router)
         # Stash on app.state too — existing tests assert on it.
         app.state.template_catalog = template_catalog
 
