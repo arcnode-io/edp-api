@@ -24,6 +24,7 @@ from src.shared.schemas.template_protocols import (
     ModbusBinding,
     RedfishBinding,
     SnmpBinding,
+    SyntheticBinding,
 )
 
 __all__ = [
@@ -40,6 +41,7 @@ __all__ = [
     "Publisher",
     "RedfishBinding",
     "SnmpBinding",
+    "SyntheticBinding",
     "TemplateKind",
     "Thresholds",
 ]

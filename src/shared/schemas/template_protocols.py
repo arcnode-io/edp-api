@@ -33,6 +33,10 @@ class Dnp3Binding(BaseModel):
     point_type: Literal[
         "analog_input", "binary_input", "analog_output", "binary_output", "counter"
     ]
+    # Optional audit metadata: outstation's configured static variation
+    # (e.g., 5 for Group 30 Var 5 = 32-bit float). Master polls with default
+    # variation when unset; outstation's configured variation governs response.
+    variation: int | None = None
 
 
 class SnmpBinding(BaseModel):
@@ -65,7 +69,33 @@ class CanopenBinding(BaseModel):
     byte_length: int
 
 
+class SyntheticBinding(BaseModel):
+    """Gateway-side pure-function derivation from cached MQTT inputs.
+
+    Synthetic channels do NOT poll a south-side device. The gateway subscribes
+    to the topics listed in `inputs`, caches latest values per topic, ticks at
+    the measurement's `poll_rate_hz`, and publishes the result of applying
+    `formula` to the cached input values. Holds (no publish) until every
+    input has at least one cached sample.
+
+    Input topic strings may contain `{site_id}` (substituted at gateway runtime
+    from deployment config) and `{device_id}` (substituted at ems-device-api
+    AsyncAPI generation time with the instantiating device's id).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    protocol: Literal["synthetic"]
+    formula: Literal["subtract", "sum", "mean", "max", "min"]
+    inputs: list[str]
+
+
 Binding = Annotated[
-    ModbusBinding | Dnp3Binding | SnmpBinding | RedfishBinding | CanopenBinding,
+    ModbusBinding
+    | Dnp3Binding
+    | SnmpBinding
+    | RedfishBinding
+    | CanopenBinding
+    | SyntheticBinding,
     Field(discriminator="protocol"),
 ]

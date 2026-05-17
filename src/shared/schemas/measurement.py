@@ -20,10 +20,17 @@ from src.shared.schemas.template_protocols import Binding
 
 
 class Publisher(StrEnum):
-    """Who publishes a measurement that has no protocol binding (rollups)."""
+    """Who publishes a measurement.
+
+    LINE_CONTROLLER / ANALYST: a derived rollup, no binding (the named process
+    knows what to compute).
+    GATEWAY: a gateway-computed synthetic channel; ALWAYS paired with
+    `binding.protocol="synthetic"` carrying the formula + inputs.
+    """
 
     LINE_CONTROLLER = "line_controller"
     ANALYST = "analyst"
+    GATEWAY = "gateway"
 
 
 class Measurement(BaseModel):
@@ -54,10 +61,19 @@ class Measurement(BaseModel):
 
     @model_validator(mode="after")
     def _binding_xor_publisher(self) -> "Measurement":
-        """Each measurement MUST have exactly one of binding or publisher."""
-        has_binding = self.binding is not None
+        """Synthetic = both required (binding has the config + publisher names
+        the gateway as emitter). Everything else = exactly one of binding XOR
+        publisher.
+        """
+        binding = self.binding
         has_publisher = self.publisher is not None
-        if has_binding == has_publisher:
+        if binding is not None and binding.protocol == "synthetic":
+            if self.publisher is not Publisher.GATEWAY:
+                raise ValueError(
+                    "binding.protocol=synthetic requires publisher=gateway"
+                )
+            return self
+        if (binding is not None) == has_publisher:
             raise ValueError(
                 "measurement requires exactly one of `binding:` (gateway-bound) "
                 "or `publisher:` (derived/rollup)"
