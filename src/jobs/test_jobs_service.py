@@ -16,6 +16,7 @@ from src.jobs.jobs_service import JobsService
 from src.module_resolver.module_resolver_service import ModuleResolverService
 from src.shared.enums import (
     AwsPartition,
+    WholesaleMarket,
     BessCoupling,
     ClimateZone,
     DeploymentContext,
@@ -123,6 +124,8 @@ def payload() -> ConfiguratorPayload:
         climate_zone=ClimateZone.TEMPERATE,
         deployment_context=DeploymentContext.COMMERCIAL,
         aws_partition=AwsPartition.STANDARD,
+        wholesale_market=WholesaleMarket.ERCOT,
+        settlement_point="HB_NORTH",
     )
 
 

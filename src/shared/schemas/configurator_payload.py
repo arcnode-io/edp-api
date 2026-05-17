@@ -13,7 +13,16 @@ from src.shared.enums import (
     GpuVariant,
     GridConnection,
     PrimaryWorkload,
+    WholesaleMarket,
 )
+
+# v1 ships ERCOT + HB_NORTH only. Other ISO/hub combos are reserved in
+# the enum / form but rejected by the validator below until analyst-server
+# has been validated against each ISO's gridstatus.io datasets + LMP
+# settlement-point dictionaries.
+_V1_SUPPORTED_HUBS: dict[WholesaleMarket, frozenset[str]] = {
+    WholesaleMarket.ERCOT: frozenset({"HB_NORTH"}),
+}
 
 
 class ConfiguratorPayload(BaseModel):
@@ -40,6 +49,12 @@ class ConfiguratorPayload(BaseModel):
     deployment_context: DeploymentContext
     aws_partition: AwsPartition
 
+    wholesale_market: WholesaleMarket
+    # Free-form so adding a new hub doesn't need a schema migration; the
+    # market_hub_supported validator below pins the (ISO, hub) pair to
+    # what analyst-server can actually query today.
+    settlement_point: str
+
     @model_validator(mode="after")
     def bess_consistency(self) -> "ConfiguratorPayload":
         """Reject NONE-coupling-with-capacity and coupled-with-zero-capacity."""
@@ -58,6 +73,26 @@ class ConfiguratorPayload(BaseModel):
         ):
             raise ValueError(
                 "aws_partition=standard only valid for deployment_context=commercial"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def market_hub_supported(self) -> "ConfiguratorPayload":
+        """v1 ships ERCOT + HB_NORTH only; reject other ISO/hub combos.
+
+        Expand _V1_SUPPORTED_HUBS as analyst-server gains support for new
+        ISOs (each needs its own gridstatus.io dataset id + LMP filter logic).
+        """
+        allowed = _V1_SUPPORTED_HUBS.get(self.wholesale_market, frozenset())
+        if self.settlement_point not in allowed:
+            supported = ", ".join(
+                f"{market.value}={','.join(sorted(hubs))}"
+                for market, hubs in _V1_SUPPORTED_HUBS.items()
+            )
+            raise ValueError(
+                f"wholesale_market={self.wholesale_market.value} + "
+                f"settlement_point={self.settlement_point!r} not supported yet. "
+                f"v1 supports: {supported}"
             )
         return self
 

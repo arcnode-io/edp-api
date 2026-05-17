@@ -15,6 +15,7 @@ from src.shared.enums import (
     GpuVariant,
     GridConnection,
     PrimaryWorkload,
+    WholesaleMarket,
 )
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 
@@ -39,6 +40,8 @@ class _PayloadKwargs(TypedDict):
     climate_zone: ClimateZone
     deployment_context: DeploymentContext
     aws_partition: AwsPartition
+    wholesale_market: WholesaleMarket
+    settlement_point: str
 
 
 def _kwargs(
@@ -47,6 +50,8 @@ def _kwargs(
     coupling: BessCoupling = BessCoupling.AC_COUPLED,
     capacity_mwh: float = 5.0,
     partition: AwsPartition = AwsPartition.STANDARD,
+    market: WholesaleMarket = WholesaleMarket.ERCOT,
+    settlement_point: str = "HB_NORTH",
 ) -> _PayloadKwargs:
     return _PayloadKwargs(
         deployment_id=DEPLOYMENT_ID,
@@ -64,6 +69,8 @@ def _kwargs(
         climate_zone=ClimateZone.TEMPERATE,
         deployment_context=context,
         aws_partition=partition,
+        wholesale_market=market,
+        settlement_point=settlement_point,
     )
 
 
@@ -151,3 +158,36 @@ def test_accepts_no_bess_with_zero_capacity() -> None:
 
     # Assert
     assert payload.bess_coupling == BessCoupling.NONE
+
+
+def test_rejects_caiso_until_v2() -> None:
+    """Non-ERCOT markets reserved in the enum but rejected by validator."""
+    # Arrange
+    kw = _kwargs(market=WholesaleMarket.CAISO, settlement_point="TH_NP15_GEN-APND")
+
+    # Act / Assert
+    with pytest.raises(ValidationError, match=r"not supported yet"):
+        ConfiguratorPayload(**kw)
+
+
+def test_rejects_ercot_with_unsupported_hub() -> None:
+    """ERCOT is enabled but only HB_NORTH is supported in v1."""
+    # Arrange
+    kw = _kwargs(market=WholesaleMarket.ERCOT, settlement_point="HB_HOUSTON")
+
+    # Act / Assert
+    with pytest.raises(ValidationError, match=r"not supported yet"):
+        ConfiguratorPayload(**kw)
+
+
+def test_accepts_ercot_hb_north() -> None:
+    """v1 happy path: ERCOT + HB_NORTH."""
+    # Arrange
+    kw = _kwargs(market=WholesaleMarket.ERCOT, settlement_point="HB_NORTH")
+
+    # Act
+    payload = ConfiguratorPayload(**kw)
+
+    # Assert
+    assert payload.wholesale_market == WholesaleMarket.ERCOT
+    assert payload.settlement_point == "HB_NORTH"

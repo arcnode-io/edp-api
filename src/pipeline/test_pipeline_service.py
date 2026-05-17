@@ -21,6 +21,7 @@ from src.pipeline.artifact_urls import build_artifact_urls_from_resolved
 from src.pipeline.pipeline_service import PipelineService
 from src.shared.enums import (
     AwsPartition,
+    WholesaleMarket,
     BessCoupling,
     ClimateZone,
     DeploymentContext,
@@ -120,6 +121,8 @@ def _payload() -> ConfiguratorPayload:
         climate_zone=ClimateZone.TEMPERATE,
         deployment_context=DeploymentContext.COMMERCIAL,
         aws_partition=AwsPartition.STANDARD,
+        wholesale_market=WholesaleMarket.ERCOT,
+        settlement_point="HB_NORTH",
     )
 
 

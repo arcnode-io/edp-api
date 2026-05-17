@@ -69,6 +69,24 @@ class AwsPartition(StrEnum):
     NONE = "none"
 
 
+class WholesaleMarket(StrEnum):
+    """ISO / RTO the deployment participates in.
+
+    v1 ships ERCOT only. Other ISOs are reserved so the enum doesn't
+    need a schema migration when they come online — the website disables
+    them at the form layer and the ConfiguratorPayload validator rejects
+    them on the backend.
+    """
+
+    ERCOT = "ercot"
+    CAISO = "caiso"
+    MISO = "miso"
+    PJM = "pjm"
+    ISO_NE = "isone"
+    NYISO = "nyiso"
+    SPP = "spp"
+
+
 class SourcingTier(StrEnum):
     """Procurement sourcing tier — derived from DeploymentContext."""
 

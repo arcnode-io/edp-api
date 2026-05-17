@@ -7,6 +7,7 @@ from src.jobs.job_store import JobStore
 from src.module_resolver.module_resolver_service import ModuleResolverService
 from src.shared.enums import (
     AwsPartition,
+    WholesaleMarket,
     BessCoupling,
     ClimateZone,
     DeploymentContext,
@@ -44,6 +45,8 @@ def _record(status: JobStatus = JobStatus.RUNNING) -> JobRecord:
         climate_zone=ClimateZone.TEMPERATE,
         deployment_context=DeploymentContext.COMMERCIAL,
         aws_partition=AwsPartition.STANDARD,
+        wholesale_market=WholesaleMarket.ERCOT,
+        settlement_point="HB_NORTH",
     )
     resolution = ModuleResolverService().resolve(payload)
     return JobRecord(

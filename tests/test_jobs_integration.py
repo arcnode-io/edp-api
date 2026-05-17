@@ -29,6 +29,8 @@ def _payload(deployment_id: UUID) -> dict[str, Any]:
         "climate_zone": "temperate",
         "deployment_context": "commercial",
         "aws_partition": "standard",
+        "wholesale_market": "ercot",
+        "settlement_point": "HB_NORTH",
     }
 
 

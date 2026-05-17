@@ -157,7 +157,7 @@ def test_standard_device_has_no_special_role_attr() -> None:
 
     svg = svc.generate(dtm).decode()
 
-    assert 'data-role=' not in svg
+    assert "data-role=" not in svg
 
 
 def test_non_breaker_device_omits_breaker_region() -> None:

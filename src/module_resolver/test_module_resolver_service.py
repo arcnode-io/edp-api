@@ -7,6 +7,7 @@ import pytest
 from src.module_resolver.module_resolver_service import ModuleResolverService
 from src.shared.enums import (
     AwsPartition,
+    WholesaleMarket,
     BessCoupling,
     ClimateZone,
     DeploymentContext,
@@ -47,6 +48,8 @@ def _payload(
         climate_zone=ClimateZone.TEMPERATE,
         deployment_context=context,
         aws_partition=partition,
+        wholesale_market=WholesaleMarket.ERCOT,
+        settlement_point="HB_NORTH",
     )
 
 
