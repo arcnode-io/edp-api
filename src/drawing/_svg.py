@@ -46,6 +46,39 @@ _WCAG_MIN_TAP = 44.0
 _STATUS_INDICATOR_RADIUS = 3.0
 
 
+def _role_for_template(template_slug: str) -> str | None:
+    """Special render-role for utility-side feed templates. Per UTILITY-FEEDS.md §5.
+
+    POI revenue meter and DLR feed get distinct visual treatment downstream
+    in the HMI — emitted here as semantic `data-role` markers + (for POI)
+    reserved `<text>` slots for live state overlay. Returns None for
+    standard device templates.
+    """
+    if template_slug == "revenue_meter":
+        return "poi"
+    if template_slug == "line_rating":
+        return "dlr-badge"
+    return None
+
+
+def _poi_state_slots() -> str:
+    """Reserved text slots for the revenue_meter (POI) live overlay.
+
+    HMI fills `primary-value` with the settlement reading + DOE direction
+    word, and the state row with `DOE` label + status token (OK / STALE /
+    INVALID / COMM_FAIL / ISLAND). Slots emitted empty per the
+    structural-only contract; positioning is local to the device-group.
+    """
+    return (
+        '    <text data-region="primary-value" x="0" y="-2" '
+        'text-anchor="middle" fill="currentColor"></text>\n'
+        '    <text data-region="state-label" x="-18" y="14" '
+        'text-anchor="middle" fill="currentColor">DOE</text>\n'
+        '    <text data-region="state-token" x="18" y="14" '
+        'text-anchor="middle" fill="currentColor"></text>\n'
+    )
+
+
 def _device_group(dtm: Dtm, pos: DevicePosition) -> str:
     """One <g> per device, positioned via translate, with id + HMI data-* hooks.
 
@@ -56,6 +89,10 @@ def _device_group(dtm: Dtm, pos: DevicePosition) -> str:
       - label-template: template slug
       - hit-area: invisible WCAG 2.5.5 tap target (>= 44x44)
     Coordinates are local to the group's transform (origin at body center).
+
+    Utility-side feeds carry an additional `data-role` attribute (POI or
+    DLR badge) so HMI can apply distinct visual treatment without DOM
+    mutation. POI nodes also include reserved state-text slots.
     """
     device = dtm.devices[pos.device_id]
     template = dtm.templates_used[device.template]
@@ -67,9 +104,12 @@ def _device_group(dtm: Dtm, pos: DevicePosition) -> str:
     hit_h = max(body_h, _WCAG_MIN_TAP)
     name = device.display_name or device.device_id
     breaker = _breaker_glyph() if is_breaker_template(template) else ""
+    role = _role_for_template(device.template)
+    role_attr = f' data-role="{role}"' if role else ""
+    poi_slots = _poi_state_slots() if role == "poi" else ""
     return (
         f'  <g id="{pos.device_id}" '
-        f'data-comp="device-node" data-template="{device.template}" '
+        f'data-comp="device-node" data-template="{device.template}"{role_attr} '
         f'transform="translate({cx:.2f} {cy:.2f})">\n'
         f'    <rect data-region="body" '
         f'x="{-half_w:.2f}" y="{-half_h:.2f}" '
@@ -82,6 +122,7 @@ def _device_group(dtm: Dtm, pos: DevicePosition) -> str:
         f'text-anchor="middle" fill="currentColor">{name}</text>\n'
         f'    <text data-region="label-template" x="0" y="12" '
         f'text-anchor="middle" fill="currentColor">{device.template}</text>\n'
+        f"{poi_slots}"
         f'    <rect data-region="hit-area" '
         f'x="{-hit_w/2:.2f}" y="{-hit_h/2:.2f}" '
         f'width="{hit_w:.2f}" height="{hit_h:.2f}" '

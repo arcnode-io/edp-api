@@ -109,6 +109,57 @@ def test_breaker_device_renders_breaker_region() -> None:
     assert 'data-region="breaker"' in svg
 
 
+def test_revenue_meter_emits_poi_role_with_state_slots() -> None:
+    """revenue_meter devices carry data-role="poi" + reserve text slots for the
+    primary settlement reading and the DOE state row. HMI overlays live values
+    onto these IDs without DOM mutation. Per UTILITY-FEEDS.md §5.
+    """
+    dtm = make_dtm(
+        devices={"poi_meter_1": make_device("poi_meter_1", template="revenue_meter")},
+        templates={
+            "revenue_meter": make_template("revenue_meter", iec_61850_ref="MMXU.W"),
+        },
+    )
+    svc = SldHmiSvgService()
+
+    svg = svc.generate(dtm).decode()
+
+    assert 'data-role="poi"' in svg
+    assert 'data-region="primary-value"' in svg
+    assert 'data-region="state-label"' in svg
+    assert 'data-region="state-token"' in svg
+
+
+def test_line_rating_emits_dlr_badge_role() -> None:
+    """line_rating devices carry data-role="dlr-badge" — HMI styles them as
+    compact mid-conductor badges (vs full device-node card). Per UTILITY-FEEDS.md §5.
+    """
+    dtm = make_dtm(
+        devices={"dlr_feed_1": make_device("dlr_feed_1", template="line_rating")},
+        templates={"line_rating": make_template("line_rating")},
+    )
+    svc = SldHmiSvgService()
+
+    svg = svc.generate(dtm).decode()
+
+    assert 'data-role="dlr-badge"' in svg
+    # Badge keeps the device-node id/tap-target contract so it can be tapped
+    # like any other device for detail navigation.
+    assert 'id="dlr_feed_1"' in svg
+
+
+def test_standard_device_has_no_special_role_attr() -> None:
+    """Regression: bess_rack / inverter / etc. must NOT carry data-role —
+    the attr is reserved for utility-side feeds with special visual treatment.
+    """
+    dtm = make_dtm({"bess_rack_1": make_device("bess_rack_1")})
+    svc = SldHmiSvgService()
+
+    svg = svc.generate(dtm).decode()
+
+    assert 'data-role=' not in svg
+
+
 def test_non_breaker_device_omits_breaker_region() -> None:
     # Arrange — BESS template has no XCBR/XSWI ref
     dtm = make_dtm({"bess_rack_1": make_device("bess_rack_1")})
