@@ -38,6 +38,6 @@ def test_app_startup_loads_template_catalog() -> None:
     # Assert
     assert hasattr(app.state, "template_catalog")
     catalog = app.state.template_catalog
-    assert len(catalog) == 12  # 9 leaves + 3 modules
+    assert len(catalog) == 14  # 11 leaves + 3 modules
     assert "revenue_meter" in catalog
     assert "bess_module" in catalog
