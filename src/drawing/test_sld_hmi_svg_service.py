@@ -201,12 +201,12 @@ def test_portrait_stacks_bus_members_vertically() -> None:
     )
     assert len(matches) == 2, f"expected both transforms, got: {matches}"
     coords = {name: (float(x), float(y)) for name, x, y in matches}
-    assert coords["bess_rack_1"][0] == coords["inverter_1"][0], (
-        f"portrait must stack on x-axis: {coords}"
-    )
-    assert coords["bess_rack_1"][1] != coords["inverter_1"][1], (
-        f"portrait must spread on y-axis: {coords}"
-    )
+    assert (
+        coords["bess_rack_1"][0] == coords["inverter_1"][0]
+    ), f"portrait must stack on x-axis: {coords}"
+    assert (
+        coords["bess_rack_1"][1] != coords["inverter_1"][1]
+    ), f"portrait must spread on y-axis: {coords}"
 
 
 def test_landscape_default_keeps_horizontal_layout() -> None:

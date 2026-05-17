@@ -17,6 +17,7 @@ edges + rankdir=TB so dot stacks bus members vertically. The HMI picks per
 viewport shape (phone → portrait, desktop → landscape).
 """
 
+from itertools import pairwise
 from typing import Literal
 
 import graphviz
@@ -31,9 +32,7 @@ Orientation = Literal["landscape", "portrait"]
 class SldHmiSvgService:
     """Generates the runtime SLD SVG artifact (`sld_hmi.svg`) from a DTM."""
 
-    def generate(
-        self, dtm: Dtm, orientation: Orientation = "landscape"
-    ) -> bytes:
+    def generate(self, dtm: Dtm, orientation: Orientation = "landscape") -> bytes:
         """Render the structural SVG for HMI runtime overlay + animation.
 
         Args:
@@ -55,7 +54,7 @@ class SldHmiSvgService:
         if orientation == "portrait":
             for bus in dtm.buses:
                 ids = [m.device_id for m in bus.members]
-                for parent, child in zip(ids, ids[1:]):
+                for parent, child in pairwise(ids):
                     graph.edge(parent, child, style="invis")
         plain = graph.pipe(format="plain").decode()
         positions = layout_devices(plain)

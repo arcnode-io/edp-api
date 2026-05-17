@@ -1,0 +1,27 @@
+template: line_rating
+kind: leaf
+equipment_id: GRD-LR-001
+vendor: ARCNODE
+model: Dynamic Line Rating Producer (Pi RTU)
+description: Utility-published rating per IEEE 738 (DLR or AAR).
+
+# Reason: bounds sized for typical medium-voltage feeder ampacity. Confirm per deployment.
+
+measurements:
+  dynamic_line_rating:
+    unit: amps
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Dynamic Line Rating"
+    iec_61850_ref: MMXU.A.phsA
+    bounds: { min: 0, max: 2000, nominal: 600 }
+    thresholds: { warn_min: 100, warn_max: 1800, alarm_min: 0, alarm_max: 2000 }
+    binding: { protocol: dnp3_tcp, point_type: analog_input, point_index: 10, variation: 5 }
+  status:
+    unit: none
+    type: enum
+    poll_rate_hz: 1
+    display_name_default: "Status"
+    iec_61850_ref: ZGEN.Mod.stVal
+    values: { 0: OK, 1: STALE, 2: INVALID, 3: COMM_FAIL }
+    binding: { protocol: dnp3_tcp, point_type: analog_input, point_index: 101, variation: 2 }

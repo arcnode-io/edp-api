@@ -119,7 +119,7 @@ def test_load_real_catalog_size() -> None:
     # Assert
     leaves = [t for t in catalog.values() if t.kind.value == "leaf"]
     modules = [t for t in catalog.values() if t.kind.value == "module"]
-    assert len(leaves) == 9
+    assert len(leaves) == 11
     assert len(modules) == 3
 
 

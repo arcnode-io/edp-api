@@ -28,6 +28,36 @@ measurements:
     display_name_default: "Module Reactive Power"
     publisher: line_controller
 
+  # Synthetic headroom measurements — gateway computes from cached MQTT inputs.
+  # Placeholders: {site_id} (gateway runtime) and {device_id} (substituted by
+  # ems-device-api at AsyncAPI generation time with the instantiating module's id).
+  # `operating_envelope` is literal — singleton DOE device per site for MVP.
+  import_headroom:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Module Import Headroom"
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      formula: subtract
+      inputs:
+        - sites/{site_id}/devices/operating_envelope/measurements/import_limit/watts
+        - sites/{site_id}/devices/{device_id}/measurements/active_power/watts
+
+  export_headroom:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Module Export Headroom"
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      formula: subtract
+      inputs:
+        - sites/{site_id}/devices/operating_envelope/measurements/export_limit/watts
+        - sites/{site_id}/devices/{device_id}/measurements/active_power/watts
+
 commands:
   set_active_power:
     verb: set
