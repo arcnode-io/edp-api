@@ -172,6 +172,74 @@ def test_text_elements_only_carry_structural_labels() -> None:
         assert body in allowed, f"unexpected <text> body: {body!r}"
 
 
+def test_portrait_stacks_bus_members_vertically() -> None:
+    """In portrait, graphviz's TB rankdir + invisible bus-member edges put
+    bus members on different y-ranks. The HMI calls portrait on phone-shaped
+    viewports so the diagram reads top-to-bottom instead of left-to-right.
+    """
+    # Arrange — two devices on a single bus
+    dtm = make_dtm(
+        devices={
+            "bess_rack_1": make_device("bess_rack_1", template="bess_rack"),
+            "inverter_1": make_device("inverter_1", template="inverter"),
+        },
+        buses=[make_bus("dc_bus_1", ["bess_rack_1", "inverter_1"], bus_type="dc")],
+        templates={
+            "bess_rack": make_template("bess_rack", iec_61850_ref="MMXU.W"),
+            "inverter": make_template("inverter"),
+        },
+    )
+    svc = SldHmiSvgService()
+
+    # Act
+    svg = svc.generate(dtm, orientation="portrait").decode()
+
+    # Assert — both devices on the SAME x, DIFFERENT y (vertical stack).
+    matches = re.findall(
+        r'id="(bess_rack_1|inverter_1)"[^>]*transform="translate\(([\d.]+) ([\d.]+)\)"',
+        svg,
+    )
+    assert len(matches) == 2, f"expected both transforms, got: {matches}"
+    coords = {name: (float(x), float(y)) for name, x, y in matches}
+    assert coords["bess_rack_1"][0] == coords["inverter_1"][0], (
+        f"portrait must stack on x-axis: {coords}"
+    )
+    assert coords["bess_rack_1"][1] != coords["inverter_1"][1], (
+        f"portrait must spread on y-axis: {coords}"
+    )
+
+
+def test_landscape_default_keeps_horizontal_layout() -> None:
+    """Default orientation is landscape — keeps the existing single-row layout
+    so existing snapshots + downstream consumers don't drift.
+    """
+    # Arrange — same two devices on a single bus
+    dtm = make_dtm(
+        devices={
+            "bess_rack_1": make_device("bess_rack_1", template="bess_rack"),
+            "inverter_1": make_device("inverter_1", template="inverter"),
+        },
+        buses=[make_bus("dc_bus_1", ["bess_rack_1", "inverter_1"], bus_type="dc")],
+        templates={
+            "bess_rack": make_template("bess_rack", iec_61850_ref="MMXU.W"),
+            "inverter": make_template("inverter"),
+        },
+    )
+    svc = SldHmiSvgService()
+
+    # Act — no orientation arg
+    svg = svc.generate(dtm).decode()
+
+    # Assert — both devices on the SAME y, DIFFERENT x (horizontal row).
+    matches = re.findall(
+        r'id="(bess_rack_1|inverter_1)"[^>]*transform="translate\(([\d.]+) ([\d.]+)\)"',
+        svg,
+    )
+    coords = {name: (float(x), float(y)) for name, x, y in matches}
+    assert coords["bess_rack_1"][1] == coords["inverter_1"][1], coords
+    assert coords["bess_rack_1"][0] != coords["inverter_1"][0], coords
+
+
 def test_hit_area_meets_wcag_min_tap_target() -> None:
     # Arrange — short-label device whose graphviz body may be small
     dtm = make_dtm({"x1": make_device("x1", display_name="X")})
