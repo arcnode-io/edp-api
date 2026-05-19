@@ -8,7 +8,6 @@ from src.shared.schemas.dtm import (
     Connection,
     Device,
     Dtm,
-    EmsMode,
     SizingParams,
 )
 from src.shared.schemas.template import DeviceTemplate, Measurement, TemplateKind
@@ -81,7 +80,6 @@ def make_dtm(
         templates = {slug: make_template(slug) for slug in slugs}
     return Dtm(
         deployment_uuid=_DEPLOYMENT_ID,
-        ems_mode=EmsMode.SIM,
         sizing_params=SizingParams(
             P_compute_total_kW=10.0,
             E_BESS_total_kWh=5000.0,

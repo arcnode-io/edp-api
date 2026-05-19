@@ -13,7 +13,6 @@ from src.shared.schemas.dtm import (
     Connection,
     Device,
     Dtm,
-    EmsMode,
     SizingParams,
 )
 from src.shared.schemas.template import DeviceTemplate, Measurement, TemplateKind
@@ -75,7 +74,6 @@ def _dtm(
 ) -> Dtm:
     return Dtm(
         deployment_uuid=DEPLOYMENT_ID,
-        ems_mode=EmsMode.SIM,
         sizing_params=_sizing(),
         devices=devices or {"revenue_meter_1": _device()},
         buses=buses or [],

@@ -10,7 +10,6 @@ from src.shared.schemas.dtm import (
     Bus,
     Device,
     Dtm,
-    EmsMode,
 )
 from src.shared.schemas.module_resolution import ModuleResolution
 from src.shared.schemas.template import DeviceTemplate
@@ -80,7 +79,6 @@ class DtmGeneratorService:
 
         return Dtm(
             deployment_uuid=resolution.deployment_id,
-            ems_mode=EmsMode.SIM,
             sizing_params=sizing(resolution),
             devices=devices,
             buses=buses,

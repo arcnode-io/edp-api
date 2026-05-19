@@ -129,7 +129,6 @@ def test_re_render_endpoint_returns_fresh_svg_for_runtime_dtm() -> None:
     dtm_body: dict[str, Any] = {
         "version": "1.0.0",
         "deployment_uuid": "00000000-0000-0000-0000-000000000aaa",
-        "ems_mode": "sim",
         "sizing_params": {
             "P_compute_total_kW": 10.0,
             "E_BESS_total_kWh": 5000.0,

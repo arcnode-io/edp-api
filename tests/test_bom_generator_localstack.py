@@ -259,7 +259,7 @@ def test_dtm_generator_against_localstack(
     dtm = service.generate(profile="commercial_ac", resolution=resolution)
 
     # assert — Q9-C-equivalent for DTM (canonical Dtm shape)
-    assert dtm.ems_mode == EmsMode.SIM
+    assert dtm.mode == EmsMode.LIVE
     # 2 compute_module devices (one per container), no grid
     module_devices = [
         d

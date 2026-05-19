@@ -61,7 +61,6 @@ def _device(
 def _dtm(*, devices: dict[str, Device]) -> Dtm:
     return Dtm(
         deployment_uuid=DEPLOYMENT_ID,
-        ems_mode=EmsMode.SIM,
         sizing_params=_sizing(),
         devices=devices,
         buses=[],

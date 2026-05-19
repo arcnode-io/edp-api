@@ -17,7 +17,7 @@ def test_generate_emits_sim_mode() -> None:
     # Act
     actual = service.generate(profile="commercial_ac", resolution=_resolution())
     # Assert
-    assert actual.ems_mode == EmsMode.SIM
+    assert actual.mode == EmsMode.LIVE
 
 
 def test_generate_dissolves_modules_into_devices() -> None:

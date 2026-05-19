@@ -95,21 +95,30 @@ class Device(BaseModel):
 
 
 class Dtm(BaseModel):
-    """Top-level DTM. SIM at edp-api emit; ems-device-api flips to LIVE."""
+    """Top-level DTM. Mode is derived from Device.has_placeholders, not stored."""
 
     model_config = ConfigDict(extra="forbid")
 
-    # Hardcoded at edp-api emit time. ems-device-api owns subsequent bumps
-    # (per-device CRUD, template revs, etc.) once the deployment is running
-    # and edp-api is no longer in the loop.
+    # ems-device-api owns subsequent version bumps (per-device CRUD, template
+    # revs, etc.) once the deployment is running and edp-api is no longer in
+    # the loop.
     version: str = "1.0.0"
     deployment_uuid: UUID
-    ems_mode: EmsMode = EmsMode.SIM
     sizing_ref: str | None = None
     sizing_params: SizingParams
     devices: dict[str, Device]
     buses: list[Bus]
     templates_used: dict[str, DeviceTemplate]
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def mode(self) -> EmsMode:
+        """LIVE iff every device fully provisioned; SIM if any placeholders."""
+        return (
+            EmsMode.LIVE
+            if all(not d.has_placeholders for d in self.devices.values())
+            else EmsMode.SIM
+        )
 
     @model_validator(mode="after")
     def parent_chain_resolves(self) -> "Dtm":

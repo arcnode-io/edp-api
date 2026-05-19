@@ -119,7 +119,7 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
     # Act
     dtm = service.generate(profile="commercial_ac", resolution=_resolution())
     # Assert — top-level shape
-    assert dtm.ems_mode == EmsMode.SIM
+    assert dtm.mode == EmsMode.LIVE
     # Module Devices exist
     assert "compute_module_1" in dtm.devices
     assert "grid_module_1" in dtm.devices

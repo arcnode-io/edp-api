@@ -24,7 +24,7 @@ DTM = stitched from two sources:
 1. **`ConfiguratorPayload` -> `ModuleResolution`** — profile, container counts, sizing.
 2. **Per-assembly topology yaml** (lives in `edp-module-assemblies` repo, fetched by URL from the manifest resolved by `ManifestService`) — device list per assembly: `device_type`, `protocol_config`, `host`, `port`, `description`. Authoritative for SIM-mode network coords.
 
-`dtm_generator` instantiates the topology N times (one per container instance), assigns `module_id` + `device_uuid = uuid5(deployment_id, ...)` for determinism, emits `Dtm` with `ems_mode=SIM`. ems-device-api owns LIVE flips (rewrites `host`/`port` on commissioning, increments `dtm_version`).
+`dtm_generator` instantiates the topology N times (one per container instance), assigns `module_id` + `device_uuid = uuid5(deployment_id, ...)` for determinism, emits a `Dtm`. Mode (SIM / LIVE) is a computed property — LIVE iff every device is fully provisioned, SIM if any still holds `PROVISIONED_AT_COMMISSIONING`. No stored field; the data IS the signal. ems-device-api owns commissioning (customer POSTs valid `host`/`port` for each device).
 
 DTM is self-describing in both modes — EMS reads `(host, port)` and polls. No mode-aware lookups in EMS code.
 
@@ -489,10 +489,11 @@ class Device(BaseModel):
 
 class Dtm(BaseModel):
     deployment_uuid: UUID
-    ems_mode:        EmsMode = EmsMode.SIM     # hardcoded SIM on initial emit; ems-device-api owns LIVE flip
     sizing_params:   SizingParams
     modules:         list[Module]
     devices:         list[Device]
+
+    # mode is a @computed_field: LIVE iff no device has placeholders, else SIM.
 
     @model_validator(mode="after")
     def fk_modules(self) -> "Dtm":
