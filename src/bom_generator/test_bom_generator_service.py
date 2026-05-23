@@ -8,6 +8,7 @@ import pytest
 from src.bom_generator.bom_generator_service import (
     BomGeneratorService,
     serialize_bom,
+    serialize_bom_xlsx,
 )
 from src.bom_generator.bom_models import ProcurementPath
 from src.bom_generator.manifest_models import (
@@ -197,3 +198,27 @@ def test_serialize_bom_emits_valid_json() -> None:
     parsed = json.loads(actual)
     assert parsed["profile"] == "commercial_ac"
     assert isinstance(parsed["line_items"], list)
+
+
+def test_serialize_bom_xlsx_emits_loadable_workbook_with_line_items() -> None:
+    """xlsx output opens back as a workbook with one row per BomLineItem."""
+    # Arrange
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    client = _make_mock_client(_make_manifest())
+    service = BomGeneratorService(client)
+    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+
+    # Act
+    actual = serialize_bom_xlsx(bom)
+
+    # Assert — round-trip through openpyxl proves real xlsx bytes
+    wb = load_workbook(BytesIO(actual))
+    ws = wb.active
+    assert ws is not None
+    # Header row + one data row per line item.
+    assert ws.max_row == 1 + len(bom.line_items)
+    # First data row's part_number column matches the first line item.
+    assert ws.cell(row=2, column=1).value == bom.line_items[0].part_number

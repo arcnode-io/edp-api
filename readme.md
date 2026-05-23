@@ -91,11 +91,12 @@ platform_api -> edp_api: GET /edp-api/jobs/{job_id}
 edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
 ```
 
-**Current state:** BOM, DTM, and SLD HMI SVG are real generators.
-SLD (dxf+pdf), P&ID, comms, installation_graph, and cable_hose_schedule
-land as `_stub_body` bytes from `PipelineService` for now — URLs are
-deterministic and reserved, content is a placeholder. Real generators
-drop in one ArtifactKind at a time without changing the pipeline shape.
+**Current state:** BOM (json + xlsx), DTM, and SLD HMI SVG are real
+generators. SLD (dxf+pdf), P&ID, comms, installation_graph, and
+cable_hose_schedule land as `_stub_body` bytes from `PipelineService`
+for now — URLs are deterministic and reserved, content is a placeholder.
+Real generators drop in one ArtifactKind at a time without changing the
+pipeline shape.
 
 ## SLD HMI SVG re-render endpoint
 

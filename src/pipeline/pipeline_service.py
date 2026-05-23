@@ -21,7 +21,11 @@ import json
 import logging
 from typing import Final
 
-from src.bom_generator.bom_generator_service import BomGeneratorService
+from src.bom_generator.bom_generator_service import (
+    BomGeneratorService,
+    serialize_bom_xlsx,
+)
+from src.bom_generator.bom_models import Bom
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
 from src.drawing.sld_hmi_svg_service import SldHmiSvgService
@@ -71,44 +75,39 @@ class PipelineService:
         generator so emit doesn't re-fetch S3 (closes ADR-012 torn-read).
         """
         profile = resolution.deployment_profile.value
-        # Generate DTM once and share with every DTM-aware consumer (the DTM
-        # JSON upload + the SLD HMI SVG generator). Saves repeat S3 topology
-        # fetches and keeps device_uuids byte-identical across both artifacts.
+        # Generate DTM + BOM once and share with every consumer. Saves repeat
+        # S3 fetches and keeps content byte-identical across all serializations
+        # of the same artifact (e.g. bom.json + bom.xlsx).
         dtm = self._dtm.generate(
             profile=profile, resolution=resolution, manifest=manifest
+        )
+        bom = self._bom.generate(
+            deployment_id=payload.deployment_id,
+            profile=profile,
+            compute_container_qty=resolution.compute_container_count,
+            grid_container_qty=1 if resolution.grid_container_present else 0,
+            deployment_context=_context_string(payload.deployment_context),
         )
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):
                 continue  # selected from catalog — already in S3
-            self._run_one(
-                ref=ref,
-                payload=payload,
-                resolution=resolution,
-                profile=profile,
-                dtm=dtm,
-            )
+            self._run_one(ref=ref, dtm=dtm, bom=bom)
 
     def _run_one(
         self,
         *,
         ref: ArtifactRef,
-        payload: ConfiguratorPayload,
-        resolution: ModuleResolution,
-        profile: str,
         dtm: Dtm,
+        bom: Bom,
     ) -> None:
         """Dispatch a single ArtifactRef to its generator (or stub)."""
         if ref.kind == ArtifactKind.BOM and ref.format == "json":
-            bom = self._bom.generate(
-                deployment_id=payload.deployment_id,
-                profile=profile,
-                compute_container_qty=resolution.compute_container_count,
-                grid_container_qty=1 if resolution.grid_container_present else 0,
-                deployment_context=_context_string(payload.deployment_context),
-            )
             self._client.upload_bom_json(
                 bom.model_dump_json(indent=2).encode("utf-8"), ref.url
             )
+            return
+        if ref.kind == ArtifactKind.BOM and ref.format == "xlsx":
+            self._client.upload_bytes(serialize_bom_xlsx(bom), ref.url)
             return
         if ref.kind == ArtifactKind.DTM:
             self._client.upload_bytes(

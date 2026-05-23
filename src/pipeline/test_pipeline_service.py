@@ -225,6 +225,39 @@ def test_bom_upload_is_real_bom_json() -> None:
     assert "line_items" in body
 
 
+def test_bom_xlsx_upload_is_real_workbook() -> None:
+    """The BOM xlsx upload opens back as a workbook (not stub bytes)."""
+    # Arrange
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    client = _RecordingClient(_commercial_ac_manifest())
+    pipeline = _build_pipeline(client)
+    payload = _payload()
+    resolution = ModuleResolverService().resolve(payload)
+    urls = build_artifact_urls_from_resolved(
+        DEPLOYMENT_ID,
+        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+    )
+
+    # Act
+    pipeline.run(
+        payload=payload,
+        resolution=resolution,
+        urls=urls,
+        manifest=_commercial_ac_manifest(),
+    )
+
+    # Assert — round-trips as a real xlsx with a BOM sheet
+    xlsx_url = next(
+        u.url for u in urls if u.kind == ArtifactKind.BOM and u.format == "xlsx"
+    )
+    wb = load_workbook(BytesIO(client.uploads[xlsx_url]))
+    assert wb.active is not None
+    assert wb.active.title == "BOM"
+
+
 def test_dtm_upload_is_real_dtm_json() -> None:
     """The DTM upload deserializes to a Dtm shape (not a stub)."""
     # Arrange
