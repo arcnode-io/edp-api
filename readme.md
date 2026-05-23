@@ -567,10 +567,29 @@ Adding a database creates the appearance of state worth preserving across
 restart when none exists. Revisit only if multi-replica + cross-replica
 job-status queries become a real product need.
 
+**Idempotency posture (POST /edp-api/jobs):**
+
+POST is **not** server-side idempotent on `deployment_id`. Every POST gets
+a fresh `job_id`, even with identical `ConfiguratorPayload`. The pipeline
+writes to deterministic S3 keys derived from `deployment_id`, so re-POSTing
+the same payload overwrites the same bytes — safe because the pipeline is
+deterministic (same input → same bytes). Race between two concurrent POSTs
+with the same payload: last writer wins, bytes are equivalent.
+
+What this means for platform-api:
+- Safe to retry on timeout / 404 without coordination.
+- No 409 to handle — duplicate POSTs always succeed.
+- Two parallel POSTs of the same payload waste compute (two pipelines run
+  + two S3 writes per artifact) but don't corrupt output.
+
+If platform-api wants single-flight semantics (one pipeline run per
+deployment_id), enforce it client-side with a `deployment_id` lock. This
+service intentionally doesn't.
+
 
 ## Manifest
 
-Profile → assembly URLs lives in `edp-module-assemblies` repo as `manifest.yaml`, published to S3. Fetched by `ManifestClient` from `cfg.manifest_url`, cached in-memory by `ManifestService` at startup. Resolution: `service.resolve(profile_str)` returns a `ResolvedProfile` with concrete `AssemblyVariant` (compute, optional grid) and `list[ResolvedPlate]` — no further manifest navigation downstream.
+Profile → assembly URLs lives in `edp-module-assemblies` repo as `manifest.yaml`, published to S3. `ManifestClient` fetches it from `cfg.manifest_url` on demand. `JobsService.create` calls `fetch_manifest()` once per job, wraps the snapshot in a `ManifestService` for `.resolve(profile_str)` (which returns a `ResolvedProfile` with concrete `AssemblyVariant` + `list[ResolvedPlate]`), and pins the Manifest on the `JobRecord` so `PipelineService` + `DtmGeneratorService` see the same snapshot at emit time. Closes ADR-012's torn-read mitigation by construction; no app-level cache.
 
 `DeploymentProfile` enum and `manifest_profiles.yaml` are both at the same 7 profiles (4 commercial, 3 defense). Adding a profile to the enum without a matching `manifest_profiles.yaml` entry surfaces as a KeyError at `JobsService.create` — fail-fast at intake.
 
