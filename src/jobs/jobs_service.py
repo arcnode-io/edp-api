@@ -1,14 +1,20 @@
 """JobsService — creates jobs, runs the pipeline, queries state.
 
-`create` returns the 202 body synchronously (resolves the profile, computes
-deterministic URLs, stores RUNNING). The caller (JobsController) schedules
-`execute` as a FastAPI BackgroundTask which runs PipelineService and flips
-status to COMPLETE on success / FAILED on exception.
+`create` returns the 202 body synchronously: fetches the manifest from S3,
+resolves the profile against it, computes deterministic URLs, pins the
+manifest on the JobRecord, and stores RUNNING. The caller (JobsController)
+then schedules `execute` as a FastAPI BackgroundTask which runs
+PipelineService using the pinned manifest and flips status to COMPLETE on
+success / FAILED on exception.
+
+Manifest is fetched per-job (not at app startup) and pinned for the job's
+lifetime — closes ADR-012 torn-read between resolve and DTM emit.
 """
 
 import logging
 from uuid import UUID, uuid4
 
+from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_service import ManifestService
 from src.jobs.job_record import JobRecord
 from src.jobs.job_store import JobStore
@@ -28,19 +34,22 @@ class JobsService:
         self,
         *,
         resolver: ModuleResolverService,
-        manifest: ManifestService,
+        client: ManifestClient,
         pipeline: PipelineService,
         store: JobStore,
     ) -> None:
         self._resolver = resolver
-        self._manifest = manifest
+        self._client = client
         self._pipeline = pipeline
         self._store = store
 
     def create(self, payload: ConfiguratorPayload) -> JobCreated:
-        """Resolve, build URLs, store as RUNNING, return the 202 body."""
+        """Fetch + pin manifest, resolve, build URLs, store as RUNNING, return 202 body."""
         resolution = self._resolver.resolve(payload)
-        resolved = self._manifest.resolve(resolution.deployment_profile.value)
+        manifest = self._client.fetch_manifest()
+        resolved = ManifestService(manifest=manifest).resolve(
+            resolution.deployment_profile.value
+        )
         urls = build_artifact_urls_from_resolved(payload.deployment_id, resolved)
         job_id = uuid4()
         self._store.put(
@@ -50,6 +59,7 @@ class JobsService:
                 edp_artifact_urls=urls,
                 payload=payload,
                 resolution=resolution,
+                manifest=manifest,
             )
         )
         return JobCreated(
@@ -69,6 +79,7 @@ class JobsService:
                 payload=record.payload,
                 resolution=record.resolution,
                 urls=record.edp_artifact_urls,
+                manifest=record.manifest,
             )
         except Exception as e:
             logger.exception("pipeline failed for job %s", job_id)

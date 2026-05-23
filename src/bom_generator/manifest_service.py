@@ -1,12 +1,10 @@
-"""ManifestService — resolves deployment profile → asset URLs from a cached Manifest.
+"""ManifestService — resolves deployment profile → asset URLs against a Manifest.
 
 Source of truth for assembly + plate URLs is the manifest published to S3
-by edp-module-assemblies; this service holds an in-memory copy and serves
-profile lookups synchronously.
-
-Two construction paths:
-- `ManifestService(manifest=...)` — pure, for unit tests with in-memory fixtures.
-- `ManifestService.from_client(client)` — fetches once via S3 (production startup).
+by edp-module-assemblies. JobsService fetches that manifest per-job via
+`ManifestClient.fetch_manifest()`, then wraps it in a ManifestService for
+the resolve call and pins the underlying Manifest on the JobRecord so the
+pipeline sees the same snapshot at DTM emit time (closes ADR-012 torn-read).
 
 `resolve(profile_str)` returns a `ResolvedProfile` containing fully-resolved
 URLs — downstream callers (artifact_urls, BOM generator, DTM generator) need
@@ -15,7 +13,6 @@ no further manifest navigation.
 
 from dataclasses import dataclass
 
-from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import (
     AssemblyVariant,
     Manifest,
@@ -45,15 +42,10 @@ class ResolvedProfile:
 
 
 class ManifestService:
-    """Cached profile → resolved-URLs lookups. Manifest fetched once at construction."""
+    """Profile → resolved-URLs lookups against a pinned Manifest snapshot."""
 
     def __init__(self, manifest: Manifest) -> None:
         self._manifest = manifest
-
-    @classmethod
-    def from_client(cls, client: ManifestClient) -> "ManifestService":
-        """Fetch + parse manifest once. Caller pins the lifecycle (startup typical)."""
-        return cls(manifest=client.fetch_manifest())
 
     def resolve(self, profile: str) -> ResolvedProfile:
         """Look up `profile` and resolve every reference inside.

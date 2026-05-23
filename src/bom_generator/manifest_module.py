@@ -1,20 +1,19 @@
-"""DI assembly for `ManifestService`.
+"""DI assembly for the manifest `ManifestClient`.
 
 Two construction paths so tests can bypass the S3 fetch:
-- `ManifestModule(manifest_url=...)` — production. Fetches once at construction.
-- `ManifestModule.from_manifest(manifest)` — tests. Skips fetch entirely;
-  installs a `_StubManifestClient` so downstream pipeline code that calls
+- `ManifestModule(manifest_url=...)` — production. Builds a real ManifestClient.
+- `ManifestModule.from_manifest(manifest)` — tests. Installs a
+  `_StubManifestClient` so downstream pipeline code that calls
   `client.fetch_*` and `client.upload_*` doesn't hit real S3.
 
-JobsModule + (future) BOM/DTM modules consume `module.service` and
-`module.client`.
+JobsModule consumes `module.client`. The actual manifest fetch happens
+per-job inside `JobsService.create()`, not at app startup.
 """
 
 from typing import cast
 
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
-from src.bom_generator.manifest_service import ManifestService
 
 
 class _StubManifestClient:
@@ -50,18 +49,16 @@ class _StubManifestClient:
 
 
 class ManifestModule:
-    """Single point of DI for the edp-module-assemblies manifest."""
+    """Single point of DI for the edp-module-assemblies ManifestClient."""
 
     def __init__(self, *, manifest_url: str) -> None:
         self.client: ManifestClient = ManifestClient(manifest_url=manifest_url)
-        self.service = ManifestService.from_client(self.client)
 
     @classmethod
     def from_manifest(cls, manifest: Manifest) -> "ManifestModule":
-        """Bypass S3 fetch — for tests. Installs a stub client too."""
+        """Bypass S3 fetch — for tests. Installs a stub client."""
         instance = cls.__new__(cls)
         # _StubManifestClient is a duck-typed test double; runtime is fine,
         # cast keeps ty happy in the production union-free path.
         instance.client = cast(ManifestClient, _StubManifestClient(manifest))
-        instance.service = ManifestService(manifest=manifest)
         return instance

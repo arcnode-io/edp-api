@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from src.bom_generator.manifest_models import Manifest
 from src.jobs.job_record import JobRecord
 from src.jobs.job_store import JobStore
 from src.module_resolver.module_resolver_service import ModuleResolverService
@@ -55,6 +56,7 @@ def _record(status: JobStatus = JobStatus.RUNNING) -> JobRecord:
         edp_artifact_urls=[],
         payload=payload,
         resolution=resolution,
+        manifest=Manifest(version="0.0.0-test", assemblies={}, plates={}, profiles={}),
     )
 
 

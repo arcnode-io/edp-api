@@ -23,8 +23,11 @@ class JobsModule:
         template_catalog: dict,
     ) -> None:
         self.store = JobStore()
-        # Pipeline shares the manifest_module's underlying ManifestClient so
-        # the in-memory Manifest cache is reused — no second S3 fetch.
+        # Pipeline and JobsService share the same ManifestClient. JobsService
+        # calls fetch_manifest() per create() and pins the result on the
+        # JobRecord; the pipeline then re-uses that pin (no second fetch).
+        # The client's other fetch_* methods (topology.yaml, spec.yaml,
+        # bom.yaml) are still called per-pipeline by BOM/DTM generators.
         client = manifest_module.client
         pipeline = PipelineService(
             client=client,
@@ -36,7 +39,7 @@ class JobsModule:
         )
         self.service = JobsService(
             resolver=resolver_module.service,
-            manifest=manifest_module.service,
+            client=client,
             pipeline=pipeline,
             store=self.store,
         )

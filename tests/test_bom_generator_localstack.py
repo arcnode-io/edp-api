@@ -256,7 +256,11 @@ def test_dtm_generator_against_localstack(
     )
 
     # act
-    dtm = service.generate(profile="commercial_ac", resolution=resolution)
+    dtm = service.generate(
+        profile="commercial_ac",
+        resolution=resolution,
+        manifest=client.fetch_manifest(),
+    )
 
     # assert — Q9-C-equivalent for DTM (canonical Dtm shape)
     assert dtm.mode == EmsMode.LIVE

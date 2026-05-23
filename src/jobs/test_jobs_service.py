@@ -10,7 +10,6 @@ from src.bom_generator.manifest_models import (
     PlateUrls,
     ProfileAssemblies,
 )
-from src.bom_generator.manifest_service import ManifestService
 from src.jobs.job_store import JobStore
 from src.jobs.jobs_service import JobsService
 from src.module_resolver.module_resolver_service import ModuleResolverService
@@ -94,12 +93,24 @@ class _NullPipeline:
         return None
 
 
+class _StaticClient:
+    """ManifestClient stub serving a fixed Manifest. No S3."""
+
+    def __init__(self, manifest: Manifest) -> None:
+        self._manifest = manifest
+
+    def fetch_manifest(self) -> Manifest:
+        return self._manifest
+
+
 @pytest.fixture
 def service() -> JobsService:
-    """Real resolver + in-memory ManifestService + null pipeline + fresh store."""
+    """Real resolver + in-memory manifest client + null pipeline + fresh store."""
     return JobsService(
         resolver=ModuleResolverService(),
-        manifest=ManifestService(manifest=_commercial_ac_manifest()),
+        client=_StaticClient(
+            _commercial_ac_manifest()
+        ),  # ty: ignore[invalid-argument-type]
         pipeline=_NullPipeline(),  # ty: ignore[invalid-argument-type]
         store=JobStore(),
     )
@@ -174,3 +185,65 @@ def test_create_url_list_matches_artifact_url_builder(
     # Assert
     assert fetched is not None
     assert created.edp_artifact_urls == fetched.edp_artifact_urls
+
+
+class _CapturingPipeline:
+    """Records the kwargs passed to run() so tests can assert what flowed through."""
+
+    def __init__(self) -> None:
+        self.last_call: dict[str, object] | None = None
+
+    def run(self, **kwargs: object) -> None:
+        self.last_call = kwargs
+
+
+class _MutatingClient:
+    """ManifestClient stub whose fetch_manifest result can change between calls.
+
+    Used to prove JobsService pins the manifest at create() time — pipeline
+    execution must see the manifest fetched at create, not whatever the
+    client returns later.
+    """
+
+    def __init__(self, current: Manifest) -> None:
+        self.current = current
+        self.fetch_count = 0
+
+    def fetch_manifest(self) -> Manifest:
+        self.fetch_count += 1
+        return self.current
+
+
+def _alternate_manifest() -> Manifest:
+    """A second manifest that resolves the same commercial_ac profile differently."""
+    base = _commercial_ac_manifest()
+    return base.model_copy(update={"version": "9.9.9-mutated"})
+
+
+def test_execute_uses_manifest_pinned_at_create_not_re_fetched(
+    payload: ConfiguratorPayload,
+) -> None:
+    """Manifest fetched at create() flows pinned through to pipeline.run().
+
+    Closes ADR-012 torn-read: if the manifest source mutates between POST
+    and pipeline execution, the pipeline still sees what create() saw.
+    """
+    # Arrange
+    original_manifest = _commercial_ac_manifest()
+    client = _MutatingClient(current=original_manifest)
+    capturing = _CapturingPipeline()
+    service = JobsService(
+        resolver=ModuleResolverService(),
+        client=client,  # ty: ignore[invalid-argument-type]
+        pipeline=capturing,  # ty: ignore[invalid-argument-type]
+        store=JobStore(),
+    )
+
+    # Act — create, mutate the source, then execute
+    created = service.create(payload)
+    client.current = _alternate_manifest()  # simulate mid-flight manifest change
+    service.execute(created.job_id)
+
+    # Assert — pipeline saw the original (pinned at create), not the mutation
+    assert capturing.last_call is not None
+    assert capturing.last_call["manifest"] is original_manifest

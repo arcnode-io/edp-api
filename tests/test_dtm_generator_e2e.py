@@ -113,11 +113,14 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
     # Arrange
     repo_root = Path(__file__).resolve().parents[1]
     catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
-    service = DtmGeneratorService(
-        _client_against_real_assemblies(), template_catalog=catalog
-    )
+    client = _client_against_real_assemblies()
+    service = DtmGeneratorService(client, template_catalog=catalog)
     # Act
-    dtm = service.generate(profile="commercial_ac", resolution=_resolution())
+    dtm = service.generate(
+        profile="commercial_ac",
+        resolution=_resolution(),
+        manifest=client.fetch_manifest(),
+    )
     # Assert — top-level shape
     assert dtm.mode == EmsMode.LIVE
     # Module Devices exist
@@ -151,10 +154,13 @@ def test_e2e_pending_devices_empty_when_topology_has_no_sentinels() -> None:
     # Arrange
     repo_root = Path(__file__).resolve().parents[1]
     catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
-    service = DtmGeneratorService(
-        _client_against_real_assemblies(), template_catalog=catalog
-    )
+    client = _client_against_real_assemblies()
+    service = DtmGeneratorService(client, template_catalog=catalog)
     # Act
-    dtm = service.generate(profile="commercial_ac", resolution=_resolution())
+    dtm = service.generate(
+        profile="commercial_ac",
+        resolution=_resolution(),
+        manifest=client.fetch_manifest(),
+    )
     # Assert
     assert dtm.pending_devices == []

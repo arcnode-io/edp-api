@@ -1,10 +1,7 @@
 """ManifestService unit tests — in-memory Manifest fixture, no I/O."""
 
-from typing import cast
-
 import pytest
 
-from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import (
     AssemblyVariant,
     Manifest,
@@ -146,25 +143,3 @@ def test_resolve_dangling_grid_reference_raises_key_error() -> None:
     # Act / Assert
     with pytest.raises(KeyError):
         svc.resolve("bad_grid_ref")
-
-
-def test_from_client_fetches_once() -> None:
-    """ManifestService.from_client calls client.fetch_manifest exactly once."""
-    # Arrange
-    manifest = _manifest_fixture()
-    fetch_count = 0
-
-    class _StubClient:
-        def fetch_manifest(self) -> Manifest:
-            nonlocal fetch_count
-            fetch_count += 1
-            return manifest
-
-    # Act — _StubClient duck-types ManifestClient (only fetch_manifest used).
-    svc = ManifestService.from_client(cast(ManifestClient, _StubClient()))
-    svc.resolve("commercial_ac")
-    svc.resolve("commercial_no_bess")
-    svc.resolve("defense_ac")
-
-    # Assert — three lookups, one fetch
-    assert fetch_count == 1

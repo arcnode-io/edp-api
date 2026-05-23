@@ -153,7 +153,12 @@ def test_run_uploads_to_every_generated_url() -> None:
     )
 
     # Act
-    pipeline.run(payload=payload, resolution=resolution, urls=urls)
+    pipeline.run(
+        payload=payload,
+        resolution=resolution,
+        urls=urls,
+        manifest=_commercial_ac_manifest(),
+    )
 
     # Assert — every per-deployment URL was uploaded to exactly once.
     expected = {u.url for u in urls if u.url.startswith("s3://arcnode-artifacts/edp/")}
@@ -176,7 +181,12 @@ def test_run_skips_selected_urls_from_catalog() -> None:
     )
 
     # Act
-    pipeline.run(payload=payload, resolution=resolution, urls=urls)
+    pipeline.run(
+        payload=payload,
+        resolution=resolution,
+        urls=urls,
+        manifest=_commercial_ac_manifest(),
+    )
 
     # Assert — none of the catalog URLs were uploaded
     catalog_urls = {
@@ -198,7 +208,12 @@ def test_bom_upload_is_real_bom_json() -> None:
     )
 
     # Act
-    pipeline.run(payload=payload, resolution=resolution, urls=urls)
+    pipeline.run(
+        payload=payload,
+        resolution=resolution,
+        urls=urls,
+        manifest=_commercial_ac_manifest(),
+    )
 
     # Assert
     bom_url = next(
@@ -223,7 +238,12 @@ def test_dtm_upload_is_real_dtm_json() -> None:
     )
 
     # Act
-    pipeline.run(payload=payload, resolution=resolution, urls=urls)
+    pipeline.run(
+        payload=payload,
+        resolution=resolution,
+        urls=urls,
+        manifest=_commercial_ac_manifest(),
+    )
 
     # Assert
     dtm_url = next(u.url for u in urls if u.kind == ArtifactKind.DTM)
@@ -246,7 +266,12 @@ def test_sld_hmi_svg_upload_is_real_svg() -> None:
     )
 
     # Act
-    pipeline.run(payload=payload, resolution=resolution, urls=urls)
+    pipeline.run(
+        payload=payload,
+        resolution=resolution,
+        urls=urls,
+        manifest=_commercial_ac_manifest(),
+    )
 
     # Assert
     svg_url = next(u.url for u in urls if u.kind == ArtifactKind.SLD_HMI_SVG)
@@ -268,7 +293,12 @@ def test_unimplemented_kinds_get_stub_bytes() -> None:
     )
 
     # Act
-    pipeline.run(payload=payload, resolution=resolution, urls=urls)
+    pipeline.run(
+        payload=payload,
+        resolution=resolution,
+        urls=urls,
+        manifest=_commercial_ac_manifest(),
+    )
 
     # Assert — pick one stub kind to verify the shape
     sld_dxf_url = next(

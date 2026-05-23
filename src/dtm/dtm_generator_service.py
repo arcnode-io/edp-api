@@ -1,6 +1,7 @@
 """DtmGeneratorService — emits canonical Dtm per ADR-002 §7."""
 
 from src.bom_generator.manifest_client import ManifestClient
+from src.bom_generator.manifest_models import Manifest
 from src.dtm.dtm_generator_internals import (
     collect_templates_used,
     emit_container,
@@ -23,16 +24,23 @@ class DtmGeneratorService:
         manifest_client: ManifestClient,
         template_catalog: dict[str, DeviceTemplate],
     ) -> None:
+        # Client still used for per-assembly topology.yaml fetches downstream.
+        # Manifest is now passed in per-call so resolve+emit see the same pin.
         self._client = manifest_client
         self._catalog = template_catalog
 
-    def generate(self, *, profile: str, resolution: ModuleResolution) -> Dtm:
+    def generate(
+        self, *, profile: str, resolution: ModuleResolution, manifest: Manifest
+    ) -> Dtm:
         """Compose devices from manifest topology yamls + resolution.
 
         Args:
             profile: Profile name (e.g. "commercial_ac"). Must exist in manifest.
             resolution: ModuleResolution with deployment_id, container counts,
                 gpu_variant/count, bess, etc.
+            manifest: Pinned snapshot from JobsService.create — must match what
+                build_artifact_urls_from_resolved saw, or DTM diverges from
+                the artifact list.
 
         Returns:
             Dtm in SIM mode with devices, buses, and templates_used populated.
@@ -40,7 +48,6 @@ class DtmGeneratorService:
         Raises:
             ValueError: If profile is not in the manifest.
         """
-        manifest = self._client.fetch_manifest()
         if profile not in manifest.profiles:
             raise ValueError(
                 f"profile {profile!r} not in manifest "

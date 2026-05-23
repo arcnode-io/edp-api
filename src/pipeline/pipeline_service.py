@@ -23,6 +23,7 @@ from typing import Final
 
 from src.bom_generator.bom_generator_service import BomGeneratorService
 from src.bom_generator.manifest_client import ManifestClient
+from src.bom_generator.manifest_models import Manifest
 from src.drawing.sld_hmi_svg_service import SldHmiSvgService
 from src.dtm.dtm_generator_service import DtmGeneratorService
 from src.shared.enums import DeploymentContext
@@ -61,13 +62,21 @@ class PipelineService:
         payload: ConfiguratorPayload,
         resolution: ModuleResolution,
         urls: list[ArtifactRef],
+        manifest: Manifest,
     ) -> None:
-        """Run the full generation pipeline. Raises on any per-artifact failure."""
+        """Run the full generation pipeline. Raises on any per-artifact failure.
+
+        `manifest` is the snapshot pinned by JobsService at create() — same
+        object used to resolve profile→URLs. Passed through to the DTM
+        generator so emit doesn't re-fetch S3 (closes ADR-012 torn-read).
+        """
         profile = resolution.deployment_profile.value
         # Generate DTM once and share with every DTM-aware consumer (the DTM
         # JSON upload + the SLD HMI SVG generator). Saves repeat S3 topology
         # fetches and keeps device_uuids byte-identical across both artifacts.
-        dtm = self._dtm.generate(profile=profile, resolution=resolution)
+        dtm = self._dtm.generate(
+            profile=profile, resolution=resolution, manifest=manifest
+        )
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):
                 continue  # selected from catalog — already in S3
