@@ -52,7 +52,6 @@ class AppModule:
 
     def import_module(self, app: FastAPI) -> None:
         """Register routes for app, call_api, and jobs."""
-        app_controller = AppController()
         call_api = CallApiModule()
         resolver_module = ModuleResolverModule()
         manifest_module = self._manifest_module_override or ManifestModule(
@@ -81,6 +80,11 @@ class AppModule:
             drawing_module=drawing_module,
             template_catalog=template_catalog,
         )
+        app_controller = AppController(
+            version=_read_project_version(repo_root),
+            template_catalog=template_catalog,
+            manifest_url=self.settings.manifest_url,
+        )
         app.include_router(app_controller.router)
         app.include_router(call_api.router)
         app.include_router(jobs.router)
@@ -93,3 +97,23 @@ class AppModule:
         app = FastAPI()
         self.import_module(app)
         return app
+
+
+def _read_project_version(repo_root: Path) -> str:
+    """Pull `project.version` out of pyproject.toml — single source of truth.
+
+    Returns "unknown" if pyproject is missing/malformed so /healthz still
+    answers even if startup config drifts. The deeper failure modes get
+    caught by the explicit RuntimeError checks above (catalog, templates).
+    """
+    import tomllib
+
+    pyproject = repo_root / "pyproject.toml"
+    if not pyproject.is_file():
+        return "unknown"
+    try:
+        data = tomllib.loads(pyproject.read_text())
+        version = data.get("project", {}).get("version")
+        return str(version) if version else "unknown"
+    except (OSError, ValueError):
+        return "unknown"

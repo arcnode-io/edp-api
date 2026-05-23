@@ -41,3 +41,22 @@ def test_app_startup_loads_template_catalog() -> None:
     assert len(catalog) == 14  # 11 leaves + 3 modules
     assert "revenue_meter" in catalog
     assert "bess_module" in catalog
+
+
+def test_healthz_returns_deep_status_with_catalog_and_manifest_info() -> None:
+    """GET /healthz returns JSON with version, catalog size, manifest_url."""
+    # Arrange
+    app_module = _app()
+    app = app_module.create_app()
+    client = TestClient(app)
+
+    # Act
+    response = client.get("/healthz")
+
+    # Assert
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["version"]  # surfaces the pyproject project.version
+    assert body["template_catalog"]["size"] == 14
+    assert body["manifest_url"].startswith("s3://")
