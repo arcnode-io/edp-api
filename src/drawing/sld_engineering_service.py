@@ -22,18 +22,20 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from ezdxf.addons.drawing import Frontend, RenderContext
+from ezdxf.addons.drawing.config import (
+    BackgroundPolicy,
+    ColorPolicy,
+    Configuration,
+)
 from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
 from ezdxf.document import Drawing
 from ezdxf.layouts import Modelspace
 from matplotlib.backends.backend_pdf import PdfPages
 from pydantic import BaseModel
 
+from src.drawing._eng_title_block import draw_sheet_frame, draw_title_block
 from src.drawing._sld_eng_layout import DevicePlacement, layout_devices
 from src.drawing._sld_eng_symbols import ensure_symbol_block
-from src.drawing._sld_eng_title_block import (
-    draw_sheet_frame,
-    draw_title_block,
-)
 from src.shared.schemas.dtm import Bus, Dtm
 
 # A3 landscape in inches: 420 mm x 297 mm / 25.4 mm/in
@@ -71,7 +73,7 @@ class SldEngineeringService:
 
         # Sheet frame + title block first (background).
         draw_sheet_frame(msp)
-        draw_title_block(msp, dtm, profile)
+        draw_title_block(msp, dtm, title="SINGLE LINE DIAGRAM", profile=profile)
 
         # Lay out devices, define a symbol block per template, INSERT one
         # block reference per device. Block name `device_{device_id}` is a
@@ -189,7 +191,17 @@ def _serialize_dxf(doc: Drawing) -> bytes:
 
 
 def _serialize_pdf(doc: Drawing) -> bytes:
-    """A3-landscape PDF rendered via ezdxf.addons.drawing.matplotlib."""
+    """A3-landscape PDF rendered via ezdxf.addons.drawing.matplotlib.
+
+    Black-on-white render: ezdxf default leaves layer-7 entities at color 7
+    which matplotlib then draws white. PDF viewers with white backgrounds
+    show a blank page. Configuration forces black foreground + white
+    background so the engineering deliverable is reviewer-readable.
+    """
+    cfg = Configuration(
+        background_policy=BackgroundPolicy.WHITE,
+        color_policy=ColorPolicy.BLACK,
+    )
     pdf_buf = io.BytesIO()
     with PdfPages(pdf_buf, metadata={"Title": "ARCNODE SLD"}) as pdf:
         fig = plt.figure(figsize=_A3_LANDSCAPE_INCHES)
@@ -197,9 +209,9 @@ def _serialize_pdf(doc: Drawing) -> bytes:
         ax = fig.add_axes((0.0, 0.0, 1.0, 1.0))
         ax.set_axis_off()
         ctx = RenderContext(doc)
-        Frontend(ctx, MatplotlibBackend(ax)).draw_layout(
+        Frontend(ctx, MatplotlibBackend(ax), config=cfg).draw_layout(
             doc.modelspace(), finalize=True
         )
-        pdf.savefig(fig, dpi=_PDF_DPI)
+        pdf.savefig(fig, dpi=_PDF_DPI, facecolor="white")
         plt.close(fig)
     return pdf_buf.getvalue()
