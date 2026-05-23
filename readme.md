@@ -510,7 +510,7 @@ Pipeline writes deterministic keys under shared `arcnode-artifacts` bucket:
 s3://arcnode-artifacts/edp/{deployment_id}/{artifact_name}.{ext}
 ```
 
-URLs are pure functions of `ConfiguratorPayload` — known at POST time, returned in `202` response. Generators are pure writers; write failure fails the whole job and platform-api retries.
+URLs are pure functions of `ConfiguratorPayload` — known at POST time, returned in the `202` response. Generators are pure writers; any per-artifact failure flips the whole job to FAILED. See §Failure Model for the retry contract.
 
 `{artifact_name}` mapping (lowercase, snake_case):
 
@@ -529,6 +529,31 @@ URLs are pure functions of `ConfiguratorPayload` — known at POST time, returne
 | DTM                  | `dtm`                      |
 
 Example: `s3://arcnode-artifacts/edp/{uuid}/plate_cg.step`
+
+
+## Failure Model
+
+`JobStore` is an in-memory dict — single replica, no durability. By design.
+The pipeline is deterministic (artifact URLs are pure functions of
+`ConfiguratorPayload`), so the artifact bytes in S3 are the only state that
+matters. The job record is a status projection over the in-flight write.
+
+**Contract with platform-api:**
+
+| Event | platform-api action |
+|---|---|
+| `POST /edp-api/jobs` returns 202 | Stash `job_id` + `edp_artifact_urls`; begin polling `status_url`. |
+| `GET /edp-api/jobs/{id}` → `RUNNING` | Keep polling. |
+| `GET /edp-api/jobs/{id}` → `COMPLETE` | Job done. Fetch artifact URLs. |
+| `GET /edp-api/jobs/{id}` → `FAILED` | Pipeline raised. `error` field carries the message. Decide: retry the original payload or surface to user. |
+| `GET /edp-api/jobs/{id}` → `404` | edp-api restarted between POST and poll, losing the in-memory record. Re-POST the original payload; you'll get a new `job_id`, and the pipeline writes the same S3 keys (idempotent at the artifact level). |
+| Poll timeout exceeded with no terminal status | Same recovery — re-POST. Two concurrent runs over the same payload race on the same S3 keys; last writer wins, bytes are equivalent. |
+
+**Why ephemeral:** durable JobStore (DDB / Postgres) would preserve a status
+record but no artifact data — the artifacts already are the persistent state.
+Adding a database creates the appearance of state worth preserving across
+restart when none exists. Revisit only if multi-replica + cross-replica
+job-status queries become a real product need.
 
 
 ## Manifest
