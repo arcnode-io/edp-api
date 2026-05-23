@@ -91,6 +91,12 @@ platform_api -> edp_api: GET /edp-api/jobs/{job_id}
 edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
 ```
 
+**Current state:** BOM, DTM, and SLD HMI SVG are real generators.
+SLD (dxf+pdf), P&ID, comms, installation_graph, and cable_hose_schedule
+land as `_stub_body` bytes from `PipelineService` for now — URLs are
+deterministic and reserved, content is a placeholder. Real generators
+drop in one ArtifactKind at a time without changing the pipeline shape.
+
 ## SLD HMI SVG re-render endpoint
 
 `POST /edp-api/sld-hmi-svg` takes a `Dtm` JSON body and returns SVG bytes
@@ -105,60 +111,62 @@ one place — device-api doesn't duplicate or mutate SVG bytes itself.
 
 ## Source Layout
 
-NestJS-style: each feature folder owns its `*_service.py` (work) + `*_module.py` (DI). 
+NestJS-style: each feature folder owns its `*_service.py` (work) + `*_module.py` (DI).
 
 ```
 src/
 ├── module_resolver/
 │   ├── module_resolver_service.py   # ConfiguratorPayload → ModuleResolution
-│   ├── deployment_profile.py        # profile derivation logic
-│   └── module_resolver_module.py    # DI
-├── bom/
-│   ├── bom_generator_service.py     # ModuleResolution → bom.json/.xlsx + cable_hose_schedule
-│   ├── bom_models.py                # BomLineItem, BomDocument, ScheduleEntry
-│   └── bom_module.py
-├── drawing/
-│   ├── drawing_generator_service.py # SLD + P&ID + comms
-│   ├── sld.py                       # single line diagram authoring
-│   ├── pid.py                       # P&ID authoring
-│   ├── comms.py                     # comms diagram authoring
-│   └── drawing_module.py
-├── installation_graph/
-│   ├── installation_graph_service.py
-│   └── installation_graph_module.py
-├── dtm/
-│   ├── dtm_generator_service.py     # ModuleResolution → dtm.json
-│   ├── dtm_models.py                # Dtm, Module, Device, ProtocolConfig discriminated union
-│   └── dtm_module.py
+│   ├── deployment_profile.py        # (context, bess_coupling) → DeploymentProfile
+│   └── module_resolver_module.py
 ├── bom_generator/
-│   ├── manifest_service.py          # caches manifest from S3, resolves profile→URLs
+│   ├── bom_generator_service.py     # ModuleResolution → bom.json
+│   ├── bom_models.py                # BomLineItem, BomDocument
+│   ├── manifest_service.py          # profile → ResolvedProfile lookups
+│   ├── manifest_client.py           # S3 fetch + upload wrapper (also handles DTM/SVG bytes)
 │   ├── manifest_module.py
-│   ├── manifest_client.py           # S3 fetch wrapper
 │   └── manifest_models.py           # Pydantic mirror of edp-module-assemblies/manifest.yaml
-├── shared/
-│   ├── schemas/
-│   │   ├── configurator_payload.py
-│   │   └── module_resolution.py
-│   ├── enums.py                     # all StrEnums
-│   └── utils/
-│       ├── excel.py
-│       └── dxf.py                   # ezdxf wrapper
+├── dtm/
+│   ├── dtm_generator_service.py     # profile + ModuleResolution → Dtm
+│   ├── dtm_generator_internals.py   # emit_container, collect_templates_used, sizing
+│   ├── template_loader.py           # walks device_templates/, builds catalog at startup
+│   └── topology_yaml.py             # per-assembly topology.yaml schema
+├── drawing/
+│   ├── sld_hmi_svg_service.py       # Dtm → SLD HMI SVG (graphviz dot layout)
+│   ├── drawing_controller.py        # POST /edp-api/sld-hmi-svg re-render endpoint
+│   ├── drawing_module.py
+│   ├── _layout.py                   # dot-graph layout helpers
+│   ├── _svg.py                      # SVG element builders
+│   └── _iec_61850.py                # IEC 61850 measurement → SVG region mapping
 ├── pipeline/
-│   ├── artifact_writer.py
-│   ├── assembly_artifacts.py
-│   ├── job_result.py
-│   ├── pipeline_service.py
-│   └── pipeline_module.py
+│   ├── artifact_urls.py             # ResolvedProfile → list[ArtifactRef] (deterministic URLs)
+│   └── pipeline_service.py          # BackgroundTask: generate + upload per ArtifactRef
 ├── jobs/
-│   ├── job_record.py
-│   ├── job_store.py
-│   ├── jobs_service.py
 │   ├── jobs_controller.py
+│   ├── jobs_service.py
+│   ├── job_store.py                 # in-memory dict, swap-targeted
 │   └── jobs_module.py
+├── call_api/                        # external API client skeleton (sample)
+├── shared/
+│   ├── enums.py                     # all StrEnums
+│   └── schemas/
+│       ├── configurator_payload.py
+│       ├── module_resolution.py
+│       ├── artifact.py              # ArtifactKind, ArtifactRef, JobCreated, JobResult, JobStatus
+│       ├── dtm.py                   # Dtm + Device (parent-chain, computed mode)
+│       ├── dtm_primitives.py        # SizingParams, Bus, Connection, PROVISIONED_AT_COMMISSIONING
+│       ├── template.py              # DeviceTemplate + Command + Fanout + ContainsEntry
+│       ├── template_protocols.py    # Binding discriminated union
+│       ├── measurement.py           # Measurement + Publisher
+│       └── measurement_ranges.py    # Bounds + Thresholds
 ├── app_controller.py
 ├── app_module.py
 ├── config.py
 └── main.py
+
+device_templates/                    # bundled with image, loaded at startup
+├── leaf/                            # 11 leaf templates (gpu_node, bess_rack, switchgear, ...)
+└── module/                          # 3 module templates (compute_module, bess_module, grid_module)
 ```
 
 
@@ -379,129 +387,119 @@ class JobResult(BaseModel):
     error:               str | None = None   # set when status=FAILED
 
 
-# === DTM ===
+# === DTM (ADR-002 §7 canonical shape) ===
+#
+# DTM is parent-chain Devices keyed by snake_case slug, with embedded
+# templates_used catalog and buses[] for electrical topology. Mode is
+# derived from device placeholders — not stored.
 
 class EmsMode(StrEnum):
     SIM  = "sim"
     LIVE = "live"
 
 
-class ProtocolKind(StrEnum):
-    MODBUS_TCP = "modbus_tcp"
-    DNP3_TCP   = "dnp3_tcp"
-    SNMP       = "snmp"
-    CANOPEN_GW = "canopen_gw"
-    REDFISH    = "redfish"
+PROVISIONED_AT_COMMISSIONING: Final[int] = -1   # sentinel for not-yet-provisioned int fields
+
+ProvisionedInt = int                            # int | PROVISIONED_AT_COMMISSIONING sentinel
 
 
-class PointMap(BaseModel):
-    name:           str
-    function_code:  int   # modbus FC: 3=holding, 4=input, ...
-    start_address:  int
-    count:          int
-
-
-class OidMap(BaseModel):
-    name: str
-    oid:  str
-
-
-class PdoMap(BaseModel):
-    name:        str
-    cob_id:      int
-    byte_offset: int
-    byte_length: int
-
-
-class RedfishResourceMap(BaseModel):
-    name: str
-    uri:  str   # e.g. "/redfish/v1/Chassis/1/Thermal"
-
-
-class SnmpV3Creds(BaseModel):
-    user:       str
-    auth_proto: str   # SHA256, SHA512
-    priv_proto: str   # AES128, AES256
-
-
-class ModbusTcpConfig(BaseModel):
-    protocol:   Literal[ProtocolKind.MODBUS_TCP]
-    unit_id:    int
-    point_maps: list[PointMap]
-
-
-class Dnp3TcpConfig(BaseModel):
-    protocol:        Literal[ProtocolKind.DNP3_TCP]
-    master_addr:     int
-    outstation_addr: int
-    point_maps:      list[PointMap]
-
-
-class SnmpConfig(BaseModel):
-    protocol: Literal[ProtocolKind.SNMP]
-    creds:    SnmpV3Creds
-    oid_maps: list[OidMap]
-
-
-class CanopenGwConfig(BaseModel):
-    protocol:       Literal[ProtocolKind.CANOPEN_GW]
-    gateway_vendor: str
-    node_id:        int
-    pdo_maps:       list[PdoMap]
-
-
-class RedfishConfig(BaseModel):
-    protocol:            Literal[ProtocolKind.REDFISH]
-    username:            str
-    password_secret_ref: str                       # ref into vault, never inline
-    service_root:        str = "/redfish/v1"
-    resource_maps:       list[RedfishResourceMap]
-
-
-ProtocolConfig = Annotated[
-    ModbusTcpConfig | Dnp3TcpConfig | SnmpConfig | CanopenGwConfig | RedfishConfig,
-    Field(discriminator="protocol"),
-]
+class BlockingKind(StrEnum):
+    # What lifecycle transition a missing device blocks.
+    LIVE_MODE                 = "live_mode"
+    COMMISSIONING_COMPLETE    = "commissioning_complete"
 
 
 class SizingParams(BaseModel):
-    P_compute_total_kW:    float
-    E_BESS_total_kWh:      float
-    T_coolant_setpoint_C:  float
+    P_compute_total_kW:   float
+    E_BESS_total_kWh:     float
+    T_coolant_setpoint_C: float
 
 
-class Module(BaseModel):
-    module_id:          str
-    module_type:        str
-    container_position: str
-    description:        str
+class Connection(BaseModel):
+    # Per-instance runtime params. SIM = from assembly topology yaml;
+    # LIVE = ems-device-api rewrites at commissioning.
+    host:    str
+    port:    ProvisionedInt
+    unit_id: str | None = None   # modbus unit_id, dnp3 outstation, etc.
+
+
+class BusMember(BaseModel):
+    device_id: str
+    port:      str | None = None   # references a port_id on the device's equipment
+
+
+class Bus(BaseModel):
+    bus_id:  str
+    type:    Literal["dc", "ac"]
+    members: list[BusMember]
 
 
 class Device(BaseModel):
-    device_uuid:     UUID
-    device_type:     str
-    module_id:       str               # FK -> Module.module_id
-    host:            str               # SIM: from assembly topology yaml; LIVE: ems-device-api rewrites
-    port:            int               # SIM: from assembly topology yaml; LIVE: ems-device-api rewrites
-    protocol_config: ProtocolConfig
-    description:     str
+    model_config = ConfigDict(extra="forbid")
+
+    device_id:    str               # snake_case slug (ADR §9)
+    template:     str               # ref into Dtm.templates_used
+    parent:       str | None = None # FK to another Device.device_id
+    display_name: str | None = None
+    connection:   Connection | None = None
+    blocking:     list[BlockingKind] = Field(default_factory=lambda: [BlockingKind.LIVE_MODE])
+    extra_measurements: dict[str, Measurement] | None = None   # ADR §7 escape hatch
+
+    @computed_field
+    @property
+    def has_placeholders(self) -> bool:
+        # True iff any field (incl. nested connection) holds PROVISIONED_AT_COMMISSIONING.
+        ...
+
+    @computed_field
+    @property
+    def mode(self) -> EmsMode:
+        return EmsMode.SIM if self.has_placeholders else EmsMode.LIVE
 
 
 class Dtm(BaseModel):
-    deployment_uuid: UUID
-    sizing_params:   SizingParams
-    modules:         list[Module]
-    devices:         list[Device]
+    model_config = ConfigDict(extra="forbid")
 
-    # mode is a @computed_field: LIVE iff no device has placeholders, else SIM.
+    version:         str = "1.0.0"     # edp-api emits 1.0.0; ems-device-api owns later bumps
+    deployment_uuid: UUID
+    sizing_ref:      str | None = None
+    sizing_params:   SizingParams
+    devices:         dict[str, Device]              # keyed by device_id
+    buses:           list[Bus]
+    templates_used:  dict[str, DeviceTemplate]      # catalog snapshot, keyed by template slug
+
+    @computed_field
+    @property
+    def mode(self) -> EmsMode:
+        # LIVE iff every device fully provisioned; SIM if any placeholders remain.
+        ...
+
+    @computed_field
+    @property
+    def pending_devices(self) -> list[Device]:
+        # Devices still carrying placeholder values.
+        ...
 
     @model_validator(mode="after")
-    def fk_modules(self) -> "Dtm":
-        ids = {m.module_id for m in self.modules}
-        for d in self.devices:
-            if d.module_id not in ids:
-                raise ValueError(f"device {d.device_uuid}: module_id {d.module_id!r} not in modules")
-        return self
+    def parent_chain_resolves(self) -> "Dtm": ...   # every parent in devices
+
+    @model_validator(mode="after")
+    def template_refs_resolve(self) -> "Dtm": ...   # every device.template in templates_used
+
+    @model_validator(mode="after")
+    def bus_members_resolve(self) -> "Dtm": ...     # every bus member device_id in devices
+
+
+# === Protocol bindings live on DeviceTemplate.measurements, not on Device ===
+#
+# `template_protocols.Binding` is a discriminated union over `protocol:`:
+#   ModbusBinding | Dnp3Binding | SnmpBinding | CanopenBinding | RedfishBinding | SyntheticBinding
+#
+# Templates own per-measurement protocol details (Modbus FC + address,
+# DNP3 group/variation/index, SNMP OID, …). Device instances contribute
+# deployment specifics (host, port, parent, display_name). The split lets
+# the same physical device class be reused across deployments without
+# duplicating binding info per instance.
 ```
 
 ## Storage
@@ -537,29 +535,37 @@ Example: `s3://arcnode-artifacts/edp/{uuid}/plate_cg.step`
 
 Profile → assembly URLs lives in `edp-module-assemblies` repo as `manifest.yaml`, published to S3. Fetched by `ManifestClient` from `cfg.manifest_url`, cached in-memory by `ManifestService` at startup. Resolution: `service.resolve(profile_str)` returns a `ResolvedProfile` with concrete `AssemblyVariant` (compute, optional grid) and `list[ResolvedPlate]` — no further manifest navigation downstream.
 
-The DeploymentProfile enum still has 11 entries, but the manifest currently only ships 6 profiles (`commercial_*`, `defense_*`, `no_bess`). `federal_*` profiles + `dod_*↔defense_*` rename are open architectural items between edp-api and edp-module-assemblies.
+`DeploymentProfile` enum and `manifest_profiles.yaml` are both at the same 7 profiles (4 commercial, 3 defense). Adding a profile to the enum without a matching `manifest_profiles.yaml` entry surfaces as a KeyError at `JobsService.create` — fail-fast at intake.
 
 ## Config
 
-`cfg.yml` (per-env): only `s3_endpoint_url` — null in prod (real AWS), LocalStack URL in local/test.
+`cfg.yml` (per-env): uvicorn host/port + log level, hot-reload toggle, e2e flag, and `manifest_url` pointing at the `edp-module-assemblies` manifest object in S3.
 
 ```yaml
 local:
-  s3_endpoint_url: "http://localhost:4566"
+  log_level: DEBUG
+  host: '127.0.0.1'
+  port: 8000
+  e2e: false
+  reload: true
+  manifest_url: 's3://arcnode-artifacts/manifest.yaml'
 beta:
-  s3_endpoint_url: null
-prod:
-  s3_endpoint_url: null
+  log_level: INFO
+  host: '0.0.0.0'
+  port: 8000
+  e2e: true
+  reload: false
+  manifest_url: 's3://arcnode-artifacts/manifest.yaml'
 ```
 
-`template-secrets.env` (committed; lists names only):
+`template-secrets.env` (committed; lists names only — actual values come from environment):
 
 ```dotenv
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 ```
 
-Region + credentials read from boto3 default chain. Bucket hardcoded `arcnode-artifacts`.
+Region + credentials read from boto3 default chain. Bucket hardcoded `arcnode-artifacts`. LocalStack endpoint used by integration tests is injected via `S3_ENDPOINT_URL` env at test time, not stored in `cfg.yml`.
 
 ## Runtime Dependencies
 
