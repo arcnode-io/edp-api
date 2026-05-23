@@ -15,7 +15,8 @@
 Pipeline is stateless and deterministic. Same input → same artifacts. 
 
 See [`arcnode`](https://gitlab.com/arcnode-io/arcnode) for system overview.
-See [`platform-api`](https://gitlab.com/arcnode-io/platform-api) for platform api
+See [`platform-api`](https://gitlab.com/arcnode-io/platform-api) for platform api.
+See [`docs/external-references.md`](docs/external-references.md) for the cross-repo ADRs, standards, and contracts this codebase consumes.
 
 ## DTM Data Flow
 
