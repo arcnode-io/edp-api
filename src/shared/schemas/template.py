@@ -90,12 +90,21 @@ class Command(BaseModel):
 
 
 class ContainsEntry(BaseModel):
-    """Reference to a child template inside a module's contains[]."""
+    """Reference to a child template inside a module's contains[].
+
+    `power_from` names sibling `contains[].template` slugs that supply
+    AC power to this entry. Empty list = doesn't draw power (e.g. PDUs
+    themselves, sensors). Multi-entry list = 2N or N+1 redundant feeds;
+    v1 cable schedule emits one row (primary feed) and parks the
+    redundant-feed row for v2 when feed-side designators (A/B) live on
+    PDU instances.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     template: str
     qty: Literal["scalable"] | int = "scalable"
+    power_from: list[str] = Field(default_factory=list)
 
 
 class DeviceTemplate(BaseModel):

@@ -13,8 +13,8 @@ from src.cable_hose_schedule.cable_hose_schedule_service import (
 )
 from src.drawing.conftest import make_device, make_dtm
 from src.shared.schemas.dtm import Dtm
-from src.shared.schemas.measurement import Measurement
-from src.shared.schemas.template import DeviceTemplate, TemplateKind
+from src.shared.schemas.measurement import Measurement, Publisher
+from src.shared.schemas.template import ContainsEntry, DeviceTemplate, TemplateKind
 from src.shared.schemas.template_protocols import (
     Dnp3Binding,
     ModbusBinding,
@@ -181,6 +181,131 @@ def test_cables_fall_back_to_tbd_label_when_no_switch_in_dtm(
     # Assert — every cable's to_device explicitly flags the missing-switch gap
     for cable in schedule.cables:
         assert "TBD" in cable.to_device
+
+
+def _compute_module_dtm_with_pdu_and_cdu() -> Dtm:
+    """A realistic compute_module instance: 1 cdu + 2 gpu_nodes + 1 pdu + 1 switch.
+
+    Mirrors the real `device_templates/module/compute_module.yaml` shape:
+    PDU is the power source; cdu, gpu_node, network_switch all carry
+    `power_from: [pdu]` on their compute_module contains entry.
+    """
+    # Build templates that mirror the real ones (contains[].power_from drives
+    # power-cable derivation; cdu+gpu_node co-residence drives hoses).
+    pdu_tpl = _tpl(
+        "pdu", SnmpBinding(protocol="snmp", oid="1.3.6.1.4.1.1718.4.1.3.3.1.7")
+    )
+    cdu_tpl = _tpl("cdu", RedfishBinding(protocol="redfish", uri="/redfish/v1"))
+    gpu_node_tpl = _tpl(
+        "gpu_node", RedfishBinding(protocol="redfish", uri="/redfish/v1/Systems/1")
+    )
+    switch_tpl = _tpl(
+        "network_switch",
+        SnmpBinding(protocol="snmp", oid="1.3.6.1.2.1.1.5.0"),
+    )
+    compute_module_tpl = DeviceTemplate(
+        template="compute_module",
+        kind=TemplateKind.MODULE,
+        description="compute_module",
+        contains=[
+            ContainsEntry(template="pdu", qty="scalable"),
+            ContainsEntry(template="gpu_node", qty="scalable", power_from=["pdu"]),
+            ContainsEntry(template="cdu", qty=1, power_from=["pdu"]),
+            ContainsEntry(
+                template="network_switch", qty="scalable", power_from=["pdu"]
+            ),
+        ],
+        measurements={
+            "total_power": Measurement(
+                unit="watts", type="float", publisher=Publisher.LINE_CONTROLLER
+            )
+        },
+    )
+
+    return make_dtm(
+        devices={
+            "compute_module_1": make_device(
+                "compute_module_1", template="compute_module"
+            ).model_copy(update={"connection": None}),
+            "pdu_1": make_device("pdu_1", template="pdu").model_copy(
+                update={"parent": "compute_module_1"}
+            ),
+            "cdu_1": make_device("cdu_1", template="cdu").model_copy(
+                update={"parent": "compute_module_1"}
+            ),
+            "gpu_node_1": make_device("gpu_node_1", template="gpu_node").model_copy(
+                update={"parent": "compute_module_1"}
+            ),
+            "gpu_node_2": make_device("gpu_node_2", template="gpu_node").model_copy(
+                update={"parent": "compute_module_1"}
+            ),
+            "switch_top": make_device(
+                "switch_top", template="network_switch"
+            ).model_copy(update={"parent": "compute_module_1"}),
+        },
+        templates={
+            "compute_module": compute_module_tpl,
+            "pdu": pdu_tpl,
+            "cdu": cdu_tpl,
+            "gpu_node": gpu_node_tpl,
+            "network_switch": switch_tpl,
+        },
+    )
+
+
+def test_power_cable_per_powered_device() -> None:
+    """Every device whose contains[] entry has `power_from` gets a power cable row.
+
+    From-device = a PDU sibling; to-device = the powered device. The PDU
+    itself doesn't get a power cable (its upstream feed is out-of-scope v1).
+    """
+    # Arrange
+    dtm = _compute_module_dtm_with_pdu_and_cdu()
+
+    # Act
+    schedule = CableHoseScheduleService().generate(dtm)
+
+    # Assert — power cables exist for cdu, gpu_node_1, gpu_node_2, switch_top.
+    # NOT for pdu_1 (it's the source) or compute_module_1 (no connection).
+    power_cables = [c for c in schedule.cables if c.service.startswith("Power")]
+    powered = {c.to_device for c in power_cables}
+    assert powered == {"cdu_1", "gpu_node_1", "gpu_node_2", "switch_top"}
+    # All power cables originate at pdu_1.
+    assert {c.from_device for c in power_cables} == {"pdu_1"}
+
+
+def test_cdu_primary_hoses_are_by_others_facility_side() -> None:
+    """CDU primary supply + return are BY OTHERS (facility-side coolant)."""
+    # Arrange
+    dtm = _compute_module_dtm_with_pdu_and_cdu()
+
+    # Act
+    schedule = CableHoseScheduleService().generate(dtm)
+
+    # Assert
+    primary_hoses = [h for h in schedule.hoses if "Primary" in h.service]
+    assert len(primary_hoses) == 2  # supply + return
+    for hose in primary_hoses:
+        assert "BY OTHERS" in hose.notes or "BY OTHERS" in hose.to_device
+
+
+def test_dlc_plate_hoses_per_gpu_node() -> None:
+    """Each gpu_node co-resident with a CDU gets a secondary supply + return hose."""
+    # Arrange
+    dtm = _compute_module_dtm_with_pdu_and_cdu()
+
+    # Act
+    schedule = CableHoseScheduleService().generate(dtm)
+
+    # Assert — 2 hoses per gpu_node (supply + return). 2 gpu_nodes → 4 hoses.
+    secondary_hoses = [h for h in schedule.hoses if "Secondary" in h.service]
+    assert len(secondary_hoses) == 4
+    # Each plate appears as either from_device (return path) or to_device
+    # (supply path); intersect with non-CDU devices to get the plate set.
+    plate_devices = {
+        d for h in secondary_hoses for d in (h.from_device, h.to_device)
+    } - {"cdu_1"}
+    assert plate_devices == {"gpu_node_1", "gpu_node_2"}
 
 
 def test_xlsx_has_hoses_sheet_even_when_empty(three_protocol_dtm: Dtm) -> None:

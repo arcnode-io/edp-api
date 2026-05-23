@@ -3,14 +3,24 @@ kind: module
 description: Compute container aggregation — utilization rollups
 
 contains:
-  - template: gpu_node
-    qty: scalable
-  - template: cdu
-    qty: 1
-  - template: network_switch
-    qty: scalable
+  # PDUs are the power source for everything else in the module — feed from
+  # the grid container's LV bus per ADR-005 (415Y/240V). 4× per compute
+  # container in 2N redundancy. PDU itself draws no `power_from` — its
+  # upstream feed comes from the grid container, modeled at v2.
   - template: pdu
     qty: scalable
+  # AC consumers in the module each get power from a PDU. v1 emits one
+  # power-cable row per consumer (primary feed); redundant-feed (B-side
+  # PDU) is reserved for v2 when PDU instances carry A/B-side designators.
+  - template: gpu_node
+    qty: scalable
+    power_from: [pdu]
+  - template: cdu
+    qty: 1
+    power_from: [pdu]
+  - template: network_switch
+    qty: scalable
+    power_from: [pdu]
 
 measurements:
   total_power:
