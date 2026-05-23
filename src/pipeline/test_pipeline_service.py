@@ -13,6 +13,7 @@ from src.bom_generator.manifest_models import (
     ProfileAssemblies,
 )
 from src.bom_generator.manifest_service import ManifestService
+from src.drawing.sld_engineering_service import SldEngineeringService
 from src.drawing.sld_hmi_svg_service import SldHmiSvgService
 from src.dtm.dtm_generator_service import DtmGeneratorService
 from src.dtm.template_loader import TemplateLoader
@@ -137,6 +138,7 @@ def _build_pipeline(client: _RecordingClient) -> PipelineService:
         bom_generator=BomGeneratorService(real_client),
         dtm_generator=DtmGeneratorService(real_client, template_catalog=catalog),
         sld_hmi_svg_service=SldHmiSvgService(),
+        sld_engineering_service=SldEngineeringService(),
     )
 
 
@@ -223,6 +225,43 @@ def test_bom_upload_is_real_bom_json() -> None:
     assert body["deployment_id"] == str(DEPLOYMENT_ID)
     assert body["profile"] == "commercial_ac"
     assert "line_items" in body
+
+
+def test_sld_engineering_uploads_real_dxf_and_pdf() -> None:
+    """SLD dxf URL gets parseable DXF bytes + sld pdf URL gets %PDF- magic bytes."""
+    # Arrange
+    import io as _io
+
+    import ezdxf as _ezdxf
+
+    client = _RecordingClient(_commercial_ac_manifest())
+    pipeline = _build_pipeline(client)
+    payload = _payload()
+    resolution = ModuleResolverService().resolve(payload)
+    urls = build_artifact_urls_from_resolved(
+        DEPLOYMENT_ID,
+        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+    )
+
+    # Act
+    pipeline.run(
+        payload=payload,
+        resolution=resolution,
+        urls=urls,
+        manifest=_commercial_ac_manifest(),
+    )
+
+    # Assert — both URLs got real bytes, not stubs
+    dxf_url = next(
+        u.url for u in urls if u.kind == ArtifactKind.SLD and u.format == "dxf"
+    )
+    pdf_url = next(
+        u.url for u in urls if u.kind == ArtifactKind.SLD and u.format == "pdf"
+    )
+    # DXF round-trips through ezdxf — proves real DXF.
+    _ezdxf.read(_io.StringIO(client.uploads[dxf_url].decode("utf-8")))
+    # PDF starts with the %PDF- magic.
+    assert client.uploads[pdf_url].startswith(b"%PDF-")
 
 
 def test_bom_xlsx_upload_is_real_workbook() -> None:
@@ -314,7 +353,7 @@ def test_sld_hmi_svg_upload_is_real_svg() -> None:
 
 
 def test_unimplemented_kinds_get_stub_bytes() -> None:
-    """SLD/P&ID/comms/installation_graph/cable_hose: stub-shaped bytes only."""
+    """P&ID/comms/installation_graph/cable_hose: stub-shaped bytes only."""
     # Arrange
     client = _RecordingClient(_commercial_ac_manifest())
     pipeline = _build_pipeline(client)
@@ -333,11 +372,11 @@ def test_unimplemented_kinds_get_stub_bytes() -> None:
         manifest=_commercial_ac_manifest(),
     )
 
-    # Assert — pick one stub kind to verify the shape
-    sld_dxf_url = next(
-        u.url for u in urls if u.kind == ArtifactKind.SLD and u.format == "dxf"
+    # Assert — pick one still-stubbed kind to verify the placeholder shape
+    pid_dxf_url = next(
+        u.url for u in urls if u.kind == ArtifactKind.PID_COOLING and u.format == "dxf"
     )
-    body = client.uploads[sld_dxf_url].decode("utf-8")
+    body = client.uploads[pid_dxf_url].decode("utf-8")
     assert "stub" in body.lower()
 
     cable_json_url = next(

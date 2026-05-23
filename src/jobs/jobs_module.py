@@ -36,6 +36,7 @@ class JobsModule:
                 client, template_catalog=template_catalog
             ),
             sld_hmi_svg_service=drawing_module.sld_hmi_svg,
+            sld_engineering_service=drawing_module.sld_engineering,
         )
         self.service = JobsService(
             resolver=resolver_module.service,

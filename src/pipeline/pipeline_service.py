@@ -28,6 +28,10 @@ from src.bom_generator.bom_generator_service import (
 from src.bom_generator.bom_models import Bom
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
+from src.drawing.sld_engineering_service import (
+    SldEngineeringOutputs,
+    SldEngineeringService,
+)
 from src.drawing.sld_hmi_svg_service import SldHmiSvgService
 from src.dtm.dtm_generator_service import DtmGeneratorService
 from src.shared.enums import DeploymentContext
@@ -54,11 +58,13 @@ class PipelineService:
         bom_generator: BomGeneratorService,
         dtm_generator: DtmGeneratorService,
         sld_hmi_svg_service: SldHmiSvgService,
+        sld_engineering_service: SldEngineeringService,
     ) -> None:
         self._client = client
         self._bom = bom_generator
         self._dtm = dtm_generator
         self._sld_hmi = sld_hmi_svg_service
+        self._sld_eng = sld_engineering_service
 
     def run(
         self,
@@ -88,10 +94,11 @@ class PipelineService:
             grid_container_qty=1 if resolution.grid_container_present else 0,
             deployment_context=_context_string(payload.deployment_context),
         )
+        sld_eng = self._sld_eng.generate(dtm, profile=profile)
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):
                 continue  # selected from catalog — already in S3
-            self._run_one(ref=ref, dtm=dtm, bom=bom)
+            self._run_one(ref=ref, dtm=dtm, bom=bom, sld_eng=sld_eng)
 
     def _run_one(
         self,
@@ -99,6 +106,7 @@ class PipelineService:
         ref: ArtifactRef,
         dtm: Dtm,
         bom: Bom,
+        sld_eng: SldEngineeringOutputs,
     ) -> None:
         """Dispatch a single ArtifactRef to its generator (or stub)."""
         if ref.kind == ArtifactKind.BOM and ref.format == "json":
@@ -116,6 +124,12 @@ class PipelineService:
             return
         if ref.kind == ArtifactKind.SLD_HMI_SVG:
             self._client.upload_bytes(self._sld_hmi.generate(dtm), ref.url)
+            return
+        if ref.kind == ArtifactKind.SLD and ref.format == "dxf":
+            self._client.upload_bytes(sld_eng.dxf, ref.url)
+            return
+        if ref.kind == ArtifactKind.SLD and ref.format == "pdf":
+            self._client.upload_bytes(sld_eng.pdf, ref.url)
             return
         # Everything else: stub-empty bytes so downstream consumers (platform-api
         # archive, portal HTML) can fetch by URL. Real generators replace these

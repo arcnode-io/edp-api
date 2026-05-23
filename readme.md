@@ -91,12 +91,19 @@ platform_api -> edp_api: GET /edp-api/jobs/{job_id}
 edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
 ```
 
-**Current state:** BOM (json + xlsx), DTM, and SLD HMI SVG are real
-generators. SLD (dxf+pdf), P&ID, comms, installation_graph, and
-cable_hose_schedule land as `_stub_body` bytes from `PipelineService`
-for now — URLs are deterministic and reserved, content is a placeholder.
-Real generators drop in one ArtifactKind at a time without changing the
-pipeline shape.
+**Current state:** BOM (json + xlsx), DTM, SLD HMI SVG, and SLD
+engineering (dxf + pdf) are real generators. P&ID, comms,
+installation_graph, and cable_hose_schedule land as `_stub_body` bytes
+from `PipelineService` for now — URLs are deterministic and reserved,
+content is a placeholder. Real generators drop in one ArtifactKind at a
+time without changing the pipeline shape.
+
+The engineering SLD is a paper-grade deliverable: IEC 60617 graphical
+symbols, ISO 5457 sheet frame, simplified ISO 7200 title block on A3
+landscape. It and the SLD HMI SVG share the same DTM source and the
+same IEC 61850 introspection rules (see `src/drawing/_iec_61850.py`) —
+device set, bus list, and source-side identification are guaranteed to
+agree between the two artifacts by construction.
 
 ## SLD HMI SVG re-render endpoint
 
@@ -134,11 +141,15 @@ src/
 │   └── topology_yaml.py             # per-assembly topology.yaml schema
 ├── drawing/
 │   ├── sld_hmi_svg_service.py       # Dtm → SLD HMI SVG (graphviz dot layout)
+│   ├── sld_engineering_service.py   # Dtm → SLD engineering DXF + PDF (ezdxf + matplotlib)
 │   ├── drawing_controller.py        # POST /edp-api/sld-hmi-svg re-render endpoint
 │   ├── drawing_module.py
-│   ├── _layout.py                   # dot-graph layout helpers
-│   ├── _svg.py                      # SVG element builders
-│   └── _iec_61850.py                # IEC 61850 measurement → SVG region mapping
+│   ├── _layout.py                   # dot-graph layout helpers (HMI)
+│   ├── _svg.py                      # SVG element builders (HMI)
+│   ├── _iec_61850.py                # IEC 61850 introspection — shared by both SLDs
+│   ├── _sld_eng_symbols.py          # IEC 60617 graphical symbol primitives
+│   ├── _sld_eng_layout.py           # A3 grid placement, source-first per bus
+│   └── _sld_eng_title_block.py      # ISO 5457 frame + ISO 7200-lite title block
 ├── pipeline/
 │   ├── artifact_urls.py             # ResolvedProfile → list[ArtifactRef] (deterministic URLs)
 │   └── pipeline_service.py          # BackgroundTask: generate + upload per ArtifactRef
@@ -595,6 +606,9 @@ Region + credentials read from boto3 default chain. Bucket hardcoded `arcnode-ar
 
 ## Runtime Dependencies
 
-`graphviz` (`dot` binary) is required at runtime — used by the SLD HMI SVG generator for hierarchical layout. Production Dockerfile installs whatever Debian-slim ships (`apt install graphviz`); local dev = `pacman -S graphviz` / `apt install graphviz` / `brew install graphviz`. The HMI consumes the SVG by element id + `data-*` attributes, so layout-coordinate differences across `dot` versions don't break the runtime contract.
+Two native dependencies are required at runtime:
+
+- **`graphviz`** (`dot` binary) — used by `SldHmiSvgService` for the runtime SVG's hierarchical layout. Production Dockerfile installs whatever Debian-slim ships (`apt install graphviz`); local dev = `pacman -S graphviz` / `apt install graphviz` / `brew install graphviz`. The HMI consumes the SVG by element id + `data-*` attributes, so layout-coordinate differences across `dot` versions don't break the runtime contract.
+- **TrueType fonts** (`fonts-liberation`, `fonts-dejavu-core`) — used by `SldEngineeringService` matplotlib backend to rasterize MTEXT in the engineering PDF. Debian-slim ships no fonts by default; the Dockerfile installs both. Local dev usually already has these via the OS.
 
 Snapshot tests (`src/drawing/test_sld_hmi_svg_snapshots.py`) ARE byte-sensitive to `dot` major version. Dev + CI must align (currently `graphviz` 13.x); regenerate baselines with `uv run pytest src/drawing/test_sld_hmi_svg_snapshots.py --snapshot-update` and review the diff in the PR.
