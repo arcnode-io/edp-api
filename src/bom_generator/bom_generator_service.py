@@ -39,12 +39,35 @@ def _spec_to_catalog_line(spec: dict, qty: int) -> BomLineItem:
         lead_time_weeks=spec.get("lead_time_weeks"),
         unit_cost_usd=spec.get("unit_cost_usd"),
         fab_tier=spec.get("fab_tier"),
-        # Track-A enrichment fields — surface verbatim from spec.yaml; None
-        # when the spec doesn't assert them (no field present).
+        # Track-A enrichment — install_video_url is a new spec field;
+        # NDAA + TAA are DERIVED from existing schema (restricted_entities
+        # + fab_tier) to avoid duplicate-source drift.
         install_video_url=spec.get("install_video_url"),
-        ndaa_compliant=spec.get("ndaa_compliant"),
-        taa_compliant=spec.get("taa_compliant"),
+        ndaa_compliant=_derive_ndaa(spec),
+        taa_compliant=_derive_taa(spec),
     )
+
+
+def _derive_ndaa(spec: dict) -> bool:
+    """True iff spec.restricted_entities does NOT include `NDAA_889`.
+
+    A spec without restricted_entities (or with an empty list) is by
+    convention NDAA-compliant — that's the "checked clean" state per
+    the equipment_spec_schema.md doc.
+    """
+    restricted = spec.get("restricted_entities") or []
+    return "NDAA_889" not in restricted
+
+
+def _derive_taa(spec: dict) -> bool:
+    """True iff spec.fab_tier is federal_civilian or dod_eligible.
+
+    Federal procurement (FAR Part 25) requires TAA compliance, so
+    classifying equipment as federally procurable implies TAA
+    compliance. `commercial` fab_tier doesn't claim either way →
+    False (= unverified).
+    """
+    return spec.get("fab_tier") in {"federal_civilian", "dod_eligible"}
 
 
 def _plate_spec_to_custom_line(
