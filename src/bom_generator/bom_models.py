@@ -33,6 +33,13 @@ class BomLineItem(BaseModel):
     unit_cost_usd: float | None = None
     fab_tier: str | None = None
 
+    # Track-A enrichment: static fields curated in equipment/<id>/spec.yaml.
+    # Dynamic enrichment (live stock, real-time lead time, lifecycle status)
+    # lands as Track B once a 3rd-party API source is picked.
+    install_video_url: str | None = None  # vendor's published install / unboxing video
+    ndaa_compliant: bool | None = None  # NDAA Section 889 — None = unasserted
+    taa_compliant: bool | None = None  # Trade Agreements Act — None = unasserted
+
     # Custom-fab-only fields
     material: str | None = None
     finish: str | None = None

@@ -73,6 +73,10 @@ def _make_mock_client(manifest: Manifest) -> MagicMock:
                 "lead_time_weeks": 4,
                 "unit_cost_usd": None,
                 "fab_tier": "dod_eligible",
+                # Track A enrichment fields
+                "install_video_url": "https://youtu.be/abc123",
+                "ndaa_compliant": True,
+                "taa_compliant": True,
             }
         if "CMP-RACK-001" in url:
             return {
@@ -222,3 +226,39 @@ def test_serialize_bom_xlsx_emits_loadable_workbook_with_line_items() -> None:
     assert ws.max_row == 1 + len(bom.line_items)
     # First data row's part_number column matches the first line item.
     assert ws.cell(row=2, column=1).value == bom.line_items[0].part_number
+
+
+def test_catalog_line_surfaces_install_video_url_from_spec() -> None:
+    """spec.install_video_url surfaces into the catalog line item."""
+    # Arrange
+    client = _make_mock_client(_make_manifest())
+    service = BomGeneratorService(client)
+
+    # Act
+    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+
+    # Assert
+    node_line = next(
+        li for li in bom.line_items if li.part_number == "SYS-421GE-NBRT-LCC"
+    )
+    assert node_line.install_video_url == "https://youtu.be/abc123"
+
+
+def test_catalog_line_surfaces_ndaa_taa_flags_from_spec() -> None:
+    """NDAA/TAA flags surface verbatim from spec; None when unasserted."""
+    # Arrange
+    client = _make_mock_client(_make_manifest())
+    service = BomGeneratorService(client)
+
+    # Act
+    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+
+    # Assert — CMP-NODE-001 spec asserts both True; CMP-RACK-001 omits both → None
+    node_line = next(
+        li for li in bom.line_items if li.part_number == "SYS-421GE-NBRT-LCC"
+    )
+    assert node_line.ndaa_compliant is True
+    assert node_line.taa_compliant is True
+    rack_line = next(li for li in bom.line_items if li.part_number == "AR9658")
+    assert rack_line.ndaa_compliant is None
+    assert rack_line.taa_compliant is None

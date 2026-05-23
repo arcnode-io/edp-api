@@ -39,6 +39,11 @@ def _spec_to_catalog_line(spec: dict, qty: int) -> BomLineItem:
         lead_time_weeks=spec.get("lead_time_weeks"),
         unit_cost_usd=spec.get("unit_cost_usd"),
         fab_tier=spec.get("fab_tier"),
+        # Track-A enrichment fields — surface verbatim from spec.yaml; None
+        # when the spec doesn't assert them (no field present).
+        install_video_url=spec.get("install_video_url"),
+        ndaa_compliant=spec.get("ndaa_compliant"),
+        taa_compliant=spec.get("taa_compliant"),
     )
 
 
@@ -205,6 +210,9 @@ _XLSX_COLUMNS: tuple[tuple[str, str], ...] = (
     ("unit_cost_usd", "Unit Cost (USD)"),
     ("lead_time_weeks", "Lead Time (weeks)"),
     ("datasheet_url", "Datasheet"),
+    ("install_video_url", "Install Video"),
+    ("ndaa_compliant", "NDAA"),
+    ("taa_compliant", "TAA"),
     ("material", "Material"),
     ("finish", "Finish"),
     ("drawing_ref", "Drawing Ref"),
