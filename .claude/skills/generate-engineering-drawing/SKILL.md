@@ -182,6 +182,32 @@ pdftoppm -r 400 /tmp/<service>.pdf /tmp/<service> -png
 - ezdxf default color 7 = white. WAS shipping blank PDFs. The
   `BackgroundPolicy.WHITE + ColorPolicy.BLACK` Configuration fixed it.
 
+### comms_diagram — converged 2026-05-23 (1 visual iter)
+
+**Hit the chug-along gate.** Skill compounded from sld + pid_cooling
+produced a clean first-render: 4 protocol clusters (Modbus / DNP3 /
+SNMP / Redfish), gateway glyph on left of each cluster, devices spoked
+right with host:port + unit_id labels, single-line title block with the
+correct sheet 1/1 marking. Zero layout iterations needed.
+
+**Design choice that worked:** dispatch by `template.measurements[*].binding.protocol`
+discriminator. Devices without a bound measurement land in an explicit
+UNBOUND cluster (not silently dropped). Empty clusters get filtered
+before layout so vertical space isn't wasted on unused protocols.
+
+**Bus-vs-spoke rendering insight:** when multiple devices on the same
+cluster row share a y-coord and a starting x (gateway right edge), their
+"gateway → device" lines OVERLAP into a single horizontal segment that
+visually reads as a bus. This is honestly correct for shared-IP protocols
+(Modbus TCP / DNP3 TCP / SNMP / Redfish all sit on one IP network), so I
+left it as-is. If a future view needs per-device discrete spokes (e.g.
+per-VLAN), bump the per-device y by an alternating offset.
+
+**Pipeline dispatch refactor co-landed:** `_run_one` if/elif chain hit
+McCabe complexity 11 (>10 limit) after the 10th branch. Refactored to
+`dispatch: dict[(ArtifactKind, str), Callable[[], bytes]]` table — adding
+the next generator is a single-row edit, no complexity tax.
+
 ### pid_cooling — converged 2026-05-23 (3 visual iters)
 
 **Iter 1 issues:**

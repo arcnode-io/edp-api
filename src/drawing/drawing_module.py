@@ -1,5 +1,6 @@
-"""DI wiring for the drawing feature (SLD HMI SVG, SLD engineering, P&ID cooling)."""
+"""DI wiring for drawing services (HMI SVG, SLD engineering, P&ID, comms)."""
 
+from src.drawing.comms_diagram_service import CommsDiagramService
 from src.drawing.drawing_controller import DrawingController
 from src.drawing.pid_cooling_service import PidCoolingService
 from src.drawing.sld_engineering_service import SldEngineeringService
@@ -13,4 +14,5 @@ class DrawingModule:
         self.sld_hmi_svg = SldHmiSvgService()
         self.sld_engineering = SldEngineeringService()
         self.pid_cooling = PidCoolingService()
+        self.comms_diagram = CommsDiagramService()
         self.router = DrawingController(self.sld_hmi_svg).router

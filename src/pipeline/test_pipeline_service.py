@@ -13,6 +13,7 @@ from src.bom_generator.manifest_models import (
     ProfileAssemblies,
 )
 from src.bom_generator.manifest_service import ManifestService
+from src.drawing.comms_diagram_service import CommsDiagramService
 from src.drawing.pid_cooling_service import PidCoolingService
 from src.drawing.sld_engineering_service import SldEngineeringService
 from src.drawing.sld_hmi_svg_service import SldHmiSvgService
@@ -141,6 +142,7 @@ def _build_pipeline(client: _RecordingClient) -> PipelineService:
         sld_hmi_svg_service=SldHmiSvgService(),
         sld_engineering_service=SldEngineeringService(),
         pid_cooling_service=PidCoolingService(),
+        comms_diagram_service=CommsDiagramService(),
     )
 
 
@@ -263,6 +265,45 @@ def test_sld_engineering_uploads_real_dxf_and_pdf() -> None:
     # DXF round-trips through ezdxf — proves real DXF.
     _ezdxf.read(_io.StringIO(client.uploads[dxf_url].decode("utf-8")))
     # PDF starts with the %PDF- magic.
+    assert client.uploads[pdf_url].startswith(b"%PDF-")
+
+
+def test_comms_diagram_uploads_real_dxf_and_pdf() -> None:
+    """Comms diagram dxf URL gets parseable DXF + pdf URL gets %PDF- magic bytes."""
+    # Arrange
+    import io as _io
+
+    import ezdxf as _ezdxf
+
+    client = _RecordingClient(_commercial_ac_manifest())
+    pipeline = _build_pipeline(client)
+    payload = _payload()
+    resolution = ModuleResolverService().resolve(payload)
+    urls = build_artifact_urls_from_resolved(
+        DEPLOYMENT_ID,
+        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+    )
+
+    # Act
+    pipeline.run(
+        payload=payload,
+        resolution=resolution,
+        urls=urls,
+        manifest=_commercial_ac_manifest(),
+    )
+
+    # Assert
+    dxf_url = next(
+        u.url
+        for u in urls
+        if u.kind == ArtifactKind.COMMS_DIAGRAM and u.format == "dxf"
+    )
+    pdf_url = next(
+        u.url
+        for u in urls
+        if u.kind == ArtifactKind.COMMS_DIAGRAM and u.format == "pdf"
+    )
+    _ezdxf.read(_io.StringIO(client.uploads[dxf_url].decode("utf-8")))
     assert client.uploads[pdf_url].startswith(b"%PDF-")
 
 
@@ -410,12 +451,12 @@ def test_unimplemented_kinds_get_stub_bytes() -> None:
     )
 
     # Assert — pick one still-stubbed kind to verify the placeholder shape
-    comms_dxf_url = next(
+    install_dxf_url = next(
         u.url
         for u in urls
-        if u.kind == ArtifactKind.COMMS_DIAGRAM and u.format == "dxf"
+        if u.kind == ArtifactKind.INSTALLATION_GRAPH and u.format == "dxf"
     )
-    body = client.uploads[comms_dxf_url].decode("utf-8")
+    body = client.uploads[install_dxf_url].decode("utf-8")
     assert "stub" in body.lower()
 
     cable_json_url = next(

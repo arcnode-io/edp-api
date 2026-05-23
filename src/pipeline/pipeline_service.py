@@ -19,6 +19,7 @@ maintained by edp-module-assemblies.
 
 import json
 import logging
+from collections.abc import Callable
 from typing import Final
 
 from src.bom_generator.bom_generator_service import (
@@ -28,6 +29,10 @@ from src.bom_generator.bom_generator_service import (
 from src.bom_generator.bom_models import Bom
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
+from src.drawing.comms_diagram_service import (
+    CommsDiagramOutputs,
+    CommsDiagramService,
+)
 from src.drawing.pid_cooling_service import PidCoolingOutputs, PidCoolingService
 from src.drawing.sld_engineering_service import (
     SldEngineeringOutputs,
@@ -61,6 +66,7 @@ class PipelineService:
         sld_hmi_svg_service: SldHmiSvgService,
         sld_engineering_service: SldEngineeringService,
         pid_cooling_service: PidCoolingService,
+        comms_diagram_service: CommsDiagramService,
     ) -> None:
         self._client = client
         self._bom = bom_generator
@@ -68,6 +74,7 @@ class PipelineService:
         self._sld_hmi = sld_hmi_svg_service
         self._sld_eng = sld_engineering_service
         self._pid_cooling = pid_cooling_service
+        self._comms_diagram = comms_diagram_service
 
     def run(
         self,
@@ -99,6 +106,7 @@ class PipelineService:
         )
         sld_eng = self._sld_eng.generate(dtm, profile=profile)
         pid_cooling = self._pid_cooling.generate(dtm, profile=profile)
+        comms_diagram = self._comms_diagram.generate(dtm, profile=profile)
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):
                 continue  # selected from catalog — already in S3
@@ -108,6 +116,7 @@ class PipelineService:
                 bom=bom,
                 sld_eng=sld_eng,
                 pid_cooling=pid_cooling,
+                comms_diagram=comms_diagram,
             )
 
     def _run_one(
@@ -118,40 +127,37 @@ class PipelineService:
         bom: Bom,
         sld_eng: SldEngineeringOutputs,
         pid_cooling: PidCoolingOutputs,
+        comms_diagram: CommsDiagramOutputs,
     ) -> None:
-        """Dispatch a single ArtifactRef to its generator (or stub)."""
-        if ref.kind == ArtifactKind.BOM and ref.format == "json":
-            self._client.upload_bom_json(
-                bom.model_dump_json(indent=2).encode("utf-8"), ref.url
-            )
-            return
-        if ref.kind == ArtifactKind.BOM and ref.format == "xlsx":
-            self._client.upload_bytes(serialize_bom_xlsx(bom), ref.url)
-            return
-        if ref.kind == ArtifactKind.DTM:
-            self._client.upload_bytes(
-                dtm.model_dump_json(indent=2).encode("utf-8"), ref.url
-            )
-            return
-        if ref.kind == ArtifactKind.SLD_HMI_SVG:
-            self._client.upload_bytes(self._sld_hmi.generate(dtm), ref.url)
-            return
-        if ref.kind == ArtifactKind.SLD and ref.format == "dxf":
-            self._client.upload_bytes(sld_eng.dxf, ref.url)
-            return
-        if ref.kind == ArtifactKind.SLD and ref.format == "pdf":
-            self._client.upload_bytes(sld_eng.pdf, ref.url)
-            return
-        if ref.kind == ArtifactKind.PID_COOLING and ref.format == "dxf":
-            self._client.upload_bytes(pid_cooling.dxf, ref.url)
-            return
-        if ref.kind == ArtifactKind.PID_COOLING and ref.format == "pdf":
-            self._client.upload_bytes(pid_cooling.pdf, ref.url)
-            return
-        # Everything else: stub-empty bytes so downstream consumers (platform-api
-        # archive, portal HTML) can fetch by URL. Real generators replace these
-        # one kind at a time without changing the pipeline shape.
-        self._client.upload_bytes(_stub_body(ref), ref.url)
+        """Dispatch a single ArtifactRef to its generator (or stub).
+
+        Dispatch table keyed by (kind, format) — adding the next real
+        generator means appending one row, not extending an if/elif chain.
+        Unmatched (kind, format) pairs fall through to `_stub_body` so
+        reserved-but-unimplemented URLs still receive deterministic bytes.
+        """
+        dispatch: dict[tuple[ArtifactKind, str], Callable[[], bytes]] = {
+            (ArtifactKind.BOM, "json"): lambda: bom.model_dump_json(indent=2).encode(
+                "utf-8"
+            ),
+            (ArtifactKind.BOM, "xlsx"): lambda: serialize_bom_xlsx(bom),
+            (ArtifactKind.DTM, "json"): lambda: dtm.model_dump_json(indent=2).encode(
+                "utf-8"
+            ),
+            (ArtifactKind.SLD_HMI_SVG, "svg"): lambda: self._sld_hmi.generate(dtm),
+            (ArtifactKind.SLD, "dxf"): lambda: sld_eng.dxf,
+            (ArtifactKind.SLD, "pdf"): lambda: sld_eng.pdf,
+            (ArtifactKind.PID_COOLING, "dxf"): lambda: pid_cooling.dxf,
+            (ArtifactKind.PID_COOLING, "pdf"): lambda: pid_cooling.pdf,
+            (ArtifactKind.COMMS_DIAGRAM, "dxf"): lambda: comms_diagram.dxf,
+            (ArtifactKind.COMMS_DIAGRAM, "pdf"): lambda: comms_diagram.pdf,
+        }
+        builder = dispatch.get((ref.kind, ref.format))
+        body = builder() if builder is not None else _stub_body(ref)
+        # `upload_bom_json` is just an alias for `upload_bytes` today; uses
+        # the same boto3 put_object under the hood. Funnel everything through
+        # `upload_bytes` for a single I/O path.
+        self._client.upload_bytes(body, ref.url)
 
 
 def _context_string(ctx: DeploymentContext) -> str:

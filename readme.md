@@ -93,11 +93,13 @@ edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
 ```
 
 **Current state:** BOM (json + xlsx), DTM, SLD HMI SVG, SLD
-engineering (dxf + pdf), and P&ID cooling (dxf + pdf) are real
-generators. Comms diagram, installation_graph, and cable_hose_schedule
-land as `_stub_body` bytes from `PipelineService` for now — URLs are
-deterministic and reserved, content is a placeholder. Real generators
-drop in one ArtifactKind at a time without changing the pipeline shape.
+engineering (dxf + pdf), P&ID cooling (dxf + pdf), and comms diagram
+(dxf + pdf) are real generators. Installation_graph and
+cable_hose_schedule land as `_stub_body` bytes from `PipelineService`
+for now — URLs are deterministic and reserved, content is a placeholder.
+Real generators drop in one ArtifactKind at a time without changing the
+pipeline shape; dispatch is a `(kind, format) -> bytes-builder` table
+in `PipelineService._run_one`.
 
 The engineering SLD is a paper-grade deliverable: IEC 60617 graphical
 symbols, ISO 5457 sheet frame, simplified ISO 7200 title block on A3
@@ -144,6 +146,7 @@ src/
 │   ├── sld_hmi_svg_service.py       # Dtm → SLD HMI SVG (graphviz dot layout)
 │   ├── sld_engineering_service.py   # Dtm → SLD engineering DXF + PDF (IEC 60617)
 │   ├── pid_cooling_service.py       # Dtm → P&ID cooling DXF + PDF (ISA 5.1, 2-sheet)
+│   ├── comms_diagram_service.py     # Dtm → comms topology DXF + PDF (per-protocol clusters)
 │   ├── drawing_controller.py        # POST /edp-api/sld-hmi-svg re-render endpoint
 │   ├── drawing_module.py
 │   ├── _layout.py                   # dot-graph layout helpers (HMI)
@@ -156,6 +159,8 @@ src/
 │   ├── _sld_eng_layout.py           # SLD A3 grid placement, source-first per bus
 │   ├── _pid_symbols.py              # ISA 5.1 P&ID symbol primitives
 │   ├── _pid_layout.py               # P&ID 2-sheet layout coordinates
+│   ├── _comms_symbols.py            # device box / switch / gateway glyphs
+│   ├── _comms_layout.py             # protocol-cluster layout coords
 │   └── assets/arcnode_logo_source.svg
 ├── pipeline/
 │   ├── artifact_urls.py             # ResolvedProfile → list[ArtifactRef] (deterministic URLs)
