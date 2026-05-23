@@ -37,6 +37,7 @@ class JobsModule:
             ),
             sld_hmi_svg_service=drawing_module.sld_hmi_svg,
             sld_engineering_service=drawing_module.sld_engineering,
+            pid_cooling_service=drawing_module.pid_cooling,
         )
         self.service = JobsService(
             resolver=resolver_module.service,

@@ -13,6 +13,7 @@ from src.bom_generator.manifest_models import (
     ProfileAssemblies,
 )
 from src.bom_generator.manifest_service import ManifestService
+from src.drawing.pid_cooling_service import PidCoolingService
 from src.drawing.sld_engineering_service import SldEngineeringService
 from src.drawing.sld_hmi_svg_service import SldHmiSvgService
 from src.dtm.dtm_generator_service import DtmGeneratorService
@@ -139,6 +140,7 @@ def _build_pipeline(client: _RecordingClient) -> PipelineService:
         dtm_generator=DtmGeneratorService(real_client, template_catalog=catalog),
         sld_hmi_svg_service=SldHmiSvgService(),
         sld_engineering_service=SldEngineeringService(),
+        pid_cooling_service=PidCoolingService(),
     )
 
 
@@ -264,6 +266,41 @@ def test_sld_engineering_uploads_real_dxf_and_pdf() -> None:
     assert client.uploads[pdf_url].startswith(b"%PDF-")
 
 
+def test_pid_cooling_uploads_real_dxf_and_pdf() -> None:
+    """P&ID dxf URL gets parseable DXF + pdf URL gets %PDF- magic bytes."""
+    # Arrange
+    import io as _io
+
+    import ezdxf as _ezdxf
+
+    client = _RecordingClient(_commercial_ac_manifest())
+    pipeline = _build_pipeline(client)
+    payload = _payload()
+    resolution = ModuleResolverService().resolve(payload)
+    urls = build_artifact_urls_from_resolved(
+        DEPLOYMENT_ID,
+        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+    )
+
+    # Act
+    pipeline.run(
+        payload=payload,
+        resolution=resolution,
+        urls=urls,
+        manifest=_commercial_ac_manifest(),
+    )
+
+    # Assert
+    dxf_url = next(
+        u.url for u in urls if u.kind == ArtifactKind.PID_COOLING and u.format == "dxf"
+    )
+    pdf_url = next(
+        u.url for u in urls if u.kind == ArtifactKind.PID_COOLING and u.format == "pdf"
+    )
+    _ezdxf.read(_io.StringIO(client.uploads[dxf_url].decode("utf-8")))
+    assert client.uploads[pdf_url].startswith(b"%PDF-")
+
+
 def test_bom_xlsx_upload_is_real_workbook() -> None:
     """The BOM xlsx upload opens back as a workbook (not stub bytes)."""
     # Arrange
@@ -373,10 +410,12 @@ def test_unimplemented_kinds_get_stub_bytes() -> None:
     )
 
     # Assert — pick one still-stubbed kind to verify the placeholder shape
-    pid_dxf_url = next(
-        u.url for u in urls if u.kind == ArtifactKind.PID_COOLING and u.format == "dxf"
+    comms_dxf_url = next(
+        u.url
+        for u in urls
+        if u.kind == ArtifactKind.COMMS_DIAGRAM and u.format == "dxf"
     )
-    body = client.uploads[pid_dxf_url].decode("utf-8")
+    body = client.uploads[comms_dxf_url].decode("utf-8")
     assert "stub" in body.lower()
 
     cable_json_url = next(

@@ -12,35 +12,16 @@ identification. Shared introspection lives in `_iec_61850.py` so the
 classification rule can't drift between the two outputs.
 """
 
-import io
-
 import ezdxf
-import matplotlib
-
-# Reason: pick a non-interactive backend before importing pyplot so the
-# matplotlib agg path doesn't try to attach to a display (Docker / CI).
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from ezdxf.addons.drawing import Frontend, RenderContext
-from ezdxf.addons.drawing.config import (
-    BackgroundPolicy,
-    ColorPolicy,
-    Configuration,
-)
-from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
 from ezdxf.document import Drawing
 from ezdxf.layouts import Modelspace
-from matplotlib.backends.backend_pdf import PdfPages
 from pydantic import BaseModel
 
+from src.drawing._eng_render import serialize_dxf, serialize_pdf
 from src.drawing._eng_title_block import draw_sheet_frame, draw_title_block
 from src.drawing._sld_eng_layout import DevicePlacement, layout_devices
 from src.drawing._sld_eng_symbols import ensure_symbol_block
 from src.shared.schemas.dtm import Bus, Dtm
-
-# A3 landscape in inches: 420 mm x 297 mm / 25.4 mm/in
-_A3_LANDSCAPE_INCHES: tuple[float, float] = (16.54, 11.69)
-_PDF_DPI: int = 300
 
 # Layer names — keep the engineering review categories clean + scriptable.
 _LAYER_DEVICES: str = "DEVICES"
@@ -63,7 +44,10 @@ class SldEngineeringService:
     def generate(self, dtm: Dtm, profile: str = "") -> SldEngineeringOutputs:
         """Build + serialize. Profile is a label-only field on the title block."""
         doc = self._build_drawing(dtm, profile)
-        return SldEngineeringOutputs(dxf=_serialize_dxf(doc), pdf=_serialize_pdf(doc))
+        return SldEngineeringOutputs(
+            dxf=serialize_dxf(doc),
+            pdf=serialize_pdf([doc], title="ARCNODE SLD"),
+        )
 
     def _build_drawing(self, dtm: Dtm, profile: str) -> Drawing:
         """Compose title block + per-device symbols + bus lines into a Drawing."""
@@ -181,37 +165,3 @@ def _draw_bus(
             "align_point": (x_right + 3, y),
         },
     )
-
-
-def _serialize_dxf(doc: Drawing) -> bytes:
-    """ASCII DXF bytes. ezdxf.write takes a text stream."""
-    buf = io.StringIO()
-    doc.write(buf, fmt="asc")
-    return buf.getvalue().encode("utf-8")
-
-
-def _serialize_pdf(doc: Drawing) -> bytes:
-    """A3-landscape PDF rendered via ezdxf.addons.drawing.matplotlib.
-
-    Black-on-white render: ezdxf default leaves layer-7 entities at color 7
-    which matplotlib then draws white. PDF viewers with white backgrounds
-    show a blank page. Configuration forces black foreground + white
-    background so the engineering deliverable is reviewer-readable.
-    """
-    cfg = Configuration(
-        background_policy=BackgroundPolicy.WHITE,
-        color_policy=ColorPolicy.BLACK,
-    )
-    pdf_buf = io.BytesIO()
-    with PdfPages(pdf_buf, metadata={"Title": "ARCNODE SLD"}) as pdf:
-        fig = plt.figure(figsize=_A3_LANDSCAPE_INCHES)
-        # Reason: matplotlib's stubs expect a 4-tuple, not a list.
-        ax = fig.add_axes((0.0, 0.0, 1.0, 1.0))
-        ax.set_axis_off()
-        ctx = RenderContext(doc)
-        Frontend(ctx, MatplotlibBackend(ax), config=cfg).draw_layout(
-            doc.modelspace(), finalize=True
-        )
-        pdf.savefig(fig, dpi=_PDF_DPI, facecolor="white")
-        plt.close(fig)
-    return pdf_buf.getvalue()

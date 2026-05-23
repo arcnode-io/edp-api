@@ -28,6 +28,7 @@ from src.bom_generator.bom_generator_service import (
 from src.bom_generator.bom_models import Bom
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
+from src.drawing.pid_cooling_service import PidCoolingOutputs, PidCoolingService
 from src.drawing.sld_engineering_service import (
     SldEngineeringOutputs,
     SldEngineeringService,
@@ -59,12 +60,14 @@ class PipelineService:
         dtm_generator: DtmGeneratorService,
         sld_hmi_svg_service: SldHmiSvgService,
         sld_engineering_service: SldEngineeringService,
+        pid_cooling_service: PidCoolingService,
     ) -> None:
         self._client = client
         self._bom = bom_generator
         self._dtm = dtm_generator
         self._sld_hmi = sld_hmi_svg_service
         self._sld_eng = sld_engineering_service
+        self._pid_cooling = pid_cooling_service
 
     def run(
         self,
@@ -95,10 +98,17 @@ class PipelineService:
             deployment_context=_context_string(payload.deployment_context),
         )
         sld_eng = self._sld_eng.generate(dtm, profile=profile)
+        pid_cooling = self._pid_cooling.generate(dtm, profile=profile)
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):
                 continue  # selected from catalog — already in S3
-            self._run_one(ref=ref, dtm=dtm, bom=bom, sld_eng=sld_eng)
+            self._run_one(
+                ref=ref,
+                dtm=dtm,
+                bom=bom,
+                sld_eng=sld_eng,
+                pid_cooling=pid_cooling,
+            )
 
     def _run_one(
         self,
@@ -107,6 +117,7 @@ class PipelineService:
         dtm: Dtm,
         bom: Bom,
         sld_eng: SldEngineeringOutputs,
+        pid_cooling: PidCoolingOutputs,
     ) -> None:
         """Dispatch a single ArtifactRef to its generator (or stub)."""
         if ref.kind == ArtifactKind.BOM and ref.format == "json":
@@ -130,6 +141,12 @@ class PipelineService:
             return
         if ref.kind == ArtifactKind.SLD and ref.format == "pdf":
             self._client.upload_bytes(sld_eng.pdf, ref.url)
+            return
+        if ref.kind == ArtifactKind.PID_COOLING and ref.format == "dxf":
+            self._client.upload_bytes(pid_cooling.dxf, ref.url)
+            return
+        if ref.kind == ArtifactKind.PID_COOLING and ref.format == "pdf":
+            self._client.upload_bytes(pid_cooling.pdf, ref.url)
             return
         # Everything else: stub-empty bytes so downstream consumers (platform-api
         # archive, portal HTML) can fetch by URL. Real generators replace these

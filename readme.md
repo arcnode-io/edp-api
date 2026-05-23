@@ -92,12 +92,12 @@ platform_api -> edp_api: GET /edp-api/jobs/{job_id}
 edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
 ```
 
-**Current state:** BOM (json + xlsx), DTM, SLD HMI SVG, and SLD
-engineering (dxf + pdf) are real generators. P&ID, comms,
-installation_graph, and cable_hose_schedule land as `_stub_body` bytes
-from `PipelineService` for now — URLs are deterministic and reserved,
-content is a placeholder. Real generators drop in one ArtifactKind at a
-time without changing the pipeline shape.
+**Current state:** BOM (json + xlsx), DTM, SLD HMI SVG, SLD
+engineering (dxf + pdf), and P&ID cooling (dxf + pdf) are real
+generators. Comms diagram, installation_graph, and cable_hose_schedule
+land as `_stub_body` bytes from `PipelineService` for now — URLs are
+deterministic and reserved, content is a placeholder. Real generators
+drop in one ArtifactKind at a time without changing the pipeline shape.
 
 The engineering SLD is a paper-grade deliverable: IEC 60617 graphical
 symbols, ISO 5457 sheet frame, simplified ISO 7200 title block on A3
@@ -142,15 +142,21 @@ src/
 │   └── topology_yaml.py             # per-assembly topology.yaml schema
 ├── drawing/
 │   ├── sld_hmi_svg_service.py       # Dtm → SLD HMI SVG (graphviz dot layout)
-│   ├── sld_engineering_service.py   # Dtm → SLD engineering DXF + PDF (ezdxf + matplotlib)
+│   ├── sld_engineering_service.py   # Dtm → SLD engineering DXF + PDF (IEC 60617)
+│   ├── pid_cooling_service.py       # Dtm → P&ID cooling DXF + PDF (ISA 5.1, 2-sheet)
 │   ├── drawing_controller.py        # POST /edp-api/sld-hmi-svg re-render endpoint
 │   ├── drawing_module.py
 │   ├── _layout.py                   # dot-graph layout helpers (HMI)
 │   ├── _svg.py                      # SVG element builders (HMI)
 │   ├── _iec_61850.py                # IEC 61850 introspection — shared by both SLDs
+│   ├── _arcnode_logo.py             # SVG-path → polyline loader for title-block glyph
+│   ├── _eng_render.py               # shared DXF + matplotlib-PDF serializers
+│   ├── _eng_title_block.py          # shared ISO 5457 frame + ISO 7200-lite title block
 │   ├── _sld_eng_symbols.py          # IEC 60617 graphical symbol primitives
-│   ├── _sld_eng_layout.py           # A3 grid placement, source-first per bus
-│   └── _sld_eng_title_block.py      # ISO 5457 frame + ISO 7200-lite title block
+│   ├── _sld_eng_layout.py           # SLD A3 grid placement, source-first per bus
+│   ├── _pid_symbols.py              # ISA 5.1 P&ID symbol primitives
+│   ├── _pid_layout.py               # P&ID 2-sheet layout coordinates
+│   └── assets/arcnode_logo_source.svg
 ├── pipeline/
 │   ├── artifact_urls.py             # ResolvedProfile → list[ArtifactRef] (deterministic URLs)
 │   └── pipeline_service.py          # BackgroundTask: generate + upload per ArtifactRef
