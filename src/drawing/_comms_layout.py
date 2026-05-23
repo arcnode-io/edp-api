@@ -20,10 +20,13 @@ DEVICES_START_X: float = 100.0
 DEVICE_X_PITCH: float = 70.0
 DEVICES_PER_ROW: int = 4
 
-# Vertical placement.
-TOP_ROW_Y: float = 240.0  # first cluster header sits here
-HEADER_TO_ROW_GAP: float = 12.0  # cluster header sits above the gateway row
-CLUSTER_Y_PITCH: float = 50.0  # between clusters (one cluster = header + row(s))
+# Vertical placement — devices sit ABOVE the gateway y (the bus line) so
+# per-device vertical stubs drop down cleanly to the bus without any line
+# passing through device-box rectangles.
+TOP_ROW_Y: float = 230.0  # first cluster's gateway/bus y
+HEADER_TO_ROW_GAP: float = 24.0  # cluster header above the devices (above the bus)
+DEVICE_OFFSET_ABOVE_BUS: float = 14.0  # device-y = gateway-y + this
+CLUSTER_Y_PITCH: float = 50.0  # between clusters (one cluster = header + devices + bus)
 SUB_ROW_Y_PITCH: float = 22.0  # within a cluster when device count > DEVICES_PER_ROW
 
 # Sheet bottom margin — keep gateway rows above title block + sheet frame.
@@ -72,7 +75,11 @@ def layout_clusters(
             sub_row = i // DEVICES_PER_ROW
             col = i % DEVICES_PER_ROW
             slot_x = DEVICES_START_X + col * DEVICE_X_PITCH
-            slot_y = y_cursor - sub_row * SUB_ROW_Y_PITCH
+            # Devices sit ABOVE the bus by DEVICE_OFFSET_ABOVE_BUS so the
+            # per-device stub has visible length and the bus line doesn't
+            # have to pass through any device-box rectangle on its way to
+            # the next device.
+            slot_y = y_cursor + DEVICE_OFFSET_ABOVE_BUS - sub_row * SUB_ROW_Y_PITCH
             slots.append(DeviceSlot(device_id=did, x=slot_x, y=slot_y))
         clusters.append(
             ClusterPlacement(

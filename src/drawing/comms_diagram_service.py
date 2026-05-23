@@ -93,6 +93,11 @@ class CommsDiagramService:
         for cluster in clusters:
             _draw_cluster_header(msp, cluster)
             _draw_gateway(msp, cluster, gateway_block)
+            # One shared bus line at gateway_y + per-device vertical stubs
+            # dropping from each device's bottom edge down to the bus.
+            # Devices live ABOVE the bus per _comms_layout, so no link
+            # line ever passes through a rectangle body.
+            _draw_bus_and_stubs(msp, cluster)
             for slot in cluster.devices:
                 _draw_device(
                     msp,
@@ -101,7 +106,6 @@ class CommsDiagramService:
                     slot,
                     device_block_name=device_block,
                 )
-                _draw_link(msp, cluster, slot)
 
         return doc
 
@@ -225,40 +229,33 @@ def _draw_device(
         )
 
 
-def _draw_link(msp: Modelspace, cluster: ClusterPlacement, slot: DeviceSlot) -> None:
-    """LINE from gateway right edge to device box left edge.
+def _draw_bus_and_stubs(msp: Modelspace, cluster: ClusterPlacement) -> None:
+    """One horizontal bus from GW to the last device + vertical stubs per device.
 
-    Orthogonal 3-segment route when the device is on a sub-row that
-    doesn't share the gateway's y — keeps connections readable at a
-    glance instead of a long diagonal across the page.
+    Bus runs along `cluster.gateway_y`. Devices sit above the bus (their
+    `slot.y > gateway_y`) so each device drops a short vertical stub down
+    from its bottom edge to the bus line. No link line ever crosses
+    through a device-box rectangle.
     """
-    gw_right_x = cluster.gateway_x + 12  # gateway block half-width
-    dev_left_x = slot.x - 20  # device box half-width
-    if abs(slot.y - cluster.gateway_y) < 1e-3:
-        # Same row — single horizontal segment.
+    if not cluster.devices:
+        return
+    gw_right_x = cluster.gateway_x + 18  # gateway block half-width
+    bus_y = cluster.gateway_y
+    bus_end_x = max(slot.x for slot in cluster.devices)
+    # Single horizontal bus segment.
+    msp.add_line(
+        start=(gw_right_x, bus_y),
+        end=(bus_end_x, bus_y),
+        dxfattribs={"layer": _LAYER_LINKS},
+    )
+    # Per-device vertical stubs from device-box bottom edge to the bus.
+    for slot in cluster.devices:
+        # Device-box half-height = 8mm (see _comms_symbols.ensure_device_box_block).
         msp.add_line(
-            start=(gw_right_x, cluster.gateway_y),
-            end=(dev_left_x, slot.y),
+            start=(slot.x, slot.y - 8),
+            end=(slot.x, bus_y),
             dxfattribs={"layer": _LAYER_LINKS},
         )
-        return
-    # Sub-row — vertical drop midway, then horizontal to the device.
-    mid_x = gw_right_x + 8
-    msp.add_line(
-        start=(gw_right_x, cluster.gateway_y),
-        end=(mid_x, cluster.gateway_y),
-        dxfattribs={"layer": _LAYER_LINKS},
-    )
-    msp.add_line(
-        start=(mid_x, cluster.gateway_y),
-        end=(mid_x, slot.y),
-        dxfattribs={"layer": _LAYER_LINKS},
-    )
-    msp.add_line(
-        start=(mid_x, slot.y),
-        end=(dev_left_x, slot.y),
-        dxfattribs={"layer": _LAYER_LINKS},
-    )
 
 
 # Re-export for convenience.

@@ -36,29 +36,34 @@ def ensure_switch_glyph_block(doc: Drawing) -> str:
 
 
 def ensure_gateway_glyph_block(doc: Drawing) -> str:
-    """Gateway / aggregation point — 24x14mm rounded-corner box (approx) + GW label."""
+    """ARCNODE Industrial Gateway — 36x14mm rounded-corner box + GATEWAY label.
+
+    Bridges south-side device protocols (Modbus / DNP3 / SNMP / Redfish /
+    CANopen) up to MQTT. One per protocol cluster on the diagram.
+    """
     name = "comms_gateway_glyph"
     if name in doc.blocks:
         return name
     blk = doc.blocks.new(name=name)
-    # Pseudo-rounded corners: octagon-like outline.
+    # Pseudo-rounded corners: octagon-like outline. Wider than the v1 GW
+    # box so the full "GATEWAY" label fits without crowding.
     blk.add_lwpolyline(
         [
-            (-12, -5),
-            (-10, -7),
-            (10, -7),
-            (12, -5),
-            (12, 5),
-            (10, 7),
-            (-10, 7),
-            (-12, 5),
+            (-18, -5),
+            (-16, -7),
+            (16, -7),
+            (18, -5),
+            (18, 5),
+            (16, 7),
+            (-16, 7),
+            (-18, 5),
         ],
         close=True,
     )
     blk.add_text(
-        "GW",
+        "GATEWAY",
         dxfattribs={
-            "height": 4.0,
+            "height": 3.5,
             "halign": 4,
             "valign": 2,
             "align_point": (0, 0),
