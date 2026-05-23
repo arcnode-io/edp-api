@@ -39,17 +39,27 @@ Sections most relevant to edp-api:
 | ADR-011 | CG plate parametric; Module F is later authority | Why sizing constants are hand-computed today — Module F is the future home for sizing math in edp-api. |
 | ADR-012 | Manifest URL versioning deferred | Documents the in-flight torn-read risk + the per-job-fetch-and-pin mitigation that landed in commit 87c18dd. |
 
-## Cross-repo open items
+## Open items
 
-These need owner-aligned decisions before edp-api can move:
-
-- **`federal_*` profile rename + `dod_*↔defense_*` alignment** (edp-api enum + manifest_profiles.yaml) — see comment in `src/shared/enums.py::DeploymentProfile`.
-- **Wholesale market scope beyond ERCOT/HB_NORTH** (depends on
-  `ems-analyst-server` certification per ISO) — see
-  `ConfiguratorPayload.market_hub_supported` validator.
-- **DNP3 master_external leaf template** (blocked on
-  `edp-module-assemblies/equipment/GRD-UTM-001/spec.yaml`) — see TODO
+- **Wholesale market scope beyond ERCOT/HB_NORTH** — depends on
+  `ems-analyst-server` (🤖 ai-engineer) certifying each ISO's
+  gridstatus.io dataset + LMP filter logic. Cross-role; edp-api owns
+  only the validator surface. See
+  `ConfiguratorPayload.market_hub_supported`.
+- **DNP3 master_external leaf template** + `equipment/GRD-UTM-001/`
+  spec — both repos are ⚡ power-engineer scope, but the point map +
+  whether GRD-UTM-001 is a separate physical relay or a second DNP3
+  session on the existing SEL-351-7 is a product-architecture decision
+  (IEEE 1547.2 interconnection requirements vary by utility). See TODO
   in `~/arcnode/edp-module-assemblies/assemblies/grid-container/commercial-ac/topology.yaml`.
+
+**Resolved (was previously flagged as open):**
+
+- ~~`federal_*` profile rename + `dod_*↔defense_*` alignment~~ — never
+  was a structural issue. `DeploymentProfile` stays commercial_* +
+  defense_* (hardware variants); `SourcingTier` separately tracks
+  `FEDERAL_CIVILIAN` vs `DOD_ELIGIBLE` (procurement path). The two
+  dimensions are orthogonal, no rename required.
 
 ## Standards in active use
 
