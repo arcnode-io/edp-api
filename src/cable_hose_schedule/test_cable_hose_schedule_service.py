@@ -19,11 +19,13 @@ from src.shared.schemas.template_protocols import (
     Dnp3Binding,
     ModbusBinding,
     RedfishBinding,
+    SnmpBinding,
 )
 
 
 def _tpl(
-    slug: str, binding: ModbusBinding | Dnp3Binding | RedfishBinding
+    slug: str,
+    binding: ModbusBinding | Dnp3Binding | RedfishBinding | SnmpBinding,
 ) -> DeviceTemplate:
     return DeviceTemplate(
         template=slug,
@@ -122,6 +124,63 @@ def test_xlsx_serializer_opens_with_cables_sheet(three_protocol_dtm: Dtm) -> Non
     cables_ws = wb["Cables"]
     # Header row + one row per cable.
     assert cables_ws.max_row == 1 + 3
+
+
+def test_cables_terminate_at_local_switch_when_present_in_dtm() -> None:
+    """When DTM has a network_switch device, cables terminate there — not at gateway.
+
+    Honest physical topology: comms cables physically run from devices to the
+    rack's local network switch. The gateway (cloud or on-prem) sits behind
+    that switch and is not a cable endpoint.
+    """
+    # Arrange
+    dtm = make_dtm(
+        devices={
+            "switch_top": make_device("switch_top", template="network_switch"),
+            "switchgear_1": make_device("switchgear_1", template="switchgear"),
+            "relay_1": make_device("relay_1", template="protective_relay"),
+        },
+        templates={
+            "network_switch": _tpl(
+                "network_switch",
+                SnmpBinding(protocol="snmp", oid="1.3.6.1.2.1.1.5.0"),
+            ),
+            "switchgear": _tpl(
+                "switchgear",
+                ModbusBinding(protocol="modbus_tcp", function_code=3, address=0),
+            ),
+            "protective_relay": _tpl(
+                "protective_relay",
+                Dnp3Binding(
+                    protocol="dnp3_tcp", point_index=0, point_type="analog_input"
+                ),
+            ),
+        },
+    )
+
+    # Act
+    schedule = CableHoseScheduleService().generate(dtm)
+
+    # Assert — every cable terminates at the switch, not "industrial_gateway".
+    # The switch itself is not its own cable row.
+    cable_to_devices = {c.to_device for c in schedule.cables}
+    cable_from_devices = {c.from_device for c in schedule.cables}
+    assert cable_to_devices == {"switch_top"}
+    assert "switch_top" not in cable_from_devices
+    # 2 cables (one per non-switch device).
+    assert len(schedule.cables) == 2
+
+
+def test_cables_fall_back_to_tbd_label_when_no_switch_in_dtm(
+    three_protocol_dtm: Dtm,
+) -> None:
+    """No network_switch in DTM → to_device labelled as TBD so the gap is honest."""
+    # Act
+    schedule = CableHoseScheduleService().generate(three_protocol_dtm)
+
+    # Assert — every cable's to_device explicitly flags the missing-switch gap
+    for cable in schedule.cables:
+        assert "TBD" in cable.to_device
 
 
 def test_xlsx_has_hoses_sheet_even_when_empty(three_protocol_dtm: Dtm) -> None:
