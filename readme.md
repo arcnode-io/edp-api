@@ -93,13 +93,12 @@ edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
 ```
 
 **Current state:** BOM (json + xlsx), DTM, SLD HMI SVG, SLD
-engineering (dxf + pdf), P&ID cooling (dxf + pdf), and comms diagram
-(dxf + pdf) are real generators. Installation_graph and
-cable_hose_schedule land as `_stub_body` bytes from `PipelineService`
-for now — URLs are deterministic and reserved, content is a placeholder.
-Real generators drop in one ArtifactKind at a time without changing the
-pipeline shape; dispatch is a `(kind, format) -> bytes-builder` table
-in `PipelineService._run_one`.
+engineering (dxf + pdf), P&ID cooling (dxf + pdf), comms diagram
+(dxf + pdf), and cable+hose schedule (json + xlsx) are real generators.
+Installation_graph is the only remaining stub — lands as `_stub_body`
+bytes from `PipelineService` for now. URLs are deterministic and
+reserved, content is a placeholder. Dispatch is a
+`(kind, format) -> bytes-builder` table in `PipelineService._run_one`.
 
 The engineering SLD is a paper-grade deliverable: IEC 60617 graphical
 symbols, ISO 5457 sheet frame, simplified ISO 7200 title block on A3
@@ -130,6 +129,9 @@ src/
 │   ├── module_resolver_service.py   # ConfiguratorPayload → ModuleResolution
 │   ├── deployment_profile.py        # (context, bess_coupling) → DeploymentProfile
 │   └── module_resolver_module.py
+├── cable_hose_schedule/
+│   ├── cable_hose_schedule_service.py  # Dtm → CableHoseSchedule + serializers
+│   └── cable_hose_schedule_models.py   # CableEntry, HoseEntry, CableHoseSchedule
 ├── bom_generator/
 │   ├── bom_generator_service.py     # ModuleResolution → bom.json
 │   ├── bom_models.py                # BomLineItem, BomDocument

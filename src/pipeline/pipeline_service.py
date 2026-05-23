@@ -29,6 +29,11 @@ from src.bom_generator.bom_generator_service import (
 from src.bom_generator.bom_models import Bom
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
+from src.cable_hose_schedule.cable_hose_schedule_models import CableHoseSchedule
+from src.cable_hose_schedule.cable_hose_schedule_service import (
+    CableHoseScheduleService,
+    serialize_cable_hose_schedule_xlsx,
+)
 from src.drawing.comms_diagram_service import (
     CommsDiagramOutputs,
     CommsDiagramService,
@@ -67,6 +72,7 @@ class PipelineService:
         sld_engineering_service: SldEngineeringService,
         pid_cooling_service: PidCoolingService,
         comms_diagram_service: CommsDiagramService,
+        cable_hose_schedule_service: CableHoseScheduleService,
     ) -> None:
         self._client = client
         self._bom = bom_generator
@@ -75,6 +81,7 @@ class PipelineService:
         self._sld_eng = sld_engineering_service
         self._pid_cooling = pid_cooling_service
         self._comms_diagram = comms_diagram_service
+        self._cable_hose = cable_hose_schedule_service
 
     def run(
         self,
@@ -107,6 +114,7 @@ class PipelineService:
         sld_eng = self._sld_eng.generate(dtm, profile=profile)
         pid_cooling = self._pid_cooling.generate(dtm, profile=profile)
         comms_diagram = self._comms_diagram.generate(dtm, profile=profile)
+        cable_hose = self._cable_hose.generate(dtm)
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):
                 continue  # selected from catalog — already in S3
@@ -117,6 +125,7 @@ class PipelineService:
                 sld_eng=sld_eng,
                 pid_cooling=pid_cooling,
                 comms_diagram=comms_diagram,
+                cable_hose=cable_hose,
             )
 
     def _run_one(
@@ -128,6 +137,7 @@ class PipelineService:
         sld_eng: SldEngineeringOutputs,
         pid_cooling: PidCoolingOutputs,
         comms_diagram: CommsDiagramOutputs,
+        cable_hose: CableHoseSchedule,
     ) -> None:
         """Dispatch a single ArtifactRef to its generator (or stub).
 
@@ -151,6 +161,14 @@ class PipelineService:
             (ArtifactKind.PID_COOLING, "pdf"): lambda: pid_cooling.pdf,
             (ArtifactKind.COMMS_DIAGRAM, "dxf"): lambda: comms_diagram.dxf,
             (ArtifactKind.COMMS_DIAGRAM, "pdf"): lambda: comms_diagram.pdf,
+            (
+                ArtifactKind.CABLE_HOSE_SCHEDULE,
+                "json",
+            ): lambda: cable_hose.model_dump_json(indent=2).encode("utf-8"),
+            (
+                ArtifactKind.CABLE_HOSE_SCHEDULE,
+                "xlsx",
+            ): lambda: serialize_cable_hose_schedule_xlsx(cable_hose),
         }
         builder = dispatch.get((ref.kind, ref.format))
         body = builder() if builder is not None else _stub_body(ref)

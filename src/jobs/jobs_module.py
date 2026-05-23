@@ -2,6 +2,7 @@
 
 from src.bom_generator.bom_generator_service import BomGeneratorService
 from src.bom_generator.manifest_module import ManifestModule
+from src.cable_hose_schedule.cable_hose_schedule_service import CableHoseScheduleService
 from src.drawing.drawing_module import DrawingModule
 from src.dtm.dtm_generator_service import DtmGeneratorService
 from src.jobs.job_store import JobStore
@@ -39,6 +40,7 @@ class JobsModule:
             sld_engineering_service=drawing_module.sld_engineering,
             pid_cooling_service=drawing_module.pid_cooling,
             comms_diagram_service=drawing_module.comms_diagram,
+            cable_hose_schedule_service=CableHoseScheduleService(),
         )
         self.service = JobsService(
             resolver=resolver_module.service,
