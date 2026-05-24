@@ -92,6 +92,7 @@ def _generated(deployment_id: UUID) -> list[ArtifactRef]:
         (ArtifactKind.CABLE_HOSE_SCHEDULE, "json", f"{base}/cable_hose_schedule.json"),
         (ArtifactKind.CABLE_HOSE_SCHEDULE, "xlsx", f"{base}/cable_hose_schedule.xlsx"),
         (ArtifactKind.INSTALL_SEQUENCE, "pdf", f"{base}/install_sequence.pdf"),
+        (ArtifactKind.INSTALL_SEQUENCE, "xlsx", f"{base}/install_sequence.xlsx"),
         (ArtifactKind.DTM, "json", f"{base}/dtm.json"),
     ]
     return [ArtifactRef(kind=k, format=fmt, url=u) for k, fmt, u in pairs]

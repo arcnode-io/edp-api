@@ -42,6 +42,7 @@ from src.drawing.comms_diagram_service import (
 from src.drawing.install_sequence_service import (
     InstallSequenceOutputs,
     InstallSequenceService,
+    serialize_install_sequence_xlsx,
 )
 from src.drawing.pid_cooling_service import PidCoolingOutputs, PidCoolingService
 from src.drawing.sld_engineering_service import (
@@ -189,6 +190,10 @@ class PipelineService:
                 "xlsx",
             ): lambda: serialize_cable_hose_schedule_xlsx(cable_hose),
             (ArtifactKind.INSTALL_SEQUENCE, "pdf"): lambda: install_sequence.pdf,
+            (
+                ArtifactKind.INSTALL_SEQUENCE,
+                "xlsx",
+            ): lambda: serialize_install_sequence_xlsx(dtm),
         }
         builder = dispatch.get((ref.kind, ref.format))
         body = builder() if builder is not None else _stub_body(ref)

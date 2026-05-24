@@ -12,6 +12,7 @@ from src.drawing.install_sequence_service import (
     InstallSequenceOutputs,
     InstallSequenceService,
     build_mop_rows,
+    serialize_install_sequence_xlsx,
 )
 from src.shared.schemas.dtm import Dtm
 from src.shared.schemas.install_task import CxLevel, InstallTask
@@ -134,6 +135,24 @@ def test_mop_rows_grouped_by_cx_level_phase(small_dtm: Dtm) -> None:
     l1_end = max(i for i, r in enumerate(rows) if r.phase == CxLevel.L1)
     l2_start = min(i for i, r in enumerate(rows) if r.phase == CxLevel.L2)
     assert l1_end < l2_start
+
+
+def test_xlsx_starts_with_zip_magic_and_has_steps_sheet(small_dtm: Dtm) -> None:
+    """xlsx artifact is a real openpyxl workbook with a Steps sheet, all rows present."""
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    # Act
+    xlsx_bytes = serialize_install_sequence_xlsx(small_dtm)
+
+    # Assert — zip magic + sheet name + row count = 1 header + N data rows.
+    assert xlsx_bytes.startswith(b"PK")
+    wb = load_workbook(BytesIO(xlsx_bytes))
+    assert "Steps" in wb.sheetnames
+    ws = wb["Steps"]
+    # Fixture has 3 + 2 + 2 = 7 rows + header = 8 total.
+    assert ws.max_row == 8
 
 
 def test_pdf_has_one_page_per_phase_plus_cover(small_dtm: Dtm) -> None:

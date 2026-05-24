@@ -42,7 +42,7 @@ DTM is self-describing in both modes — EMS reads `(host, port)` and polls. No 
 | 6  | P&ID — Cooling System         | dxf + pdf        | created by internal drawing_generator and put into artifact_s3                                |
 | 7  | Communication Network Diagram | dxf + pdf        | created by internal drawing_generator and put into artifact_s3                                |
 | 8  | Cable and Hose Schedule       | json + xlsx      | BomGenerator — derived from BOM lines + spec.yaml port/connection fields → artifact_s3        |
-| 9  | Install Sequence (MOP)        | pdf              | InstallSequenceService -> reportlab narrative PDF -> artifact_s3                              |
+| 9  | Install Sequence (MOP)        | pdf + xlsx       | InstallSequenceService -> reportlab narrative PDF + openpyxl single-sheet xlsx -> artifact_s3 |
 | 10 | Device Topology Manifest      | json             | DTMGenerator -> artifact_s3                                                                   |
 
 

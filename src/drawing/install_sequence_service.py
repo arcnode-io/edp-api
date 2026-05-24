@@ -12,6 +12,8 @@ drawing. Rendered with reportlab Platypus (no system deps).
 
 from io import BytesIO
 
+from openpyxl import Workbook
+from openpyxl.styles import Font
 from pydantic import BaseModel
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import LETTER
@@ -122,6 +124,38 @@ def _render_mop_pdf(rows: list[MopRow], *, deployment_uuid: str, profile: str) -
         story.append(Spacer(1, 0.1 * inch))
         story.extend(_phase_table(phase, rows))
     doc.build(story)
+    return buf.getvalue()
+
+
+_XLSX_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("phase", "Phase"),
+    ("device_id", "Device"),
+    ("task_name", "Task"),
+    ("est_minutes", "Est (min)"),
+    ("crew_role", "Crew"),
+)
+
+
+def serialize_install_sequence_xlsx(dtm: Dtm) -> bytes:
+    """One Steps sheet — phase / device / task / minutes / crew + Sign-off column."""
+    rows = build_mop_rows(dtm)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Steps"
+    bold = Font(bold=True)
+    headers = [*[label for _, label in _XLSX_COLUMNS], "Sign-off"]
+    for col_idx, label in enumerate(headers, start=1):
+        ws.cell(row=1, column=col_idx, value=label).font = bold
+    for row_idx, row in enumerate(rows, start=2):
+        for col_idx, (field, _label) in enumerate(_XLSX_COLUMNS, start=1):
+            value = getattr(row, field)
+            if hasattr(value, "value"):
+                value = value.value
+            ws.cell(row=row_idx, column=col_idx, value=value)
+        # Sign-off column — empty cell for installer to mark
+        ws.cell(row=row_idx, column=len(headers), value="")
+    buf = BytesIO()
+    wb.save(buf)
     return buf.getvalue()
 
 
