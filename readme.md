@@ -42,7 +42,7 @@ DTM is self-describing in both modes — EMS reads `(host, port)` and polls. No 
 | 6  | P&ID — Cooling System         | dxf + pdf        | created by internal drawing_generator and put into artifact_s3                                |
 | 7  | Communication Network Diagram | dxf + pdf        | created by internal drawing_generator and put into artifact_s3                                |
 | 8  | Cable and Hose Schedule       | json + xlsx      | BomGenerator — derived from BOM lines + spec.yaml port/connection fields → artifact_s3        |
-| 9  | Install Sequence (PERT DAG)   | pdf              | InstallSequenceService -> graphviz dot -> artifact_s3                                         |
+| 9  | Install Sequence (MOP)        | pdf              | InstallSequenceService -> reportlab narrative PDF -> artifact_s3                              |
 | 10 | Device Topology Manifest      | json             | DTMGenerator -> artifact_s3                                                                   |
 
 
@@ -95,7 +95,7 @@ edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
 **Current state:** every reserved `ArtifactKind` has a real generator.
 BOM (json + xlsx), DTM (json), SLD HMI SVG, SLD engineering (dxf + pdf),
 P&ID cooling (dxf + pdf), comms diagram (dxf + pdf), cable+hose
-schedule (json + xlsx), and install sequence (pdf — PERT DAG) all ship
+schedule (json + xlsx), and install sequence MOP (pdf — narrative, phased) all ship
 real bytes. No `_stub_body` paths exercised in the pipeline today;
 `_stub_body` stays around as a safety net for future reserved kinds.
 Dispatch is a `(kind, format) -> bytes-builder` table in
@@ -150,7 +150,7 @@ src/
 │   ├── sld_engineering_service.py   # Dtm → SLD engineering DXF + PDF (IEC 60617)
 │   ├── pid_cooling_service.py       # Dtm → P&ID cooling DXF + PDF (ISA 5.1, 2-sheet)
 │   ├── comms_diagram_service.py     # Dtm → comms topology DXF + PDF (per-protocol clusters)
-│   ├── install_sequence_service.py  # Dtm → install commissioning PERT DAG PDF (graphviz dot)
+│   ├── install_sequence_service.py  # Dtm → install MOP PDF (reportlab narrative)
 │   ├── drawing_controller.py        # POST /edp-api/sld-hmi-svg re-render endpoint
 │   ├── drawing_module.py
 │   ├── _layout.py                   # dot-graph layout helpers (HMI)
@@ -165,8 +165,6 @@ src/
 │   ├── _pid_layout.py               # P&ID 2-sheet layout coordinates
 │   ├── _comms_symbols.py            # device box / switch / gateway glyphs
 │   ├── _comms_layout.py             # protocol-cluster layout coords
-│   ├── _install_dag.py              # DTM → install task DAG + critical path (CPM)
-│   ├── _install_dot.py              # InstallDag → graphviz DOT + dot subprocess → PDF
 │   └── assets/arcnode_logo_source.svg
 ├── pipeline/
 │   ├── artifact_urls.py             # ResolvedProfile → list[ArtifactRef] (deterministic URLs)

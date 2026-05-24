@@ -1,8 +1,8 @@
-"""InstallSequenceService unit tests — PERT-style commissioning DAG (PDF).
+"""InstallSequenceService unit tests — narrative MOP (Method of Procedure) PDF.
 
-Per ARCNODE artifact-pipeline spec: PDF only (project-mgmt artifact,
-not engineering drawing — no DXF). Uses graphviz `dot` to render the
-layered DAG.
+Standard installation deliverable: PDF organized by commissioning-level
+phases (L1→L5), with numbered steps per device task, est minutes,
+crew role, and sign-off boxes. Built with reportlab.
 """
 
 import pytest
@@ -11,6 +11,7 @@ from src.drawing.conftest import make_device, make_dtm
 from src.drawing.install_sequence_service import (
     InstallSequenceOutputs,
     InstallSequenceService,
+    build_mop_rows,
 )
 from src.shared.schemas.dtm import Dtm
 from src.shared.schemas.install_task import CxLevel, InstallTask
@@ -85,7 +86,7 @@ def _pdu_tpl() -> DeviceTemplate:
 
 @pytest.fixture
 def small_dtm() -> Dtm:
-    """1 compute module + 2 PDUs as children — minimal DAG fixture."""
+    """1 compute module + 2 PDUs as children — minimal MOP fixture."""
     return make_dtm(
         devices={
             "compute_module_1": make_device(
@@ -106,7 +107,7 @@ def small_dtm() -> Dtm:
 
 
 def test_generate_returns_pdf_bytes(small_dtm: Dtm) -> None:
-    """generate() returns a PDF byte stream from graphviz."""
+    """generate() returns a PDF byte stream."""
     # Act
     actual = InstallSequenceService().generate(small_dtm)
 
@@ -115,41 +116,33 @@ def test_generate_returns_pdf_bytes(small_dtm: Dtm) -> None:
     assert actual.pdf.startswith(b"%PDF-")
 
 
-def test_dot_source_carries_per_device_task_labels(small_dtm: Dtm) -> None:
-    """Each device's tasks appear as nodes in the DOT source.
+def test_mop_rows_grouped_by_cx_level_phase(small_dtm: Dtm) -> None:
+    """Rows group by cx_level, sorted L1→L5; per-device sub-order is deterministic.
 
-    PDF streams are FlateDecode-compressed so labels aren't grep-able
-    in PDF bytes; verify the DOT layer instead — it's where label
-    presence actually originates.
+    Fixture has 3 L1 tasks (compute_module container_set + 2 PDU mounts),
+    2 L2 tasks (PDU wire_input_feed x 2), 2 L3 tasks (PDU snmp_commission x 2).
     """
-    from src.drawing._install_dag import build_install_dag
-    from src.drawing._install_dot import build_dot_source
-
     # Act
-    dag = build_install_dag(small_dtm)
-    dot_src = build_dot_source(dag, deployment_uuid=small_dtm.deployment_uuid)
+    rows = build_mop_rows(small_dtm)
 
     # Assert
-    assert "pdu_a__mount_in_rack" in dot_src
-    assert "pdu_b__wire_input_feed" in dot_src
+    phases = [r.phase for r in rows]
+    assert phases.count(CxLevel.L1) == 3
+    assert phases.count(CxLevel.L2) == 2
+    assert phases.count(CxLevel.L3) == 2
+    # L1 before L2 before L3 (sorted by phase enum order in output).
+    l1_end = max(i for i, r in enumerate(rows) if r.phase == CxLevel.L1)
+    l2_start = min(i for i, r in enumerate(rows) if r.phase == CxLevel.L2)
+    assert l1_end < l2_start
 
 
-def test_critical_path_is_longest_total_minutes(small_dtm: Dtm) -> None:
-    """Critical path = longest cumulative est_minutes — verify against fixture.
-
-    Fixture: compute_module(L1=240) + pdu_a/pdu_b(L1=20, L2=30, L3=15).
-    Longest path: container_set (240) -> pdu_x.wire_input_feed (30)
-    -> pdu_x.snmp_commission (15) = 285 min. The L1 PDU task itself
-    isn't on the path (240 from container dominates the 20).
-    """
-    from src.drawing._install_dag import build_install_dag
+def test_pdf_has_one_page_per_phase_plus_cover(small_dtm: Dtm) -> None:
+    """PDF page count = 1 cover + N phases (fixture spans L1+L2+L3 = 3 phases)."""
+    import re
 
     # Act
-    dag = build_install_dag(small_dtm)
+    pdf = InstallSequenceService().generate(small_dtm).pdf
 
-    # Assert — container task is the longest L1 contributor; L3 PDU end is the tail.
-    assert "compute_module_1__container_set" in dag.critical_path
-    # One of the two PDUs is on the critical path through L2 → L3.
-    pdu_a_end = "pdu_a__snmp_commission" in dag.critical_path
-    pdu_b_end = "pdu_b__snmp_commission" in dag.critical_path
-    assert pdu_a_end or pdu_b_end
+    # Assert
+    page_count = len(re.findall(rb"/Type\s*/Page(?!s)", pdf))
+    assert page_count == 4  # 1 cover + 3 phase sections
