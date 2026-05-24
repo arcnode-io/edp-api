@@ -34,9 +34,24 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_LOGIN_URL = "https://www.graybar.com/store/login"
-_SEARCH_URL = "https://www.graybar.com/store/en/gb/search?q={mpn}"
+_LOGIN_URL = "https://www.graybar.com/login"
+# `enablePartNumberSearch=true` returns product cards instead of a category
+# facet landing page. Search relevance is fuzzy — the first /p/ link is
+# our best guess but may not exact-match the queried MPN; the scraper
+# verifies via `data-mpn` on the product detail page and surfaces an
+# "ambiguous" error when the match is weak.
+_SEARCH_URL = "https://www.graybar.com/search/?text={mpn}&enablePartNumberSearch=true"
 _NAV_TIMEOUT_MS = 30_000
+
+# Graybar renders two j_username fields on /login — one VISIBLE main login
+# form + one HIDDEN ship-to-account form. Both use the same id, distinguished
+# by the `_shipto` class suffix. Selectors target the visible one explicitly
+# so playwright's visibility wait doesn't loop on the hidden duplicate.
+_USERNAME_SELECTOR = "input.login-form-email:not(.login-form-email_shipto)"
+_PASSWORD_SELECTOR = "input.login-form-pwd:not(.login-form-pwd_shipto)"  # nosec B105 # noqa: S105 — CSS selector, not a password
+# Likewise two #signinButton elements — the visible one carries the
+# `gb-button` brand class; the hidden shipto duplicate does not.
+_SUBMIT_SELECTOR = "input#signinButton.gb-button"
 
 
 class GraybarClient(DistributorClient):
@@ -56,19 +71,36 @@ class GraybarClient(DistributorClient):
         return "graybar"
 
     def fetch_offer(self, mpn: str) -> DistributorOffer:
-        """Search Graybar for `mpn`, return the first hit's offer."""
+        """Search Graybar for `mpn`, navigate to first product hit, extract offer."""
         try:
             self._ensure_logged_in()
             assert self._page is not None
+            # Step 1: search.
             self._page.goto(_SEARCH_URL.format(mpn=mpn), timeout=_NAV_TIMEOUT_MS)
+            self._page.wait_for_load_state("domcontentloaded", timeout=_NAV_TIMEOUT_MS)
+            self._page.wait_for_timeout(3_000)  # let result JS hydrate
+
+            # Step 2: walk to first /p/ product link.
+            product_href = self._page.evaluate("""
+                () => {
+                    const a = document.querySelector('a[href*="/p/"]');
+                    return a ? a.href : null;
+                }
+                """)
+            if not product_href:
+                return _error_offer(
+                    self.distributor_id, mpn, "no product results for MPN"
+                )
+
+            # Step 3: open product detail + extract.
+            self._page.goto(product_href, timeout=_NAV_TIMEOUT_MS)
+            self._page.wait_for_load_state("domcontentloaded", timeout=_NAV_TIMEOUT_MS)
+            self._page.wait_for_timeout(3_000)
             return self._parse_product_detail(mpn)
         except Exception as e:
             logger.exception("graybar fetch failed for %s", mpn)
-            return DistributorOffer(
-                distributor=self.distributor_id,
-                mpn=mpn,
-                refreshed_at=datetime.now(UTC),
-                error=f"graybar fetch failed: {e!r}",
+            return _error_offer(
+                self.distributor_id, mpn, f"graybar fetch failed: {e!r}"
             )
 
     def close(self) -> None:
@@ -103,34 +135,97 @@ class GraybarClient(DistributorClient):
         self._page = self._context.new_page()
 
         self._page.goto(_LOGIN_URL, timeout=_NAV_TIMEOUT_MS)
-        self._page.fill("input[name='username']", user)
-        self._page.fill("input[name='password']", password)
-        self._page.click("button[type='submit']")
+        # Graybar throws up a cookie notification banner + a "favorites tour"
+        # modal on first load — both intercept the sign-in button click.
+        # Dismiss before login. Best-effort: missing overlay isn't fatal.
+        self._dismiss_overlays()
+        # Login form fields use Spring Security defaults (j_username / j_password).
+        self._page.fill(_USERNAME_SELECTOR, user)
+        self._page.fill(_PASSWORD_SELECTOR, password)
+        self._page.click(_SUBMIT_SELECTOR)
         self._page.wait_for_load_state("networkidle", timeout=_NAV_TIMEOUT_MS)
         self._logged_in = True
 
-    def _parse_product_detail(self, mpn: str) -> DistributorOffer:
-        """Read stock + lead time + price from the loaded search result page.
+    def _dismiss_overlays(self) -> None:
+        """Close cookie banner + any open modals so the login button is clickable."""
+        assert self._page is not None
+        # Cookie banner — try the close button selectors Graybar uses.
+        for selector in (
+            "#js-cookie-notification button",
+            "#js-cookie-notification .close",
+            "button[aria-label='Close']",
+            ".gb-modal.open .close",
+        ):
+            try:
+                el = self._page.query_selector(selector)
+                if el is not None and el.is_visible():
+                    el.click(timeout=2_000)
+            except Exception as e:
+                # Reason: overlay dismissal is best-effort. Log + continue;
+                # the real click in the login flow retries.
+                logger.debug("overlay dismissal %s: %r", selector, e)
 
-        Selectors here are best-guess and WILL need adjustment on first
-        real run against Graybar. Each missing selector returns the field
-        as None rather than failing the whole offer — partial data ships.
+    def _parse_product_detail(self, mpn: str) -> DistributorOffer:
+        """Read MPN + price + availability from the loaded product detail page.
+
+        Graybar exposes everything we need as `data-*` attributes on the
+        product container — far more stable than CSS-class scraping. The
+        `.availability` text block carries stock state ("In Stock" / "Out
+        of Stock to Ship") that we map to `stock_count` 1 / 0. Real
+        per-distributor stock counts aren't shown to logged-in users at
+        v1; Graybar surfaces "in stock at branch" / "out of stock" only.
+
+        Sets `error` to "ambiguous match" when the page's `data-mpn`
+        doesn't include the queried MPN — search relevance is fuzzy.
         """
         assert self._page is not None
+        data = self._page.evaluate("""
+            () => {
+                const el = document.querySelector('[data-mpn]');
+                if (!el) return {};
+                return {
+                    mpn: el.getAttribute('data-mpn'),
+                    sku: el.getAttribute('data-sku'),
+                    price: el.getAttribute('data-price'),
+                    manufacturer: el.getAttribute('data-manufacturer'),
+                };
+            }
+            """)
+        availability_text = _text_or_none(self._page, ".availability") or ""
+        in_stock = (
+            "In Stock" in availability_text and "Out of Stock" not in availability_text
+        )
+
+        page_mpn = (data.get("mpn") or "").strip()
+        ambiguous = (
+            mpn.upper() not in page_mpn.upper() and page_mpn.upper() not in mpn.upper()
+        )
+
         return DistributorOffer(
             distributor=self.distributor_id,
             mpn=mpn,
-            stock_count=_safe_int(
-                _text_or_none(self._page, "[data-test-id='stock-count']")
-            ),
-            lead_time_weeks=_safe_int(
-                _text_or_none(self._page, "[data-test-id='lead-time-weeks']")
-            ),
-            unit_cost_usd=_safe_float(
-                _text_or_none(self._page, "[data-test-id='unit-price']")
-            ),
+            stock_count=1 if in_stock else 0,
+            lead_time_weeks=None,  # Graybar doesn't surface lead-time on PDP at v1
+            unit_cost_usd=_safe_float(data.get("price")),
             refreshed_at=datetime.now(UTC),
+            error=(
+                f"ambiguous match: search returned MPN {page_mpn!r}"
+                if ambiguous
+                else None
+            ),
         )
+
+
+def _error_offer(
+    distributor: DistributorId, mpn: str, message: str
+) -> DistributorOffer:
+    """Build an error-only offer for fetches that failed before extraction."""
+    return DistributorOffer(
+        distributor=distributor,
+        mpn=mpn,
+        refreshed_at=datetime.now(UTC),
+        error=message,
+    )
 
 
 def _text_or_none(page: "Page", selector: str) -> str | None:
