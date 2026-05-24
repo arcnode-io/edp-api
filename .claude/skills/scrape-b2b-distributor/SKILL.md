@@ -1,6 +1,6 @@
 ---
 name: scrape-b2b-distributor
-description: Build a Playwright-driven B2B distributor catalog scraper (Graybar, Anixter/Wesco, Insight, CDW) for the BOM enrichment pipeline. Encodes the iteration discipline + portal-quirks that the Graybar live-probe converged on. Compounds learnings as each new distributor lands.
+description: Build a Playwright-driven B2B distributor catalog scraper for the BOM enrichment pipeline. ONLY Graybar is viable today — Anixter, Insight, and CDW all run anti-bot stacks (Cloudflare / HTTP2 fingerprinting / reCAPTCHA+Akamai) verified NOT VIABLE. Mouser uses REST API instead. Encodes the iteration discipline + portal-quirks from the Graybar live-probe.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent
 ---
 
@@ -280,11 +280,24 @@ defense, different vendor.
 Same recommendation: skip automated scraping; use account for manual
 quotes.
 
-### cdw — login page reachable, awaiting account confirmation
+### cdw — NOT VIABLE for scraping (verified 2026-05-24)
 
-Probe 2026-05-23: `https://www.cdw.com/account/LogOn` loads cleanly,
-sign-in form accessible. No anti-bot blocks observed. Iteration
-deferred until ARCNODE's CDW B2B account is confirmed via email.
+Login page loads cleanly (no Cloudflare-style challenge) BUT the form
+itself stacks three anti-bot layers:
+
+- **reCAPTCHA v3** — invisible behavioral scoring (key
+  `6LeU7D8kAAAAAMnsFMQpkrrKoq0hoONBvAKRVEMp`). Headless Playwright
+  scores below the block threshold even with stealth plugins.
+- **Akamai bot manager** — script loaded on the login page; adds a
+  second behavioral check.
+- **Client-side password encoding** — form has `PlainPassword` (visible
+  field) AND `EncodedPassword` (hidden); JS encodes before POST. Even
+  if reCAPTCHA passes, missing this step makes the POST fail silently.
+- ASP.NET `__RequestVerificationToken` anti-forgery (manageable in
+  isolation but stacked on the above).
+
+Same recommendation as Anixter / Insight: don't circumvent. Use the CDW
+account for manual procurement only; do not automate against it.
 
 ### mouser — REST API path
 
