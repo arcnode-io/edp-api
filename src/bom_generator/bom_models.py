@@ -10,6 +10,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from src.bom_enrichment.enrichment_models import DistributorOffer
+
 
 class ProcurementPath(StrEnum):
     """Where each line item is sourced."""
@@ -34,11 +36,14 @@ class BomLineItem(BaseModel):
     fab_tier: str | None = None
 
     # Track-A enrichment: static fields curated in equipment/<id>/spec.yaml.
-    # Dynamic enrichment (live stock, real-time lead time, lifecycle status)
-    # lands as Track B once a 3rd-party API source is picked.
     install_video_url: str | None = None  # vendor's published install / unboxing video
     ndaa_compliant: bool | None = None  # NDAA Section 889 — None = unasserted
     taa_compliant: bool | None = None  # Trade Agreements Act — None = unasserted
+
+    # Track-B enrichment: per-distributor offers fetched at BOM generation
+    # time. Empty when no enrichment ran (e.g. credentials missing) or when
+    # no distributor returned a non-error offer for this MPN.
+    offers: list[DistributorOffer] = Field(default_factory=list)
 
     # Custom-fab-only fields
     material: str | None = None

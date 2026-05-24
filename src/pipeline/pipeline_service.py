@@ -26,6 +26,7 @@ from src.bom_generator.bom_generator_service import (
     BomGeneratorService,
     serialize_bom_xlsx,
 )
+from src.bom_enrichment.enrichment_service import EnrichmentService
 from src.bom_generator.bom_models import Bom
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
@@ -73,6 +74,7 @@ class PipelineService:
         pid_cooling_service: PidCoolingService,
         comms_diagram_service: CommsDiagramService,
         cable_hose_schedule_service: CableHoseScheduleService,
+        enrichment_service: EnrichmentService | None = None,
     ) -> None:
         self._client = client
         self._bom = bom_generator
@@ -82,6 +84,9 @@ class PipelineService:
         self._pid_cooling = pid_cooling_service
         self._comms_diagram = comms_diagram_service
         self._cable_hose = cable_hose_schedule_service
+        # None when no distributor creds are configured — pipeline still
+        # ships, BOM line_items just have empty `offers` lists.
+        self._enrichment = enrichment_service
 
     def run(
         self,
@@ -111,6 +116,11 @@ class PipelineService:
             grid_container_qty=1 if resolution.grid_container_present else 0,
             deployment_context=_context_string(payload.deployment_context),
         )
+        # Track-B enrichment: per-distributor offers merged into each line
+        # item. No-op when no enrichment service is configured (e.g. when
+        # distributor creds aren't set in env).
+        if self._enrichment is not None:
+            _attach_offers(bom, self._enrichment)
         sld_eng = self._sld_eng.generate(dtm, profile=profile)
         pid_cooling = self._pid_cooling.generate(dtm, profile=profile)
         comms_diagram = self._comms_diagram.generate(dtm, profile=profile)
@@ -176,6 +186,32 @@ class PipelineService:
         # the same boto3 put_object under the hood. Funnel everything through
         # `upload_bytes` for a single I/O path.
         self._client.upload_bytes(body, ref.url)
+
+
+def _attach_offers(bom: Bom, enrichment: EnrichmentService) -> None:
+    """Fetch per-MPN offers across all configured distributors, merge into BOM.
+
+    Looks up by `BomLineItem.part_number` (which IS the MPN for catalog
+    items per `BomGeneratorService._spec_to_catalog_line`). Custom-fab
+    lines (ARCNODE plates) are skipped — no external distributor offer
+    exists. Each line's `offers` field gets the full list of returned
+    offers (including error-offers, so a reviewer sees which distributors
+    failed for this MPN).
+    """
+    catalog_mpns = sorted(
+        {
+            li.part_number
+            for li in bom.line_items
+            if li.procurement_path.value == "catalog"
+        }
+    )
+    if not catalog_mpns:
+        return
+    enriched = enrichment.enrich(catalog_mpns)
+    for line in bom.line_items:
+        result = enriched.get(line.part_number)
+        if result is not None:
+            line.offers = result.offers
 
 
 def _context_string(ctx: DeploymentContext) -> str:
