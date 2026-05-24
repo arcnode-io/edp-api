@@ -92,13 +92,14 @@ platform_api -> edp_api: GET /edp-api/jobs/{job_id}
 edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
 ```
 
-**Current state:** BOM (json + xlsx), DTM, SLD HMI SVG, SLD
-engineering (dxf + pdf), P&ID cooling (dxf + pdf), comms diagram
-(dxf + pdf), and cable+hose schedule (json + xlsx) are real generators.
-Installation_graph is the only remaining stub — lands as `_stub_body`
-bytes from `PipelineService` for now. URLs are deterministic and
-reserved, content is a placeholder. Dispatch is a
-`(kind, format) -> bytes-builder` table in `PipelineService._run_one`.
+**Current state:** every reserved `ArtifactKind` has a real generator.
+BOM (json + xlsx), DTM (json), SLD HMI SVG, SLD engineering (dxf + pdf),
+P&ID cooling (dxf + pdf), comms diagram (dxf + pdf), cable+hose
+schedule (json + xlsx), and installation graph (dxf + pdf) all ship
+real bytes. No `_stub_body` paths exercised in the pipeline today;
+`_stub_body` stays around as a safety net for future reserved kinds.
+Dispatch is a `(kind, format) -> bytes-builder` table in
+`PipelineService._run_one`.
 
 The engineering SLD is a paper-grade deliverable: IEC 60617 graphical
 symbols, ISO 5457 sheet frame, simplified ISO 7200 title block on A3
@@ -149,6 +150,7 @@ src/
 │   ├── sld_engineering_service.py   # Dtm → SLD engineering DXF + PDF (IEC 60617)
 │   ├── pid_cooling_service.py       # Dtm → P&ID cooling DXF + PDF (ISA 5.1, 2-sheet)
 │   ├── comms_diagram_service.py     # Dtm → comms topology DXF + PDF (per-protocol clusters)
+│   ├── install_graph_service.py     # Dtm → per-module floor plan DXF + PDF (schematic)
 │   ├── drawing_controller.py        # POST /edp-api/sld-hmi-svg re-render endpoint
 │   ├── drawing_module.py
 │   ├── _layout.py                   # dot-graph layout helpers (HMI)
@@ -163,6 +165,8 @@ src/
 │   ├── _pid_layout.py               # P&ID 2-sheet layout coordinates
 │   ├── _comms_symbols.py            # device box / switch / gateway glyphs
 │   ├── _comms_layout.py             # protocol-cluster layout coords
+│   ├── _install_graph_symbols.py    # equipment box + clearance halo primitives
+│   ├── _install_graph_layout.py     # schematic floor-plan placement coords
 │   └── assets/arcnode_logo_source.svg
 ├── pipeline/
 │   ├── artifact_urls.py             # ResolvedProfile → list[ArtifactRef] (deterministic URLs)
