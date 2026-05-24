@@ -49,6 +49,7 @@ class JobsModule:
             pid_cooling_service=drawing_module.pid_cooling,
             comms_diagram_service=drawing_module.comms_diagram,
             cable_hose_schedule_service=CableHoseScheduleService(),
+            install_graph_service=drawing_module.install_graph,
             enrichment_service=_build_enrichment_service(),
         )
         self.service = JobsService(
