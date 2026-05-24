@@ -252,17 +252,46 @@ when iterating selectors.
 - Fuzzy search returns wrong products often. Ambiguous-match detection
   via `data-mpn` substring check is mandatory.
 
-### anixter — not yet converged
+### anixter — NOT VIABLE for scraping (verified 2026-05-23)
 
-(Fill in after first live-probe iteration.)
+Cloudflare's "Just a moment..." challenge page blocks all headless
+playwright requests with HTTP 403. This is an active anti-bot signal —
+Anixter (Wesco) has explicitly chosen to block automated access.
 
-### insight — not yet converged
+Bypass options + tradeoffs:
+- `playwright-stealth` library: sometimes evades Cloudflare detection
+  via fingerprint patching, but cat-and-mouse — Cloudflare updates
+  regularly.
+- Headed mode (`headless=False`): still detected because of automation
+  flags (`navigator.webdriver`, etc.).
+- Browser-extension agent (Claude for Chrome) with human-resembling
+  pacing: more likely to pass.
 
-(Fill in.)
+**Recommendation: don't try to circumvent.** Active anti-bot defenses
+are an explicit "no" from the vendor. Use Anixter accounts for manual
+procurement; do not automate against them.
 
-### cdw — not yet converged
+### insight — NOT VIABLE for scraping (verified 2026-05-23)
 
-(Fill in after their account-confirmation email lands.)
+Returns `ERR_HTTP2_PROTOCOL_ERROR` on every request — likely TLS
+fingerprint or HTTP/2 settings detection. Same family as Cloudflare's
+defense, different vendor.
+
+Same recommendation: skip automated scraping; use account for manual
+quotes.
+
+### cdw — login page reachable, awaiting account confirmation
+
+Probe 2026-05-23: `https://www.cdw.com/account/LogOn` loads cleanly,
+sign-in form accessible. No anti-bot blocks observed. Iteration
+deferred until ARCNODE's CDW B2B account is confirmed via email.
+
+### mouser — REST API path
+
+Skip Playwright entirely. Implement via `httpx` POST to
+`https://api.mouser.com/api/v1/search/partnumber` with `apiKey` query
+param. Free tier covers our volume. See Mouser docs at
+https://www.mouser.com/api-search/.
 
 ## Chug-along gate
 
