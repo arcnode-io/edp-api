@@ -5,7 +5,9 @@ import os
 
 from src.bom_enrichment._base_scraper import DistributorClient
 from src.bom_enrichment._graybar_client import GraybarClient
+from src.bom_enrichment._offer_cache import OfferCache
 from src.bom_enrichment.enrichment_service import EnrichmentService
+from src.bom_generator.manifest_client import _make_client as _make_s3_client
 from src.bom_generator.bom_generator_service import BomGeneratorService
 from src.bom_generator.manifest_module import ManifestModule
 from src.cable_hose_schedule.cable_hose_schedule_service import CableHoseScheduleService
@@ -67,12 +69,20 @@ def _build_enrichment_service() -> EnrichmentService | None:
     Each distributor is opt-in via env vars. Missing creds for a distributor
     just skips it — no error, no fallback. If no distributor is configured,
     returns None and the pipeline skips enrichment entirely.
+
+    Wires an S3-backed OfferCache (7-day TTL) so re-runs of the same
+    deployment profile don't re-hammer distributor portals.
     """
     clients: list[DistributorClient] = []
     if os.environ.get("GRAYBAR_USER") and os.environ.get("GRAYBAR_PASS"):
         clients.append(GraybarClient())
-    # Anixter / Insight / Mouser / CDW lands as those clients ship.
+    # Mouser API client lands once MOUSER_API_KEY activates.
     if not clients:
         logger.info("no distributor creds in env; BOM enrichment disabled")
         return None
-    return EnrichmentService(clients)
+    cache = OfferCache(
+        bucket="arcnode-artifacts",
+        prefix="bom-enrichment-cache",
+        s3=_make_s3_client(),
+    )
+    return EnrichmentService(clients, cache=cache)

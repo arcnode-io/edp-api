@@ -21,6 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 
 from src.bom_enrichment._base_scraper import DistributorClient
+from src.bom_enrichment._offer_cache import OfferCache
 from src.bom_enrichment.enrichment_models import (
     DistributorOffer,
     EnrichmentForMpn,
@@ -32,8 +33,14 @@ logger = logging.getLogger(__name__)
 class EnrichmentService:
     """Drives a fixed set of DistributorClients to enrich a list of MPNs."""
 
-    def __init__(self, clients: list[DistributorClient]) -> None:
+    def __init__(
+        self,
+        clients: list[DistributorClient],
+        *,
+        cache: OfferCache | None = None,
+    ) -> None:
         self._clients = clients
+        self._cache = cache
 
     def enrich(self, mpns: list[str]) -> dict[str, EnrichmentForMpn]:
         """Fetch offers for every MPN from every client. Parallel per client.
@@ -46,7 +53,7 @@ class EnrichmentService:
         with ThreadPoolExecutor(max_workers=max(len(self._clients), 1)) as pool:
             per_client_results = list(
                 pool.map(
-                    lambda client: _fetch_all_for_client(client, mpns),
+                    lambda client: _fetch_all_for_client(client, mpns, self._cache),
                     self._clients,
                 )
             )
@@ -75,25 +82,37 @@ class EnrichmentService:
 
 
 def _fetch_all_for_client(
-    client: DistributorClient, mpns: list[str]
+    client: DistributorClient,
+    mpns: list[str],
+    cache: OfferCache | None,
 ) -> list[DistributorOffer]:
-    """Sequential per-distributor — share session, respect rate limit."""
+    """Sequential per-distributor — share session, respect rate limit.
+
+    Cache lookup short-circuits the scrape when a fresh offer exists.
+    Successful scrapes are written back; error offers are not cached.
+    """
     results: list[DistributorOffer] = []
     for mpn in mpns:
+        if cache is not None:
+            cached = cache.get(distributor=client.distributor_id, mpn=mpn)
+            if cached is not None:
+                results.append(cached)
+                continue
         try:
-            results.append(client.fetch_offer(mpn))
+            offer = client.fetch_offer(mpn)
         except Exception as e:
             # Reason: clients SHOULD catch + populate error inside DistributorOffer.
             # This is the safety net for truly unexpected exceptions.
             logger.exception(
                 "client %s unexpectedly raised on %s", client.distributor_id, mpn
             )
-            results.append(
-                DistributorOffer(
-                    distributor=client.distributor_id,
-                    mpn=mpn,
-                    refreshed_at=datetime.now(UTC),
-                    error=f"unexpected: {e!r}",
-                )
+            offer = DistributorOffer(
+                distributor=client.distributor_id,
+                mpn=mpn,
+                refreshed_at=datetime.now(UTC),
+                error=f"unexpected: {e!r}",
             )
+        if cache is not None:
+            cache.put(offer)
+        results.append(offer)
     return results

@@ -116,6 +116,58 @@ def test_client_raising_unexpectedly_is_isolated_to_its_distributor() -> None:
     assert "selectors" in by_dist["anixter"].error
 
 
+def test_cached_offer_short_circuits_client_call() -> None:
+    """When OfferCache has the offer, the distributor client is NOT called."""
+    from src.bom_enrichment._offer_cache import OfferCache
+    from src.bom_enrichment.test_offer_cache import _fake_s3
+
+    # Arrange — pre-populate the cache with a known offer for PN-1.
+    cache = OfferCache(bucket="b", prefix="p", s3=_fake_s3())
+    cache.put(_offer("graybar", "PN-1", unit_cost_usd=99.99))
+
+    # Client that would explode if called — proves we never call it on cache hit.
+    class _ExplodingClient(DistributorClient):
+        @property
+        def distributor_id(self) -> DistributorId:
+            return "graybar"
+
+        def fetch_offer(self, mpn: str) -> DistributorOffer:
+            raise AssertionError(f"client called for cached mpn {mpn!r}")
+
+        def close(self) -> None:
+            pass
+
+    service = EnrichmentService([_ExplodingClient()], cache=cache)
+
+    # Act
+    actual = service.enrich(["PN-1"])
+
+    # Assert — cached offer surfaces, client.fetch_offer never ran
+    assert actual["PN-1"].offers[0].unit_cost_usd == 99.99
+
+
+def test_successful_scrape_is_written_to_cache_but_error_is_not() -> None:
+    """Cache miss → scrape → write back. Error offer → no write."""
+    from src.bom_enrichment._offer_cache import OfferCache
+    from src.bom_enrichment.test_offer_cache import _fake_s3
+
+    # Arrange
+    cache = OfferCache(bucket="b", prefix="p", s3=_fake_s3())
+    client = _MockClient(
+        "graybar",
+        {"PN-OK": _offer("graybar", "PN-OK", unit_cost_usd=15.0)},
+        # PN-FAIL is missing → _MockClient returns an error offer
+    )
+    service = EnrichmentService([client], cache=cache)
+
+    # Act
+    service.enrich(["PN-OK", "PN-FAIL"])
+
+    # Assert — only the successful offer landed in the cache.
+    assert cache.get(distributor="graybar", mpn="PN-OK") is not None
+    assert cache.get(distributor="graybar", mpn="PN-FAIL") is None
+
+
 def test_close_calls_each_client_once() -> None:
     """Service.close() releases every client's resources."""
     # Arrange
