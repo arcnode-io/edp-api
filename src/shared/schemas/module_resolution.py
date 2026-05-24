@@ -15,7 +15,7 @@ from src.shared.enums import (
 
 
 class ModuleResolution(BaseModel):
-    """Canonical input to BOM, DTM, drawing, installation_graph, manifest_service."""
+    """Canonical input to BOM, DTM, drawing, install_sequence, manifest_service."""
 
     deployment_id: UUID
 

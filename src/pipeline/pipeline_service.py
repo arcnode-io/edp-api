@@ -39,9 +39,9 @@ from src.drawing.comms_diagram_service import (
     CommsDiagramOutputs,
     CommsDiagramService,
 )
-from src.drawing.install_graph_service import (
-    InstallGraphOutputs,
-    InstallGraphService,
+from src.drawing.install_sequence_service import (
+    InstallSequenceOutputs,
+    InstallSequenceService,
 )
 from src.drawing.pid_cooling_service import PidCoolingOutputs, PidCoolingService
 from src.drawing.sld_engineering_service import (
@@ -78,7 +78,7 @@ class PipelineService:
         pid_cooling_service: PidCoolingService,
         comms_diagram_service: CommsDiagramService,
         cable_hose_schedule_service: CableHoseScheduleService,
-        install_graph_service: InstallGraphService,
+        install_sequence_service: InstallSequenceService,
         enrichment_service: EnrichmentService | None = None,
     ) -> None:
         self._client = client
@@ -89,7 +89,7 @@ class PipelineService:
         self._pid_cooling = pid_cooling_service
         self._comms_diagram = comms_diagram_service
         self._cable_hose = cable_hose_schedule_service
-        self._install_graph = install_graph_service
+        self._install_sequence = install_sequence_service
         # None when no distributor creds are configured — pipeline still
         # ships, BOM line_items just have empty `offers` lists.
         self._enrichment = enrichment_service
@@ -131,7 +131,7 @@ class PipelineService:
         pid_cooling = self._pid_cooling.generate(dtm, profile=profile)
         comms_diagram = self._comms_diagram.generate(dtm, profile=profile)
         cable_hose = self._cable_hose.generate(dtm)
-        install_graph = self._install_graph.generate(dtm, profile=profile)
+        install_sequence = self._install_sequence.generate(dtm, profile=profile)
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):
                 continue  # selected from catalog — already in S3
@@ -143,7 +143,7 @@ class PipelineService:
                 pid_cooling=pid_cooling,
                 comms_diagram=comms_diagram,
                 cable_hose=cable_hose,
-                install_graph=install_graph,
+                install_sequence=install_sequence,
             )
 
     def _run_one(
@@ -156,7 +156,7 @@ class PipelineService:
         pid_cooling: PidCoolingOutputs,
         comms_diagram: CommsDiagramOutputs,
         cable_hose: CableHoseSchedule,
-        install_graph: InstallGraphOutputs,
+        install_sequence: InstallSequenceOutputs,
     ) -> None:
         """Dispatch a single ArtifactRef to its generator (or stub).
 
@@ -188,8 +188,7 @@ class PipelineService:
                 ArtifactKind.CABLE_HOSE_SCHEDULE,
                 "xlsx",
             ): lambda: serialize_cable_hose_schedule_xlsx(cable_hose),
-            (ArtifactKind.INSTALLATION_GRAPH, "dxf"): lambda: install_graph.dxf,
-            (ArtifactKind.INSTALLATION_GRAPH, "pdf"): lambda: install_graph.pdf,
+            (ArtifactKind.INSTALL_SEQUENCE, "pdf"): lambda: install_sequence.pdf,
         }
         builder = dispatch.get((ref.kind, ref.format))
         body = builder() if builder is not None else _stub_body(ref)

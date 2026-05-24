@@ -61,3 +61,19 @@ measurements:
       protocol: redfish
       uri: /Fabric/SW1/Ports
       json_pointer: /Members/0/LinkStatus
+
+install_tasks:
+  - name: rack_install
+    est_minutes: 20
+    crew_role: it
+    cx_level: L1
+  - name: uplink_terminate
+    depends_on: [rack_install]
+    est_minutes: 30
+    crew_role: it
+    cx_level: L2
+  - name: redfish_commission
+    depends_on: [uplink_terminate]
+    est_minutes: 15
+    crew_role: it
+    cx_level: L3

@@ -1,6 +1,6 @@
 ---
 name: generate-engineering-drawing
-description: Build a new paper-grade engineering drawing generator (P&ID, comms diagram, installation graph, cable+hose schedule) by extending the shared title-block + render path used by SLD-eng + P&ID-cooling. Two-phase: TDD the structure, then visual loop check at 400dpi.
+description: Build a new paper-grade engineering drawing generator (P&ID, comms diagram, cable+hose schedule) by extending the shared title-block + render path used by SLD-eng + P&ID-cooling. Two-phase: TDD the structure, then visual loop check at 400dpi. NOTE: install sequence is NOT an engineering drawing — it uses graphviz dot, not ezdxf, see install_sequence_service.py.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent
 ---
 
@@ -12,9 +12,8 @@ EDP (BOM-adjacent CAD documents). Already-shipped instances:
 - `sld_engineering_service.py` — Single Line Diagram (IEC 60617 symbols).
 - `pid_cooling_service.py` — P&ID Cooling (ISA 5.1 symbols, 2 sheets).
 
-This skill encodes the converged patterns so the next drawing
-(comms_diagram, installation_graph, cable_hose_schedule) lands in ~1 day
-not ~3.
+This skill encodes the converged patterns so the next paper-grade
+drawing lands in ~1 day not ~3.
 
 ## Shared infrastructure (do NOT duplicate)
 
@@ -234,7 +233,7 @@ properly connected, title blocks fit on one line. Ship.
 
 ### Chug-along gate
 
-Skill is "done" when the next drawing (comms_diagram, installation_graph)
+Skill is "done" when the next drawing (comms_diagram, cable_hose_schedule)
 runs clean visual loop in ≤2 iterations. If iter 3+ still has layout
 issues on the second drawing, refine this skill before iter 4.
 

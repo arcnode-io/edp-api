@@ -39,3 +39,19 @@ measurements:
     binding:
       protocol: snmp
       oid: 1.3.6.1.4.1.1718.4.1.8.5.1.2
+
+install_tasks:
+  - name: mount_in_rack
+    est_minutes: 20
+    crew_role: electrician
+    cx_level: L1
+  - name: wire_input_feed
+    depends_on: [mount_in_rack]
+    est_minutes: 30
+    crew_role: electrician
+    cx_level: L2
+  - name: snmp_commission
+    depends_on: [wire_input_feed]
+    est_minutes: 15
+    crew_role: it
+    cx_level: L3

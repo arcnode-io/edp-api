@@ -68,7 +68,7 @@ def _commercial_no_bess_manifest() -> Manifest:
 
 
 def test_commercial_ac_produces_expected_ref_count() -> None:
-    """commercial_ac: 2 compute + 2 grid + 3 plates x 2 fmts (step+dxf) + 14 generated = 24."""
+    """commercial_ac: 2 compute + 2 grid + 3 plates x 2 fmts (step+dxf) + 13 generated = 23."""
     # Arrange
     svc = ManifestService(manifest=_commercial_ac_manifest())
     resolved = svc.resolve("commercial_ac")
@@ -77,7 +77,7 @@ def test_commercial_ac_produces_expected_ref_count() -> None:
     refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
 
     # Assert
-    assert len(refs) == 2 + 2 + 3 * 2 + 14
+    assert len(refs) == 2 + 2 + 3 * 2 + 13
 
 
 def test_commercial_no_bess_omits_grid_container() -> None:
@@ -202,19 +202,20 @@ def _all_seven_profiles_manifest() -> Manifest:
 
 # Expected URL counts per profile, derived from manifest shape:
 # 2 compute_container (step + glb), 2 grid_container (step + glb) if present,
-# n plates x 2 formats (step + dxf), 14 deterministic generated artifacts.
+# n plates x 2 formats (step + dxf), 13 deterministic generated artifacts
+# (install_sequence is pdf-only, no dxf).
 # `no_bess` profiles have 0 grid + 2 plates; ac/dc profiles have 2 grid + 3 plates.
 _PROFILE_EXPECTED_URL_COUNT: dict[str, int] = {
-    "commercial_ac": 2 + 2 + 3 * 2 + 14,  # 24
-    "commercial_dc_int": 2 + 2 + 3 * 2 + 14,
-    "commercial_dc_ext": 2 + 2 + 3 * 2 + 14,
+    "commercial_ac": 2 + 2 + 3 * 2 + 13,  # 23
+    "commercial_dc_int": 2 + 2 + 3 * 2 + 13,
+    "commercial_dc_ext": 2 + 2 + 3 * 2 + 13,
     "commercial_no_bess": 2
     + 2
     + 2 * 2
-    + 14,  # 22 — no-bess GRID variant present, no BG-* plate
-    "defense_ac": 2 + 2 + 3 * 2 + 14,
-    "defense_dc_ext": 2 + 2 + 3 * 2 + 14,
-    "defense_no_bess": 2 + 2 + 2 * 2 + 14,
+    + 13,  # 21 — no-bess GRID variant present, no BG-* plate
+    "defense_ac": 2 + 2 + 3 * 2 + 13,
+    "defense_dc_ext": 2 + 2 + 3 * 2 + 13,
+    "defense_no_bess": 2 + 2 + 2 * 2 + 13,
 }
 
 

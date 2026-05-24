@@ -139,3 +139,19 @@ commands:
       data_type: int32
       word_order: high_low
       scale: 1.0
+
+install_tasks:
+  - name: set_and_anchor
+    est_minutes: 180
+    crew_role: electrician
+    cx_level: L1
+  - name: wire_dc_bus
+    depends_on: [set_and_anchor]
+    est_minutes: 120
+    crew_role: electrician
+    cx_level: L2
+  - name: canopen_commission
+    depends_on: [wire_dc_bus]
+    est_minutes: 30
+    crew_role: it
+    cx_level: L3

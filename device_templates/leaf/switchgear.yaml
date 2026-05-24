@@ -100,3 +100,19 @@ measurements:
       data_type: int16
       word_order: high_low
       scale: 0.1
+
+install_tasks:
+  - name: set_and_anchor
+    est_minutes: 240
+    crew_role: electrician
+    cx_level: L1
+  - name: terminate_incoming_feeder
+    depends_on: [set_and_anchor]
+    est_minutes: 180
+    crew_role: electrician
+    cx_level: L2
+  - name: modbus_commission
+    depends_on: [terminate_incoming_feeder]
+    est_minutes: 30
+    crew_role: it
+    cx_level: L3

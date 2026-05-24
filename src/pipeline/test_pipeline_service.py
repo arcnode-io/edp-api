@@ -15,7 +15,7 @@ from src.bom_generator.manifest_models import (
 from src.bom_generator.manifest_service import ManifestService
 from src.cable_hose_schedule.cable_hose_schedule_service import CableHoseScheduleService
 from src.drawing.comms_diagram_service import CommsDiagramService
-from src.drawing.install_graph_service import InstallGraphService
+from src.drawing.install_sequence_service import InstallSequenceService
 from src.drawing.pid_cooling_service import PidCoolingService
 from src.drawing.sld_engineering_service import SldEngineeringService
 from src.drawing.sld_hmi_svg_service import SldHmiSvgService
@@ -146,7 +146,7 @@ def _build_pipeline(client: _RecordingClient) -> PipelineService:
         pid_cooling_service=PidCoolingService(),
         comms_diagram_service=CommsDiagramService(),
         cable_hose_schedule_service=CableHoseScheduleService(),
-        install_graph_service=InstallGraphService(),
+        install_sequence_service=InstallSequenceService(),
     )
 
 
@@ -482,10 +482,8 @@ def test_sld_hmi_svg_upload_is_real_svg() -> None:
 def test_all_reserved_artifact_kinds_now_get_real_bytes() -> None:
     """No `_stub_body` fallback paths exercised — every reserved kind has a real generator.
 
-    Renamed from `test_unimplemented_kinds_get_stub_bytes` after the
-    installation_graph generator landed (the last stub). The test stays
-    as a regression guard: if a future refactor accidentally drops a
-    real generator from the dispatch table, the corresponding URL would
+    Regression guard: if a future refactor accidentally drops a real
+    generator from the dispatch table, the corresponding URL would
     silently receive stub bytes — this test catches that drift.
     """
     # Arrange
@@ -506,8 +504,8 @@ def test_all_reserved_artifact_kinds_now_get_real_bytes() -> None:
         manifest=_commercial_ac_manifest(),
     )
 
-    # Assert — every reserved generated URL got non-stub bytes after the
-    # installation_graph wiring. Pick the BOM xlsx to verify the shape:
+    # Assert — every reserved generated URL got non-stub bytes. Pick the
+    # BOM xlsx to verify the shape:
     # real xlsx bytes start with the ZIP magic 'PK'.
     bom_xlsx = next(
         u.url for u in urls if u.kind == ArtifactKind.BOM and u.format == "xlsx"

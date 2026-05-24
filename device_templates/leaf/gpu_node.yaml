@@ -68,3 +68,19 @@ measurements:
       protocol: redfish
       uri: /Chassis/1/Processors
       json_pointer: /Members/0/Oem/Nvidia/TotalPowerWatts
+
+install_tasks:
+  - name: rack_install
+    est_minutes: 30
+    crew_role: it
+    cx_level: L1
+  - name: network_connect
+    depends_on: [rack_install]
+    est_minutes: 15
+    crew_role: it
+    cx_level: L2
+  - name: power_on_and_pxe
+    depends_on: [network_connect]
+    est_minutes: 60
+    crew_role: it
+    cx_level: L3

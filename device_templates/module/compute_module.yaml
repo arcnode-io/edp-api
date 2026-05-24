@@ -43,3 +43,14 @@ measurements:
     poll_rate_hz: 0.1
     display_name_default: "Power Usage Effectiveness"
     publisher: analyst
+
+install_tasks:
+  - name: container_set_and_anchor
+    est_minutes: 240
+    crew_role: general
+    cx_level: L1
+  - name: container_grounding
+    depends_on: [container_set_and_anchor]
+    est_minutes: 60
+    crew_role: electrician
+    cx_level: L2

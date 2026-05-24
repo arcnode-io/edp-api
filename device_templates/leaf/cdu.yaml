@@ -61,3 +61,24 @@ measurements:
       protocol: redfish
       uri: /Chassis/CDU/Pumps
       json_pointer: /Members/0/Status/State
+
+install_tasks:
+  - name: mount_in_rack
+    est_minutes: 30
+    crew_role: plumber
+    cx_level: L1
+  - name: connect_facility_loop
+    depends_on: [mount_in_rack]
+    est_minutes: 90
+    crew_role: plumber
+    cx_level: L2
+  - name: wire_control_power
+    depends_on: [mount_in_rack]
+    est_minutes: 20
+    crew_role: electrician
+    cx_level: L2
+  - name: redfish_commission
+    depends_on: [connect_facility_loop, wire_control_power]
+    est_minutes: 15
+    crew_role: it
+    cx_level: L3

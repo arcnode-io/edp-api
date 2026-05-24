@@ -39,3 +39,19 @@ measurements:
     values: { 0: OK, 1: STALE, 2: INVALID, 3: COMM_FAIL }
     # status uses analog_input (not binary_input) — 4-value enum needs >1 bit.
     binding: { protocol: dnp3_tcp, point_type: analog_input, point_index: 100, variation: 2 }
+
+install_tasks:
+  - name: pi_mount
+    est_minutes: 20
+    crew_role: it
+    cx_level: L1
+  - name: sensor_wire
+    depends_on: [pi_mount]
+    est_minutes: 45
+    crew_role: electrician
+    cx_level: L2
+  - name: dnp3_commission
+    depends_on: [sensor_wire]
+    est_minutes: 30
+    crew_role: it
+    cx_level: L3

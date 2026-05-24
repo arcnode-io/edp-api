@@ -26,7 +26,7 @@ class ArtifactKind(StrEnum):
     PID_COOLING = "pid_cooling"
     COMMS_DIAGRAM = "comms_diagram"
     CABLE_HOSE_SCHEDULE = "cable_hose_schedule"
-    INSTALLATION_GRAPH = "installation_graph"
+    INSTALL_SEQUENCE = "install_sequence"
     DTM = "dtm"
 
 

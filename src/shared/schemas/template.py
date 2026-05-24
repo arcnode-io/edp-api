@@ -15,6 +15,7 @@ from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from src.shared.schemas.install_task import CxLevel, InstallTask
 from src.shared.schemas.measurement import Measurement, Publisher
 from src.shared.schemas.measurement_ranges import Bounds, Thresholds
 from src.shared.schemas.template_protocols import (
@@ -33,9 +34,11 @@ __all__ = [
     "CanopenBinding",
     "Command",
     "ContainsEntry",
+    "CxLevel",
     "DeviceTemplate",
     "Dnp3Binding",
     "Fanout",
+    "InstallTask",
     "Measurement",
     "ModbusBinding",
     "Publisher",
@@ -121,6 +124,7 @@ class DeviceTemplate(BaseModel):
     contains: list[ContainsEntry] = Field(default_factory=list)
     measurements: dict[str, Measurement] = Field(default_factory=dict)
     commands: dict[str, Command] = Field(default_factory=dict)
+    install_tasks: list[InstallTask] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def slug_format(self) -> "DeviceTemplate":
@@ -153,6 +157,19 @@ class DeviceTemplate(BaseModel):
                 raise ValueError(f"template {t!r}: vendor forbidden for kind=module")
             if self.model is not None:
                 raise ValueError(f"template {t!r}: model forbidden for kind=module")
+        return self
+
+    @model_validator(mode="after")
+    def install_task_deps_resolve(self) -> "DeviceTemplate":
+        """Every install_task.depends_on must name another install_task in this template."""
+        names = {t.name for t in self.install_tasks}
+        for task in self.install_tasks:
+            for dep in task.depends_on:
+                if dep not in names:
+                    raise ValueError(
+                        f"template {self.template!r} install_task {task.name!r}: "
+                        f"depends_on {dep!r} not found in install_tasks"
+                    )
         return self
 
     @model_validator(mode="after")

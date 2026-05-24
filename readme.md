@@ -42,7 +42,7 @@ DTM is self-describing in both modes — EMS reads `(host, port)` and polls. No 
 | 6  | P&ID — Cooling System         | dxf + pdf        | created by internal drawing_generator and put into artifact_s3                                |
 | 7  | Communication Network Diagram | dxf + pdf        | created by internal drawing_generator and put into artifact_s3                                |
 | 8  | Cable and Hose Schedule       | json + xlsx      | BomGenerator — derived from BOM lines + spec.yaml port/connection fields → artifact_s3        |
-| 9  | Installation Graph            | dxf + pdf        | InstallationGraphGenerator -> artifact_s3                                                     |
+| 9  | Install Sequence (PERT DAG)   | pdf              | InstallSequenceService -> graphviz dot -> artifact_s3                                         |
 | 10 | Device Topology Manifest      | json             | DTMGenerator -> artifact_s3                                                                   |
 
 
@@ -58,7 +58,7 @@ participant manifest_service
 participant bom_generator
 participant dtm_generator
 participant drawing_generator
-participant installation_graph_generator
+participant install_sequence_service
 database artifact_s3
 
 platform_api -> edp_api: POST /edp-api/jobs { ConfiguratorPayload }
@@ -85,8 +85,8 @@ drawing_generator -> artifact_s3: pid.dxf + pid.pdf
 edp_api -> drawing_generator: ModuleResolution + dtm
 drawing_generator -> artifact_s3: comms.dxf + comms.pdf
 
-edp_api -> installation_graph_generator: ModuleResolution
-installation_graph_generator -> artifact_s3: install_graph.dxf + .pdf
+edp_api -> install_sequence_service: ModuleResolution + dtm
+install_sequence_service -> artifact_s3: install_sequence.pdf
 
 platform_api -> edp_api: GET /edp-api/jobs/{job_id}
 edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
@@ -95,7 +95,7 @@ edp_api -> platform_api: { status: complete, edp_artifact_urls[] }
 **Current state:** every reserved `ArtifactKind` has a real generator.
 BOM (json + xlsx), DTM (json), SLD HMI SVG, SLD engineering (dxf + pdf),
 P&ID cooling (dxf + pdf), comms diagram (dxf + pdf), cable+hose
-schedule (json + xlsx), and installation graph (dxf + pdf) all ship
+schedule (json + xlsx), and install sequence (pdf — PERT DAG) all ship
 real bytes. No `_stub_body` paths exercised in the pipeline today;
 `_stub_body` stays around as a safety net for future reserved kinds.
 Dispatch is a `(kind, format) -> bytes-builder` table in
@@ -150,7 +150,7 @@ src/
 │   ├── sld_engineering_service.py   # Dtm → SLD engineering DXF + PDF (IEC 60617)
 │   ├── pid_cooling_service.py       # Dtm → P&ID cooling DXF + PDF (ISA 5.1, 2-sheet)
 │   ├── comms_diagram_service.py     # Dtm → comms topology DXF + PDF (per-protocol clusters)
-│   ├── install_graph_service.py     # Dtm → per-module floor plan DXF + PDF (schematic)
+│   ├── install_sequence_service.py  # Dtm → install commissioning PERT DAG PDF (graphviz dot)
 │   ├── drawing_controller.py        # POST /edp-api/sld-hmi-svg re-render endpoint
 │   ├── drawing_module.py
 │   ├── _layout.py                   # dot-graph layout helpers (HMI)
@@ -165,8 +165,8 @@ src/
 │   ├── _pid_layout.py               # P&ID 2-sheet layout coordinates
 │   ├── _comms_symbols.py            # device box / switch / gateway glyphs
 │   ├── _comms_layout.py             # protocol-cluster layout coords
-│   ├── _install_graph_symbols.py    # equipment box + clearance halo primitives
-│   ├── _install_graph_layout.py     # schematic floor-plan placement coords
+│   ├── _install_dag.py              # DTM → install task DAG + critical path (CPM)
+│   ├── _install_dot.py              # InstallDag → graphviz DOT + dot subprocess → PDF
 │   └── assets/arcnode_logo_source.svg
 ├── pipeline/
 │   ├── artifact_urls.py             # ResolvedProfile → list[ArtifactRef] (deterministic URLs)
@@ -394,7 +394,7 @@ class ArtifactKind(StrEnum):
     PID_COOLING          = "pid_cooling"
     COMMS_DIAGRAM        = "comms_diagram"
     CABLE_HOSE_SCHEDULE  = "cable_hose_schedule"
-    INSTALLATION_GRAPH   = "installation_graph"
+    INSTALL_SEQUENCE     = "install_sequence"
     DTM                  = "dtm"
 
 
@@ -555,7 +555,7 @@ URLs are pure functions of `ConfiguratorPayload` — known at POST time, returne
 | PID_COOLING          | `pid_cooling`              |
 | COMMS_DIAGRAM        | `comms`                    |
 | CABLE_HOSE_SCHEDULE  | `cable_hose_schedule`      |
-| INSTALLATION_GRAPH   | `installation_graph`       |
+| INSTALL_SEQUENCE     | `install_sequence`         |
 | DTM                  | `dtm`                      |
 
 Example: `s3://arcnode-artifacts/edp/{uuid}/plate_cg.step`

@@ -79,3 +79,19 @@ measurements:
       address: 4022
       data_type: int16
       scale: 0.01
+
+install_tasks:
+  - name: mount_in_panel
+    est_minutes: 30
+    crew_role: electrician
+    cx_level: L1
+  - name: wire_ct_pt_inputs
+    depends_on: [mount_in_panel]
+    est_minutes: 60
+    crew_role: electrician
+    cx_level: L2
+  - name: modbus_commission
+    depends_on: [wire_ct_pt_inputs]
+    est_minutes: 15
+    crew_role: it
+    cx_level: L3

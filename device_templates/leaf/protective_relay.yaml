@@ -89,3 +89,24 @@ measurements:
       protocol: dnp3_tcp
       point_index: 110
       point_type: binary_input
+
+install_tasks:
+  - name: mount_in_panel
+    est_minutes: 60
+    crew_role: electrician
+    cx_level: L1
+  - name: wire_ct_pt_inputs
+    depends_on: [mount_in_panel]
+    est_minutes: 90
+    crew_role: electrician
+    cx_level: L2
+  - name: dnp3_commission
+    depends_on: [wire_ct_pt_inputs]
+    est_minutes: 30
+    crew_role: it
+    cx_level: L3
+  - name: protection_settings_test
+    depends_on: [dnp3_commission]
+    est_minutes: 60
+    crew_role: electrician
+    cx_level: L4

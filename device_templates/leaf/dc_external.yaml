@@ -107,3 +107,9 @@ commands:
       data_type: int16
       word_order: high_low
       scale: 0.1
+
+install_tasks:
+  - name: utility_interconnect_witness
+    est_minutes: 30
+    crew_role: general
+    cx_level: L1
