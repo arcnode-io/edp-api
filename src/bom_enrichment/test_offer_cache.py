@@ -42,6 +42,14 @@ class _FakeS3:
     def put_object(self, *, Bucket: str, Key: str, Body: bytes) -> None:  # noqa: N803
         self._store[(Bucket, Key)] = Body
 
+    def list_objects_v2(self, *, Bucket: str, Prefix: str) -> dict:  # noqa: N803
+        contents = [
+            {"Key": key}
+            for (bucket, key) in self._store
+            if bucket == Bucket and key.startswith(Prefix)
+        ]
+        return {"Contents": contents}
+
 
 class _BodyStream:
     def __init__(self, data: bytes) -> None:

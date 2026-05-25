@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 
 from src.bom_enrichment._base_scraper import DistributorClient
 from src.bom_enrichment._offer_cache import OfferCache
+from src.bom_enrichment._offer_history import OfferHistory, compute_delta_pct
 from src.bom_enrichment.enrichment_models import (
     DistributorOffer,
     EnrichmentForMpn,
@@ -38,9 +39,11 @@ class EnrichmentService:
         clients: list[DistributorClient],
         *,
         cache: OfferCache | None = None,
+        history: OfferHistory | None = None,
     ) -> None:
         self._clients = clients
         self._cache = cache
+        self._history = history
 
     def enrich(self, mpns: list[str]) -> dict[str, EnrichmentForMpn]:
         """Fetch offers for every MPN from every client. Parallel per client.
@@ -53,7 +56,9 @@ class EnrichmentService:
         with ThreadPoolExecutor(max_workers=max(len(self._clients), 1)) as pool:
             per_client_results = list(
                 pool.map(
-                    lambda client: _fetch_all_for_client(client, mpns, self._cache),
+                    lambda client: _fetch_all_for_client(
+                        client, mpns, self._cache, self._history
+                    ),
                     self._clients,
                 )
             )
@@ -70,6 +75,19 @@ class EnrichmentService:
             for mpn, offers in offers_by_mpn.items()
         }
 
+    def price_delta_pct_7d(self, offer: DistributorOffer) -> float | None:
+        """% change between this offer's price and its nearest 7-day-old snapshot.
+
+        Returns None when no history backend is configured, the offer is
+        an error, or no qualifying snapshot exists.
+        """
+        if self._history is None or offer.error is not None:
+            return None
+        snaps = self._history.list_snapshots(
+            distributor=offer.distributor, mpn=offer.mpn
+        )
+        return compute_delta_pct(current=offer, snapshots=snaps, now=offer.refreshed_at)
+
     def close(self) -> None:
         """Release browser / API resources across all clients."""
         for client in self._clients:
@@ -85,11 +103,13 @@ def _fetch_all_for_client(
     client: DistributorClient,
     mpns: list[str],
     cache: OfferCache | None,
+    history: OfferHistory | None,
 ) -> list[DistributorOffer]:
     """Sequential per-distributor — share session, respect rate limit.
 
     Cache lookup short-circuits the scrape when a fresh offer exists.
-    Successful scrapes are written back; error offers are not cached.
+    Successful scrapes are written to cache + history; error offers are
+    skipped in both stores.
     """
     results: list[DistributorOffer] = []
     for mpn in mpns:
@@ -114,5 +134,7 @@ def _fetch_all_for_client(
             )
         if cache is not None:
             cache.put(offer)
+        if history is not None:
+            history.record(offer)
         results.append(offer)
     return results

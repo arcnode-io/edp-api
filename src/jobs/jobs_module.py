@@ -6,6 +6,7 @@ import os
 from src.bom_enrichment._base_scraper import DistributorClient
 from src.bom_enrichment._graybar_client import GraybarClient
 from src.bom_enrichment._offer_cache import OfferCache
+from src.bom_enrichment._offer_history import OfferHistory
 from src.bom_enrichment.enrichment_service import EnrichmentService
 from src.bom_generator.manifest_client import _make_client as _make_s3_client
 from src.bom_generator.bom_generator_service import BomGeneratorService
@@ -80,9 +81,9 @@ def _build_enrichment_service() -> EnrichmentService | None:
     if not clients:
         logger.info("no distributor creds in env; BOM enrichment disabled")
         return None
-    cache = OfferCache(
-        bucket="arcnode-artifacts",
-        prefix="bom-enrichment-cache",
-        s3=_make_s3_client(),
+    s3 = _make_s3_client()
+    cache = OfferCache(bucket="arcnode-artifacts", prefix="bom-enrichment-cache", s3=s3)
+    history = OfferHistory(
+        bucket="arcnode-artifacts", prefix="bom-enrichment-history", s3=s3
     )
-    return EnrichmentService(clients, cache=cache)
+    return EnrichmentService(clients, cache=cache, history=history)

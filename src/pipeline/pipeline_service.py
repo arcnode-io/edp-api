@@ -26,6 +26,7 @@ from src.bom_generator.bom_generator_service import (
     BomGeneratorService,
     serialize_bom_xlsx,
 )
+from src.bom_enrichment.enrichment_models import DistributorOffer
 from src.bom_enrichment.enrichment_service import EnrichmentService
 from src.bom_generator.bom_models import Bom
 from src.bom_generator.manifest_client import ManifestClient
@@ -225,8 +226,20 @@ def _attach_offers(bom: Bom, enrichment: EnrichmentService) -> None:
     enriched = enrichment.enrich(catalog_mpns)
     for line in bom.line_items:
         result = enriched.get(line.part_number)
-        if result is not None:
-            line.offers = result.offers
+        if result is None:
+            continue
+        line.offers = result.offers
+        cheapest = _cheapest_priced_offer(result.offers)
+        if cheapest is not None:
+            line.price_change_pct_7d = enrichment.price_delta_pct_7d(cheapest)
+
+
+def _cheapest_priced_offer(offers: list[DistributorOffer]) -> DistributorOffer | None:
+    """Lowest-priced non-error offer; None when there's nothing to compare."""
+    priced = [o for o in offers if o.error is None and o.unit_cost_usd is not None]
+    if not priced:
+        return None
+    return min(priced, key=lambda o: o.unit_cost_usd or 0)
 
 
 def _context_string(ctx: DeploymentContext) -> str:

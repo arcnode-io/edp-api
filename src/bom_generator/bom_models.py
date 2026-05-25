@@ -45,6 +45,11 @@ class BomLineItem(BaseModel):
     # no distributor returned a non-error offer for this MPN.
     offers: list[DistributorOffer] = Field(default_factory=list)
 
+    # Percent change between cheapest current offer and its nearest history
+    # snapshot ≥ 7 days old. None when no prior snapshot exists (first-ever
+    # scrape or no historical data for this MPN). Positive = price up.
+    price_change_pct_7d: float | None = None
+
     # Custom-fab-only fields
     material: str | None = None
     finish: str | None = None

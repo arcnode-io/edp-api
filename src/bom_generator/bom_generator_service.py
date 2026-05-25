@@ -241,6 +241,7 @@ _XLSX_COLUMNS: tuple[tuple[str, str], ...] = (
     # a non-error offer). Full per-distributor breakdown lives in the json.
     ("__live_cheapest", "Live Cheapest (USD)"),
     ("__live_source", "Live Source"),
+    ("price_change_pct_7d", "Δ vs 7d ago (%)"),
     ("material", "Material"),
     ("finish", "Finish"),
     ("drawing_ref", "Drawing Ref"),
