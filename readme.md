@@ -605,7 +605,7 @@ service intentionally doesn't.
 
 ## Manifest
 
-Profile → assembly URLs lives in `edp-module-assemblies` repo as `manifest.yaml`, published to S3. `ManifestClient` fetches it from `cfg.manifest_url` on demand. `JobsService.create` calls `fetch_manifest()` once per job, wraps the snapshot in a `ManifestService` for `.resolve(profile_str)` (which returns a `ResolvedProfile` with concrete `AssemblyVariant` + `list[ResolvedPlate]`), and pins the Manifest on the `JobRecord` so `PipelineService` + `DtmGeneratorService` see the same snapshot at emit time. Closes ADR-012's torn-read mitigation by construction; no app-level cache.
+Profile → assembly URLs lives in `edp-module-assemblies` repo as `manifest.yaml`, published to S3. `ManifestClient` fetches it from `cfg.manifest_url` on demand. `JobsService.create` calls `fetch_manifest()` once per job, wraps the snapshot in a `ManifestService` for `.resolve(profile_str)` (which returns a `ResolvedProfile` with concrete `AssemblyVariant` + `list[ResolvedPlate]`), and pins the Manifest on the `JobRecord` so `PipelineService` + `DtmGeneratorService` see the same snapshot at emit time. Closes ADR-011's torn-read mitigation by construction; no app-level cache.
 
 `DeploymentProfile` enum and `manifest_profiles.yaml` are both at the same 7 profiles (4 commercial, 3 defense). Adding a profile to the enum without a matching `manifest_profiles.yaml` entry surfaces as a KeyError at `JobsService.create` — fail-fast at intake.
 

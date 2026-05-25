@@ -8,7 +8,7 @@ PipelineService using the pinned manifest and flips status to COMPLETE on
 success / FAILED on exception.
 
 Manifest is fetched per-job (not at app startup) and pinned for the job's
-lifetime — closes ADR-012 torn-read between resolve and DTM emit.
+lifetime — closes ADR-011 torn-read between resolve and DTM emit.
 """
 
 import logging

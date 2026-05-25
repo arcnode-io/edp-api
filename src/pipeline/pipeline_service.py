@@ -108,7 +108,7 @@ class PipelineService:
 
         `manifest` is the snapshot pinned by JobsService at create() — same
         object used to resolve profile→URLs. Passed through to the DTM
-        generator so emit doesn't re-fetch S3 (closes ADR-012 torn-read).
+        generator so emit doesn't re-fetch S3 (closes ADR-011 torn-read).
         """
         profile = resolution.deployment_profile.value
         # Generate DTM + BOM once and share with every consumer. Saves repeat

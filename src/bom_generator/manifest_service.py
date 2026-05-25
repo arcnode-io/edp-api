@@ -4,7 +4,7 @@ Source of truth for assembly + plate URLs is the manifest published to S3
 by edp-module-assemblies. JobsService fetches that manifest per-job via
 `ManifestClient.fetch_manifest()`, then wraps it in a ManifestService for
 the resolve call and pins the underlying Manifest on the JobRecord so the
-pipeline sees the same snapshot at DTM emit time (closes ADR-012 torn-read).
+pipeline sees the same snapshot at DTM emit time (closes ADR-011 torn-read).
 
 `resolve(profile_str)` returns a `ResolvedProfile` containing fully-resolved
 URLs — downstream callers (artifact_urls, BOM generator, DTM generator) need

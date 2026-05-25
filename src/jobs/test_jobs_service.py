@@ -225,7 +225,7 @@ def test_execute_uses_manifest_pinned_at_create_not_re_fetched(
 ) -> None:
     """Manifest fetched at create() flows pinned through to pipeline.run().
 
-    Closes ADR-012 torn-read: if the manifest source mutates between POST
+    Closes ADR-011 torn-read: if the manifest source mutates between POST
     and pipeline execution, the pipeline still sees what create() saw.
     """
     # Arrange

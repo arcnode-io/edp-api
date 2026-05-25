@@ -17,7 +17,7 @@ class JobRecord(BaseModel):
     pipeline can resume from the record alone (no extra round-trip through
     ModuleResolverService). `manifest` is pinned at create() time so the
     pipeline sees the same hardware contract the 202 response was built
-    against (closes ADR-012 torn-read). All three are stripped from the
+    against (closes ADR-011 torn-read). All three are stripped from the
     public JobResult projection — clients see status + URLs only.
     """
 

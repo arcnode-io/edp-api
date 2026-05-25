@@ -36,8 +36,7 @@ Sections most relevant to edp-api:
 | ADR-002 | v1 targets HGX B200 | Sets `GpuVariant.B200` as default; informs sizing constants. |
 | ADR-006 | Manifest absorbs profile→asset mapping | Why `ManifestService` lives in edp-api but `manifest_profiles.yaml` is upstream. Drives the per-job manifest pin. |
 | ADR-009 | Hardware↔edp-api contract artifacts | Pins the `bom.yaml` (input) + `bom.json` (output) shapes. Drives `manifest_models.py` + `bom_models.py`. |
-| ADR-011 | CG plate parametric; Module F is later authority | Why sizing constants are hand-computed today — Module F is the future home for sizing math in edp-api. |
-| ADR-012 | Manifest URL versioning deferred | Documents the in-flight torn-read risk + the per-job-fetch-and-pin mitigation that landed in commit 87c18dd. |
+| ADR-011 | Manifest URL versioning deferred | Documents the in-flight torn-read risk + the per-job-fetch-and-pin mitigation that landed in commit 87c18dd. |
 
 ## Open items
 
