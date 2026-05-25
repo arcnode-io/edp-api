@@ -75,6 +75,56 @@ def test_generate_embeds_templates_used() -> None:
     assert actual.templates_used["revenue_meter"].equipment_id == "GRD-MTR-001"
 
 
+def test_generate_attaches_alarms_from_equipment_spec() -> None:
+    """Per-SKU alarms from equipment_spec.alarms[] land on templates_used[].alarms.
+
+    Backend-engineer (device-api) consumes the DTM to emit AsyncAPI x-alarms;
+    alarms must ride with the template, not be fetched separately.
+    """
+    # Arrange — extend the manifest with a specs entry + mock fetch_spec
+    from src.shared.schemas.alarm import AlarmPriority
+
+    manifest = _manifest()
+    manifest.specs["GRD-MTR-001"] = "s3://test/specs/GRD-MTR-001.yaml"
+    client = _make_client()
+    client.fetch_manifest.return_value = manifest
+    client.fetch_spec.return_value = {
+        "spec": {
+            "alarms": [
+                {
+                    "id": "voltage_anomaly",
+                    "description": "Phase voltage outside ±5% nominal",
+                    "condition_source": {
+                        "type": "analog_threshold",
+                        "address": 4000,
+                        "threshold": 252.0,
+                        "direction": "above",
+                        "unit": "volts",
+                    },
+                    "priority": "P2",
+                    "operator_action": "Verify utility tap setting.",
+                    "on_delay_ms": 2000,
+                    "off_delay_ms": 0,
+                    "reset": "auto",
+                    "reference_doc": "ION9000 §4",
+                }
+            ]
+        }
+    }
+    service = DtmGeneratorService(client, template_catalog=_real_catalog())
+
+    # Act
+    dtm = service.generate(
+        profile="commercial_ac", resolution=_resolution(), manifest=manifest
+    )
+
+    # Assert
+    meter_alarms = dtm.templates_used["revenue_meter"].alarms
+    assert len(meter_alarms) == 1
+    assert meter_alarms[0].id == "voltage_anomaly"
+    assert meter_alarms[0].priority == AlarmPriority.P2
+
+
 def test_generate_expands_bus_members() -> None:
     # Arrange
     service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())

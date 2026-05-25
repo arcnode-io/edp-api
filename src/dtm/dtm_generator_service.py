@@ -89,5 +89,7 @@ class DtmGeneratorService:
             sizing_params=sizing(resolution),
             devices=devices,
             buses=buses,
-            templates_used=collect_templates_used(devices, self._catalog),
+            templates_used=collect_templates_used(
+                devices, self._catalog, client=self._client, manifest=manifest
+            ),
         )

@@ -10,6 +10,7 @@ from src.dtm.topology_yaml import (
     TopologyYaml,
 )
 from src.shared.enums import GpuVariant
+from src.shared.schemas.alarm import Alarm, load_alarms_from_spec
 from src.shared.schemas.dtm import (
     Bus,
     BusMember,
@@ -115,16 +116,44 @@ def expand_bus(bus_spec: TopologyBusSpec, by_template: dict[str, list[str]]) -> 
 
 
 def collect_templates_used(
-    devices: dict[str, Device], catalog: dict[str, DeviceTemplate]
+    devices: dict[str, Device],
+    catalog: dict[str, DeviceTemplate],
+    *,
+    client: ManifestClient,
+    manifest: Manifest,
 ) -> dict[str, DeviceTemplate]:
-    """Build templates_used map from catalog, raising if any slug is missing."""
+    """Build templates_used; attach per-SKU alarms[] from equipment_spec.yaml.
+
+    Modules (kind=module, no equipment_id) get the template unchanged.
+    Leaves whose equipment_id is not in manifest.specs surface with empty
+    alarms (specs may be still being curated; degrade quiet, log).
+    """
     slugs = {d.template for d in devices.values()}
     result: dict[str, DeviceTemplate] = {}
     for slug in slugs:
         if slug not in catalog:
             raise ValueError(f"device references template {slug!r} not in catalog")
-        result[slug] = catalog[slug]
+        template = catalog[slug]
+        alarms = _load_alarms_for_template(template, client, manifest)
+        result[slug] = template.model_copy(update={"alarms": alarms})
     return result
+
+
+def _load_alarms_for_template(
+    template: DeviceTemplate, client: ManifestClient, manifest: Manifest
+) -> list[Alarm]:
+    """Fetch equipment_spec for this leaf and extract alarms[]."""
+    if template.equipment_id is None:
+        return []
+    spec_url = manifest.specs.get(template.equipment_id)
+    if spec_url is None:
+        logger.warning(
+            "spec URL missing for %s; templates_used[%s].alarms = []",
+            template.equipment_id,
+            template.template,
+        )
+        return []
+    return load_alarms_from_spec(client.fetch_spec(spec_url))
 
 
 def sizing(resolution: ModuleResolution) -> SizingParams:
