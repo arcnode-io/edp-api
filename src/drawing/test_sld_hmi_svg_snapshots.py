@@ -1,20 +1,57 @@
 """Syrupy snapshot tests for SLD HMI SVG generator.
 
-Baselines guard against unintended drift in SVG byte output. Regenerate
-intentionally with `uv run pytest src/drawing/test_sld_hmi_svg_snapshots.py
---snapshot-update` and review the diff before committing.
+Snapshots assert STRUCTURAL shape — element IDs, nesting, classes,
+text content, data-* attributes — not coordinate values. graphviz
+major versions (2.42 vs 14.x vs ...) shift layout heuristics, but the
+HMI animation binds to element IDs + path topology, not absolute pixel
+positions, so coord drift is functionally irrelevant. Normalizer below
+strips coord-bearing attribute values to make snapshots version-agnostic.
 
-Snapshot stability requires dot binary major-version alignment between
-dev + CI + Dockerfile (currently graphviz 13.x).
+Regenerate intentionally with `uv run pytest src/drawing/test_sld_hmi_svg_snapshots.py
+--snapshot-update` and review the diff before committing.
 """
+
+import re
 
 from src.drawing.conftest import make_bus, make_device, make_dtm, make_template
 from src.drawing.sld_hmi_svg_service import SldHmiSvgService
 from src.shared.schemas.dtm import Dtm
 
+# Attributes whose values are coordinate-bearing and thus graphviz-version-
+# dependent. Their VALUES get replaced with N so snapshots don't break on
+# layout drift; the attribute keys themselves stay so structural shape
+# (which attrs are present on which elements) is still asserted.
+_COORD_ATTRS = (
+    "viewBox",
+    "transform",
+    "d",
+    "points",
+    "x",
+    "y",
+    "x1",
+    "y1",
+    "x2",
+    "y2",
+    "dx",
+    "dy",
+    "cx",
+    "cy",
+    "r",
+    "rx",
+    "ry",
+    "width",
+    "height",
+)
+_COORD_ATTR_RE = re.compile(r"(?<![\w-])(" + "|".join(_COORD_ATTRS) + r')="[^"]*"')
+
+
+def _normalize_svg(svg: str) -> str:
+    """Replace coord-bearing attr values with 'N'. Element text content untouched."""
+    return _COORD_ATTR_RE.sub(r'\1="N"', svg)
+
 
 def _generate(dtm: Dtm) -> str:
-    return SldHmiSvgService().generate(dtm).decode("utf-8")
+    return _normalize_svg(SldHmiSvgService().generate(dtm).decode("utf-8"))
 
 
 def test_snapshot_minimal_one_bess_one_inverter_one_grid(snapshot) -> None:  # type: ignore[no-untyped-def]

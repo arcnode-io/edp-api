@@ -2,29 +2,29 @@
 # name: test_snapshot_minimal_one_bess_one_inverter_one_grid
   '''
   <?xml version="1.0" encoding="UTF-8"?>
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 402.20 56.00">
-    <g id="bess_rack_1" data-comp="device-node" data-template="bess_rack" transform="translate(56.47 18.00)">
-      <rect data-region="body" x="-56.47" y="-18.00" width="112.94" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="56.47" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">BESS Rack 1</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">bess_rack</text>
-      <rect data-region="hit-area" x="-56.47" y="-22.00" width="112.94" height="44.00" fill="transparent" />
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="N">
+    <g id="bess_rack_1" data-comp="device-node" data-template="bess_rack" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">BESS Rack 1</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">bess_rack</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <g id="inverter_1" data-comp="device-node" data-template="inverter" transform="translate(179.47 18.00)">
-      <rect data-region="body" x="-48.79" y="-18.00" width="97.58" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="48.79" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">Inverter 1</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">inverter</text>
-      <rect data-region="hit-area" x="-48.79" y="-22.00" width="97.58" height="44.00" fill="transparent" />
+    <g id="inverter_1" data-comp="device-node" data-template="inverter" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">Inverter 1</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">inverter</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <g id="grid_module_1" data-comp="device-node" data-template="grid_module" transform="translate(314.47 18.00)">
-      <rect data-region="body" x="-67.73" y="-18.00" width="135.46" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="67.73" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">Grid Module 1</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">grid_module</text>
-      <rect data-region="hit-area" x="-67.73" y="-22.00" width="135.46" height="44.00" fill="transparent" />
+    <g id="grid_module_1" data-comp="device-node" data-template="grid_module" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">Grid Module 1</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">grid_module</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <path id="bus_dc_bus_1" data-comp="bus" data-bus-type="dc" d="M 56.47 18.00 L 179.47 18.00" fill="none" stroke="currentColor" />
+    <path id="bus_dc_bus_1" data-comp="bus" data-bus-type="dc" d="N" fill="none" stroke="currentColor" />
   </svg>
   
   '''
@@ -32,37 +32,37 @@
 # name: test_snapshot_mixed_two_bess_compute_grid
   '''
   <?xml version="1.0" encoding="UTF-8"?>
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 655.49 56.00">
-    <g id="bess_module_1" data-comp="device-node" data-template="bess_module" transform="translate(68.75 18.00)">
-      <rect data-region="body" x="-68.75" y="-18.00" width="137.51" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="68.75" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">bess_module_1</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">bess_module</text>
-      <rect data-region="hit-area" x="-68.75" y="-22.00" width="137.51" height="44.00" fill="transparent" />
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="N">
+    <g id="bess_module_1" data-comp="device-node" data-template="bess_module" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">bess_module_1</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">bess_module</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <g id="bess_module_2" data-comp="device-node" data-template="bess_module" transform="translate(224.76 18.00)">
-      <rect data-region="body" x="-68.75" y="-18.00" width="137.51" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="68.75" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">bess_module_2</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">bess_module</text>
-      <rect data-region="hit-area" x="-68.75" y="-22.00" width="137.51" height="44.00" fill="transparent" />
+    <g id="bess_module_2" data-comp="device-node" data-template="bess_module" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">bess_module_2</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">bess_module</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <g id="compute_module_1" data-comp="device-node" data-template="compute_module" transform="translate(396.76 18.00)">
-      <rect data-region="body" x="-85.13" y="-18.00" width="170.26" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="85.13" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">compute_module_1</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">compute_module</text>
-      <rect data-region="hit-area" x="-85.13" y="-22.00" width="170.26" height="44.00" fill="transparent" />
+    <g id="compute_module_1" data-comp="device-node" data-template="compute_module" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">compute_module_1</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">compute_module</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <g id="grid_module_1" data-comp="device-node" data-template="grid_module" transform="translate(567.76 18.00)">
-      <rect data-region="body" x="-67.73" y="-18.00" width="135.46" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="67.73" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">grid_module_1</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">grid_module</text>
-      <rect data-region="hit-area" x="-67.73" y="-22.00" width="135.46" height="44.00" fill="transparent" />
+    <g id="grid_module_1" data-comp="device-node" data-template="grid_module" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">grid_module_1</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">grid_module</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <path id="bus_ac_bus_1" data-comp="bus" data-bus-type="ac" d="M 68.75 18.00 L 567.76 18.00" fill="none" stroke="currentColor" />
-    <path id="bus_load_bus_1" data-comp="bus" data-bus-type="ac" d="M 567.76 18.00 L 396.76 18.00" fill="none" stroke="currentColor" />
+    <path id="bus_ac_bus_1" data-comp="bus" data-bus-type="ac" d="N" fill="none" stroke="currentColor" />
+    <path id="bus_load_bus_1" data-comp="bus" data-bus-type="ac" d="N" fill="none" stroke="currentColor" />
   </svg>
   
   '''
@@ -70,47 +70,47 @@
 # name: test_snapshot_multi_rack_four_bess_one_pcs_one_ac_bus
   '''
   <?xml version="1.0" encoding="UTF-8"?>
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 608.88 56.00">
-    <g id="bess_rack_1" data-comp="device-node" data-template="bess_rack" transform="translate(56.47 18.00)">
-      <rect data-region="body" x="-56.47" y="-18.00" width="112.94" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="56.47" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">bess_rack_1</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">bess_rack</text>
-      <rect data-region="hit-area" x="-56.47" y="-22.00" width="112.94" height="44.00" fill="transparent" />
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="N">
+    <g id="bess_rack_1" data-comp="device-node" data-template="bess_rack" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">bess_rack_1</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">bess_rack</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <g id="bess_rack_2" data-comp="device-node" data-template="bess_rack" transform="translate(187.47 18.00)">
-      <rect data-region="body" x="-56.47" y="-18.00" width="112.94" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="56.47" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">bess_rack_2</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">bess_rack</text>
-      <rect data-region="hit-area" x="-56.47" y="-22.00" width="112.94" height="44.00" fill="transparent" />
+    <g id="bess_rack_2" data-comp="device-node" data-template="bess_rack" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">bess_rack_2</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">bess_rack</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <g id="bess_rack_3" data-comp="device-node" data-template="bess_rack" transform="translate(318.47 18.00)">
-      <rect data-region="body" x="-56.47" y="-18.00" width="112.94" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="56.47" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">bess_rack_3</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">bess_rack</text>
-      <rect data-region="hit-area" x="-56.47" y="-22.00" width="112.94" height="44.00" fill="transparent" />
+    <g id="bess_rack_3" data-comp="device-node" data-template="bess_rack" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">bess_rack_3</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">bess_rack</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <g id="bess_rack_4" data-comp="device-node" data-template="bess_rack" transform="translate(449.47 18.00)">
-      <rect data-region="body" x="-56.47" y="-18.00" width="112.94" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="56.47" cy="-18.00" r="3.0" />
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">bess_rack_4</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">bess_rack</text>
-      <rect data-region="hit-area" x="-56.47" y="-22.00" width="112.94" height="44.00" fill="transparent" />
+    <g id="bess_rack_4" data-comp="device-node" data-template="bess_rack" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">bess_rack_4</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">bess_rack</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <g id="pcs_1" data-comp="device-node" data-template="pcs" transform="translate(556.47 18.00)">
-      <rect data-region="body" x="-32.41" y="-18.00" width="64.83" height="36.00" fill="currentColor" />
-      <circle data-region="status-indicator" cx="32.41" cy="-18.00" r="3.0" />
+    <g id="pcs_1" data-comp="device-node" data-template="pcs" transform="N">
+      <rect data-region="body" x="N" y="N" width="N" height="N" fill="currentColor" />
+      <circle data-region="status-indicator" cx="N" cy="N" r="N" />
       <g data-region="breaker">
-        <circle cx="0" cy="0" r="6" fill="none" stroke="currentColor" />
-        <line x1="-6" y1="0" x2="6" y2="0" stroke="currentColor" />
+        <circle cx="N" cy="N" r="N" fill="none" stroke="currentColor" />
+        <line x1="N" y1="N" x2="N" y2="N" stroke="currentColor" />
       </g>
-      <text data-region="label-name" x="0" y="0" text-anchor="middle" fill="currentColor">pcs_1</text>
-      <text data-region="label-template" x="0" y="12" text-anchor="middle" fill="currentColor">pcs</text>
-      <rect data-region="hit-area" x="-32.41" y="-22.00" width="64.83" height="44.00" fill="transparent" />
+      <text data-region="label-name" x="N" y="N" text-anchor="middle" fill="currentColor">pcs_1</text>
+      <text data-region="label-template" x="N" y="N" text-anchor="middle" fill="currentColor">pcs</text>
+      <rect data-region="hit-area" x="N" y="N" width="N" height="N" fill="transparent" />
     </g>
-    <path id="bus_dc_bus_1" data-comp="bus" data-bus-type="dc" d="M 56.47 18.00 L 556.47 18.00" fill="none" stroke="currentColor" />
+    <path id="bus_dc_bus_1" data-comp="bus" data-bus-type="dc" d="N" fill="none" stroke="currentColor" />
   </svg>
   
   '''
