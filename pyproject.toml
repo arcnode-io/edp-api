@@ -1,7 +1,7 @@
 [project]
 name = "edp-api"
 version = "1.0.0-beta"
-requires-python = "==3.13.2"
+requires-python = ">=3.13,<3.14"
 dependencies = [
     "boto3>=1.35.0",
     "botocore>=1.35.0",
