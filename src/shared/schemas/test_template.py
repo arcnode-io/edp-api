@@ -42,7 +42,16 @@ def test_enum_values() -> None:
     assert TemplateKind.MODULE == "module"
     assert Publisher.LINE_CONTROLLER == "line_controller"
     assert Publisher.ANALYST == "analyst"
+    assert Publisher.DER_CONTROL_API == "der_control_api"
     assert Fanout.LINE_CONTROLLER == "line_controller"
+
+
+def test_der_control_api_publisher_needs_no_binding() -> None:
+    # Arrange / Act — HTTPS-service publisher, same shape as line_controller
+    m = Measurement(unit="watts", type="float", publisher=Publisher.DER_CONTROL_API)
+    # Assert
+    assert m.publisher == Publisher.DER_CONTROL_API
+    assert m.binding is None
 
 
 # --- DeviceTemplate happy paths ---

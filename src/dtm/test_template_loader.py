@@ -119,8 +119,25 @@ def test_load_real_catalog_size() -> None:
     # Assert
     leaves = [t for t in catalog.values() if t.kind.value == "leaf"]
     modules = [t for t in catalog.values() if t.kind.value == "module"]
-    assert len(leaves) == 11
+    assert len(leaves) == 12
     assert len(modules) == 3
+
+
+def test_load_real_catalog_includes_der_dispatch() -> None:
+    # Arrange — der_dispatch is the IP-native twin of operating_envelope
+    repo_root = Path(__file__).resolve().parents[2]
+    loader = TemplateLoader(root=repo_root / "device_templates")
+    # Act
+    catalog = loader.load_catalog()
+    # Assert
+    dd = catalog["der_dispatch"]
+    assert dd.kind.value == "leaf"
+    tap = dd.measurements["target_active_power"]
+    assert tap.publisher is not None and tap.publisher.value == "der_control_api"
+    assert tap.binding is None
+    # bool setpoints carry no bounds/thresholds
+    assert dd.measurements["energize_enabled"].type == "bool"
+    assert dd.measurements["energize_enabled"].bounds is None
 
 
 def test_load_real_catalog_includes_compute_and_grid_modules() -> None:

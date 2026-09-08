@@ -1,0 +1,40 @@
+template: der_dispatch
+kind: leaf
+equipment_id: GRD-DER-001
+vendor: ARCNODE
+model: DER Dispatch Intake (IEEE 2030.5 DERControl)
+description: >
+  Utility/aggregator DER dispatch per IEEE 2030.5 DERControlBase, received over HTTPS by
+  ems-der-control-api and republished to MQTT. Singleton per site. IP-native twin of
+  operating_envelope (which carries the DNP3/DOE path). Runtime-onboarded via device-api
+  POST /topology — not DTM-emitted.
+
+# Reason: target_active_power bounds sized for datacenter-scale POI (1-10 MW).
+# Confirm per deployment at commissioning, same as operating_envelope.
+
+measurements:
+  target_active_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 0.0033          # event-driven; nominal rate only
+    display_name_default: "DER Target Active Power"
+    iec_61850_ref: CSIP.opModTargetW
+    bounds: { min: -10000000, max: 10000000, nominal: 0 }
+    thresholds: { warn_min: -9500000, warn_max: 9500000, alarm_min: -10000000, alarm_max: 10000000 }
+    publisher: der_control_api
+
+  event_active:
+    unit: none
+    type: bool
+    poll_rate_hz: 0.0033
+    display_name_default: "DER Event Active"
+    iec_61850_ref: CSIP.DERControl.EventStatus
+    publisher: der_control_api
+
+  energize_enabled:
+    unit: none
+    type: bool
+    poll_rate_hz: 0.0033
+    display_name_default: "DER Energize Permitted"
+    iec_61850_ref: CSIP.opModEnergize
+    publisher: der_control_api

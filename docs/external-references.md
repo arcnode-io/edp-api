@@ -70,6 +70,6 @@ Captured here so the link between code and standard is one click away.
 | IEC 60617 (graphical symbols for diagrams) | `src/drawing/_sld_eng_symbols.py`. Breaker S00286, disconnector S00282, meter S00313, battery S00306. |
 | ISO 5457 (engineering drawing sheets) | `src/drawing/_sld_eng_title_block.py::draw_sheet_frame` — A3 landscape, 5mm border inset. |
 | ISO 7200 (title blocks) | `src/drawing/_sld_eng_title_block.py::draw_title_block` — "lite" version, ~4 rows in the bottom-right corner. |
-| IEEE 2030.5 / CSIP (Common Smart Inverter Profile) | `device_templates/leaf/operating_envelope.yaml` — `CSIP.opModImpLimW`, `CSIP.opModExpLimW` measurement refs. |
+| IEEE 2030.5 / CSIP (Common Smart Inverter Profile) | `device_templates/leaf/operating_envelope.yaml` — `CSIP.opModImpLimW`, `CSIP.opModExpLimW` measurement refs. `device_templates/leaf/der_dispatch.yaml` — `CSIP.opModTargetW`, `CSIP.opModEnergize`, `CSIP.DERControl.EventStatus` (IP-native DERControl intake). |
 | ANSI C12.20 / IEC 62053-22 (revenue-meter accuracy class) | `device_templates/leaf/revenue_meter.yaml` description. Class 0.1S. |
 | DXF R2018 (AutoCAD Drawing Exchange Format) | `src/drawing/sld_engineering_service.py` — `dxfversion="R2018"`. |
