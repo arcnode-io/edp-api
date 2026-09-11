@@ -8,6 +8,7 @@ from src.bom_generator.manifest_models import Manifest
 from src.shared.schemas.artifact import ArtifactRef, JobStatus
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 from src.shared.schemas.module_resolution import ModuleResolution
+from src.shared.schemas.sizing import SizingPreview
 
 
 class JobRecord(BaseModel):
@@ -17,8 +18,10 @@ class JobRecord(BaseModel):
     pipeline can resume from the record alone (no extra round-trip through
     ModuleResolverService). `manifest` is pinned at create() time so the
     pipeline sees the same hardware contract the 202 response was built
-    against (closes ADR-011 torn-read). All three are stripped from the
-    public JobResult projection — clients see status + URLs only.
+    against (closes ADR-011 torn-read). `sizing_preview` is computed once at
+    create() so the future Interconnection Package generator can read it
+    without recomputing. All four are stripped from the public JobResult
+    projection — clients see status + URLs only.
     """
 
     job_id: UUID
@@ -27,4 +30,5 @@ class JobRecord(BaseModel):
     payload: ConfiguratorPayload
     resolution: ModuleResolution
     manifest: Manifest
+    sizing_preview: SizingPreview
     error: str | None = None

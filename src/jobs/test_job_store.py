@@ -5,6 +5,7 @@ from uuid import UUID
 from src.bom_generator.manifest_models import Manifest
 from src.jobs.job_record import JobRecord
 from src.jobs.job_store import JobStore
+from src.jobs.jobs_service import _sizing_request
 from src.module_resolver.module_resolver_service import ModuleResolverService
 from src.shared.enums import (
     AwsPartition,
@@ -24,9 +25,16 @@ from src.shared.schemas.configurator_grid import (
     SiteLocation,
 )
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
+from src.shared.schemas.grid_regions import GridRegionsConfig, RegionDefaults
+from src.sizing.sizing_service import SizingService
 
 JOB_ID: UUID = UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000901")
+_REGIONS = GridRegionsConfig(
+    defaults=RegionDefaults(distribution_limit_mw=20, distribution_near_mw=15),
+    regions={},
+    flex_levels={},
+)
 
 
 def _record(status: JobStatus = JobStatus.RUNNING) -> JobRecord:
@@ -53,6 +61,7 @@ def _record(status: JobStatus = JobStatus.RUNNING) -> JobRecord:
         grid=Grid(path=GridPath.OFF_GRID),
     )
     resolution = ModuleResolverService().resolve(payload)
+    sizing_preview = SizingService(regions=_REGIONS).preview(_sizing_request(payload))
     return JobRecord(
         job_id=JOB_ID,
         status=status,
@@ -60,6 +69,7 @@ def _record(status: JobStatus = JobStatus.RUNNING) -> JobRecord:
         payload=payload,
         resolution=resolution,
         manifest=Manifest(version="0.0.0-test", assemblies={}, plates={}, profiles={}),
+        sizing_preview=sizing_preview,
     )
 
 

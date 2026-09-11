@@ -14,6 +14,7 @@ from src.grid.grid_module import GridModule
 from src.grid.grid_regions_loader import GridRegionsLoader
 from src.jobs.jobs_module import JobsModule
 from src.module_resolver.module_resolver_module import ModuleResolverModule
+from src.sizing.sizing_module import SizingModule
 
 
 class Settings(BaseSettings):  # type: ignore[explicit-any]  # upstream: pydantic-settings PRs #557/#559 reverted Any fix
@@ -85,6 +86,7 @@ class AppModule:
             )
         grid_regions = GridRegionsLoader(regions_path).load()
         grid_module = GridModule(regions=grid_regions)
+        sizing_module = SizingModule(regions=grid_regions)
         drawing_module = DrawingModule()
         jobs = JobsModule(
             resolver_module=resolver_module,
@@ -92,6 +94,7 @@ class AppModule:
             drawing_module=drawing_module,
             template_catalog=template_catalog,
             grid_regions=grid_regions,
+            sizing_service=sizing_module.service,
         )
         app_controller = AppController(
             version=_read_project_version(repo_root),
@@ -103,6 +106,7 @@ class AppModule:
         app.include_router(jobs.router)
         app.include_router(drawing_module.router)
         app.include_router(grid_module.router)
+        app.include_router(sizing_module.router)
         # Stash on app.state too — existing tests assert on it.
         app.state.template_catalog = template_catalog
 

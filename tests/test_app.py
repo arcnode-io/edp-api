@@ -61,6 +61,69 @@ def test_grid_regions_endpoint_returns_config() -> None:
     assert "standard" in body["flex_levels"]
 
 
+def test_sizing_preview_endpoint_returns_200_shape() -> None:
+    """POST /edp-api/sizing/preview returns the SizingPreview shape."""
+    # Arrange
+    app_module = _app()
+    app = app_module.create_app()
+    client = TestClient(app)
+    body = {
+        "gpu_variant": "b200",
+        "target_gpu_count": 56,
+        "bess_coupling": "ac_coupled",
+        "bess_capacity_mwh": 5.0,
+        "deployment_context": "commercial",
+        "onsite_generation": {"type": "none", "capacity_mw": None},
+        "grid": {},
+    }
+
+    # Act
+    response = client.post("/edp-api/sizing/preview", json=body)
+
+    # Assert
+    assert response.status_code == 200, response.text
+    preview = response.json()
+    assert preview["site_peak_mw"] == 0.08
+    assert preview["recommended_path"] == "off_grid"
+    assert preview["flex"] is None
+    assert isinstance(preview["flags"], list)
+
+
+def test_sizing_preview_rejects_drifted_flex_preset() -> None:
+    """FL/D12 (region-dependent) -> 422 through the real shipped yaml."""
+    # Arrange
+    app_module = _app()
+    app = app_module.create_app()
+    client = TestClient(app)
+    body = {
+        "gpu_variant": "b200",
+        "target_gpu_count": 56,
+        "bess_coupling": "ac_coupled",
+        "bess_capacity_mwh": 5.0,
+        "deployment_context": "commercial",
+        "onsite_generation": {"type": "none", "capacity_mw": None},
+        "grid": {
+            "path": "flexible",
+            "service_type": "flexible",
+            "flex_obligation": {
+                "level": "standard",
+                "depth_pct": 99,
+                "max_duration_h": 4,
+                "max_events_yr": 40,
+                "min_interval_h": 20,
+                "notice_s": 600,
+            },
+        },
+    }
+
+    # Act
+    response = client.post("/edp-api/sizing/preview", json=body)
+
+    # Assert
+    assert response.status_code == 422
+    assert "must match preset" in response.text
+
+
 def test_healthz_returns_deep_status_with_catalog_and_manifest_info() -> None:
     """GET /healthz returns JSON with version, catalog size, manifest_url."""
     # Arrange

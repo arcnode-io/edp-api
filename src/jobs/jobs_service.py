@@ -22,11 +22,36 @@ from src.jobs.job_store import JobStore
 from src.module_resolver.module_resolver_service import ModuleResolverService
 from src.pipeline.artifact_urls import build_artifact_urls_from_resolved
 from src.pipeline.pipeline_service import PipelineService
+from src.shared.enums import GridPath
 from src.shared.schemas.artifact import JobCreated, JobResult, JobStatus
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 from src.shared.schemas.grid_regions import GridRegionsConfig
+from src.shared.schemas.sizing import SizingGridInput, SizingPreviewRequest
+from src.sizing.sizing_service import SizingService
 
 logger = logging.getLogger(__name__)
+
+
+def _sizing_request(payload: ConfiguratorPayload) -> SizingPreviewRequest:
+    """Project ConfiguratorPayload onto the narrower sizing-preview shape."""
+    grid = payload.grid
+    return SizingPreviewRequest(
+        gpu_variant=payload.gpu_variant,
+        target_gpu_count=payload.target_gpu_count,
+        bess_coupling=payload.bess_coupling,
+        bess_capacity_mwh=payload.bess_capacity_mwh,
+        ride_through_hours=payload.ride_through_hours,
+        deployment_context=payload.deployment_context,
+        onsite_generation=payload.onsite_generation,
+        grid=SizingGridInput(
+            path=grid.path,
+            market_region=grid.market_region,
+            service_type=grid.service_type,
+            flex_obligation=grid.flex_obligation,
+            export_mode=grid.export_mode,
+            intentional_islanding=grid.intentional_islanding,
+        ),
+    )
 
 
 class JobsService:
@@ -40,21 +65,37 @@ class JobsService:
         pipeline: PipelineService,
         store: JobStore,
         regions: GridRegionsConfig,
+        sizing: SizingService,
     ) -> None:
         self._resolver = resolver
         self._client = client
         self._pipeline = pipeline
         self._store = store
         self._regions = regions
+        self._sizing = sizing
 
     def create(self, payload: ConfiguratorPayload) -> JobCreated:
-        """Validate region-dependent rules, resolve, build URLs, store as RUNNING.
+        """Validate, size, resolve, build URLs, store as RUNNING.
 
         Raises ValueError on the first region-dependent rule violation
         (V4b/V6/SP/FL) — the controller maps that to a 422, same as pydantic's
         own structural validators.
         """
         validate_against_regions(payload, self._regions)
+        preview = self._sizing.preview(_sizing_request(payload))
+        # IL: interconnection_level is server-derived — overwrite whatever the
+        # client sent with the preview's computed value. off_grid is exempt:
+        # V1 requires interconnection_level null there, and a would-be level
+        # (still computed for the site-peak math) doesn't apply to a site
+        # that isn't interconnecting at all.
+        if payload.grid.path != GridPath.OFF_GRID:
+            payload = payload.model_copy(
+                update={
+                    "grid": payload.grid.model_copy(
+                        update={"interconnection_level": preview.interconnection_level}
+                    )
+                }
+            )
         resolution = self._resolver.resolve(payload)
         manifest = self._client.fetch_manifest()
         resolved = ManifestService(manifest=manifest).resolve(
@@ -70,6 +111,7 @@ class JobsService:
                 payload=payload,
                 resolution=resolution,
                 manifest=manifest,
+                sizing_preview=preview,
             )
         )
         return JobCreated(

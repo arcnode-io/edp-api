@@ -7,7 +7,7 @@ first violation, which the caller maps to a 422.
 """
 
 from src.shared.enums import ExportMode, FlexLevel, GridPath, MarketRegion
-from src.shared.schemas.configurator_grid import Grid
+from src.shared.schemas.configurator_grid import FlexObligation, Grid
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 from src.shared.schemas.grid_regions import GridRegionsConfig
 
@@ -20,7 +20,7 @@ def validate_against_regions(
     _check_market_program(grid, regions)
     _check_export_limit(grid, regions)
     _check_settlement_point(grid, regions)
-    _check_flex_preset(grid, regions)
+    check_flex_preset(grid.flex_obligation, regions)
 
 
 def _check_market_program(grid: Grid, regions: GridRegionsConfig) -> None:
@@ -64,9 +64,13 @@ def _check_settlement_point(grid: Grid, regions: GridRegionsConfig) -> None:
         raise ValueError(f"settlement_point={grid.settlement_point!r} not in {allowed}")
 
 
-def _check_flex_preset(grid: Grid, regions: GridRegionsConfig) -> None:
-    """FL (D12): non-custom flex level's five numbers must equal the yaml preset."""
-    fx = grid.flex_obligation
+def check_flex_preset(fx: FlexObligation | None, regions: GridRegionsConfig) -> None:
+    """FL (D12): non-custom flex level's five numbers must equal the yaml preset.
+
+    Shared with the sizing preview endpoint (src/sizing/) — SizingGridInput
+    carries a flex_obligation too, so both call sites reuse this check
+    instead of duplicating it.
+    """
     if fx is None or fx.level == FlexLevel.CUSTOM:
         return
     preset = regions.flex_levels[fx.level]

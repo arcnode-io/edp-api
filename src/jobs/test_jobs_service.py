@@ -32,6 +32,7 @@ from src.shared.schemas.configurator_grid import (
 )
 from src.shared.schemas.grid_regions import GridRegionsConfig, RegionDefaults
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
+from src.sizing.sizing_service import SizingService
 
 DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000077")
 
@@ -130,6 +131,7 @@ def service() -> JobsService:
         pipeline=_NullPipeline(),  # ty: ignore[invalid-argument-type]
         store=JobStore(),
         regions=_regions(),
+        sizing=SizingService(regions=_regions()),
     )
 
 
@@ -253,6 +255,7 @@ def test_execute_uses_manifest_pinned_at_create_not_re_fetched(
         pipeline=capturing,  # ty: ignore[invalid-argument-type]
         store=JobStore(),
         regions=_regions(),
+        sizing=SizingService(regions=_regions()),
     )
 
     # Act — create, mutate the source, then execute
