@@ -30,6 +30,7 @@ from src.shared.schemas.configurator_grid import (
     Site,
     SiteLocation,
 )
+from src.shared.schemas.grid_regions import GridRegionsConfig, RegionDefaults
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 
 DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000077")
@@ -108,6 +109,16 @@ class _StaticClient:
         return self._manifest
 
 
+def _regions() -> GridRegionsConfig:
+    """Minimal valid config — this suite's off_grid fixture payload never hits
+    a region-dependent rule, so the content doesn't matter beyond parsing."""
+    return GridRegionsConfig(
+        defaults=RegionDefaults(distribution_limit_mw=20, distribution_near_mw=15),
+        regions={},
+        flex_levels={},
+    )
+
+
 @pytest.fixture
 def service() -> JobsService:
     """Real resolver + in-memory manifest client + null pipeline + fresh store."""
@@ -118,6 +129,7 @@ def service() -> JobsService:
         ),  # ty: ignore[invalid-argument-type]
         pipeline=_NullPipeline(),  # ty: ignore[invalid-argument-type]
         store=JobStore(),
+        regions=_regions(),
     )
 
 
@@ -240,6 +252,7 @@ def test_execute_uses_manifest_pinned_at_create_not_re_fetched(
         client=client,  # ty: ignore[invalid-argument-type]
         pipeline=capturing,  # ty: ignore[invalid-argument-type]
         store=JobStore(),
+        regions=_regions(),
     )
 
     # Act — create, mutate the source, then execute

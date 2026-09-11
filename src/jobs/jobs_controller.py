@@ -31,8 +31,17 @@ class JobsController(Routable):
         Pipeline runs as a FastAPI BackgroundTask after the 202 ships, so
         the client gets URLs synchronously and polls GET /jobs/{id} for
         terminal state.
+
+        Raises:
+            HTTPException: 422 if a region-dependent rule (V4b/V6/SP/FL)
+                fails — same status pydantic's own validators surface.
         """
-        created = self._service.create(payload)
+        try:
+            created = self._service.create(payload)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e)
+            ) from e
         background_tasks.add_task(self._service.execute, created.job_id)
         return created
 

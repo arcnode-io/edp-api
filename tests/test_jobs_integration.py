@@ -241,3 +241,32 @@ def test_post_rejects_invalid_payload() -> None:
     # Assert
     assert response.status_code == 422
     assert "CATL" in response.text
+
+
+def test_post_rejects_market_program_not_offered_in_region() -> None:
+    """V4b (region-dependent, against the real config/grid_regions.yaml) -> 422.
+
+    CAISO offers zero market_programs today — any grid_revenue payload
+    targeting it is rejected by JobsService.create, not just by pydantic.
+    """
+    # Arrange
+    client = _client()
+    payload = _payload(uuid4())
+    payload["grid"] = {
+        "path": "grid_revenue",
+        "service_type": "firm",
+        "flex_obligation": None,
+        "export_mode": "export",
+        "market_access": "direct",
+        "market_program": "ercot_ader",
+        "settlement_point": "HB_NORTH",
+        "wires_owner": {"id": "pge", "name": "PG&E", "type": "iou", "eia_id": None},
+        "market_region": "caiso",
+    }
+
+    # Act
+    response = client.post("/edp-api/jobs", json=payload)
+
+    # Assert
+    assert response.status_code == 422
+    assert "not offered" in response.text

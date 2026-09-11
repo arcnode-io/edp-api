@@ -19,6 +19,7 @@ from src.jobs.jobs_controller import JobsController
 from src.jobs.jobs_service import JobsService
 from src.module_resolver.module_resolver_module import ModuleResolverModule
 from src.pipeline.pipeline_service import PipelineService
+from src.shared.schemas.grid_regions import GridRegionsConfig
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class JobsModule:
         manifest_module: ManifestModule,
         drawing_module: DrawingModule,
         template_catalog: dict,
+        grid_regions: GridRegionsConfig,
     ) -> None:
         self.store = JobStore()
         # Pipeline and JobsService share the same ManifestClient. JobsService
@@ -60,6 +62,7 @@ class JobsModule:
             client=client,
             pipeline=pipeline,
             store=self.store,
+            regions=grid_regions,
         )
         self.router = JobsController(self.service).router
 

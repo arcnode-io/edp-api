@@ -10,6 +10,8 @@ from src.call_api.call_api_module import CallApiModule
 from src.config import LogLevel, load_config
 from src.drawing.drawing_module import DrawingModule
 from src.dtm.template_loader import TemplateLoader
+from src.grid.grid_module import GridModule
+from src.grid.grid_regions_loader import GridRegionsLoader
 from src.jobs.jobs_module import JobsModule
 from src.module_resolver.module_resolver_module import ModuleResolverModule
 
@@ -73,12 +75,23 @@ class AppModule:
                 f"empty template catalog from {templates_root} — "
                 "no leaf/ or module/ YAML found"
             )
+        # Same fail-fast contract as the template catalog: GridRegionsLoadError
+        # propagates uncaught and crashes startup before any request lands.
+        regions_path = repo_root / "config" / "grid_regions.yaml"
+        if not regions_path.is_file():
+            raise RuntimeError(
+                f"grid_regions.yaml missing at {regions_path} — "
+                "Dockerfile must COPY it into the image"
+            )
+        grid_regions = GridRegionsLoader(regions_path).load()
+        grid_module = GridModule(regions=grid_regions)
         drawing_module = DrawingModule()
         jobs = JobsModule(
             resolver_module=resolver_module,
             manifest_module=manifest_module,
             drawing_module=drawing_module,
             template_catalog=template_catalog,
+            grid_regions=grid_regions,
         )
         app_controller = AppController(
             version=_read_project_version(repo_root),
@@ -89,6 +102,7 @@ class AppModule:
         app.include_router(call_api.router)
         app.include_router(jobs.router)
         app.include_router(drawing_module.router)
+        app.include_router(grid_module.router)
         # Stash on app.state too — existing tests assert on it.
         app.state.template_catalog = template_catalog
 

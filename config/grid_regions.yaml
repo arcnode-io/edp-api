@@ -1,0 +1,22 @@
+# Every threshold is data, not code. Each carries source + as_of.
+defaults:
+  distribution_limit_mw: 20        # source: ARCNODE policy (PO to confirm)   as_of: 2026-09-11
+  distribution_near_mw: 15         # source: ARCNODE policy (PO to confirm)   as_of: 2026-09-11
+regions:
+  ercot:
+    large_load_mw: 75              # source: ERCOT Batch Zero / SB6          as_of: 2026-09-11
+    dg_export_max_mw: 10           # source: DG <=10 MW at <=60 kV, host-TDSP interconnection
+    dg_registration_mw: 1          # source: >1 MW export -> SODG/DGR
+    market_programs: [ercot_ader, ercot_dgr]
+    settlement_points: [HB_NORTH]  # others Coming Soon (unchanged from today)
+  caiso:   { large_load_mw: null, dg_export_max_mw: null, dg_registration_mw: null, market_programs: [], settlement_points: [] }
+  miso:    { large_load_mw: null, dg_export_max_mw: null, dg_registration_mw: null, market_programs: [], settlement_points: [] }
+  pjm:     { large_load_mw: null, dg_export_max_mw: null, dg_registration_mw: null, market_programs: [], settlement_points: [] }
+  isone:   { large_load_mw: null, dg_export_max_mw: null, dg_registration_mw: null, market_programs: [], settlement_points: [] }
+  nyiso:   { large_load_mw: null, dg_export_max_mw: null, dg_registration_mw: null, market_programs: [], settlement_points: [] }
+  spp:     { large_load_mw: null, dg_export_max_mw: null, dg_registration_mw: null, market_programs: [], settlement_points: [] }
+  non_rto: { large_load_mw: null, dg_export_max_mw: null, dg_registration_mw: null, market_programs: [], settlement_points: [] }
+flex_levels:                       # PLACEHOLDERS — PO decision #3 pending; UI labels them "Indicative"
+  light:    { depth_pct: 25,  max_duration_h: 2, max_events_yr: 20, min_interval_h: 24, notice_s: 600 }
+  standard: { depth_pct: 50,  max_duration_h: 4, max_events_yr: 40, min_interval_h: 20, notice_s: 600 }
+  heavy:    { depth_pct: 100, max_duration_h: 4, max_events_yr: 60, min_interval_h: 20, notice_s: 600 }

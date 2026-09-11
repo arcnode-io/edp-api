@@ -43,6 +43,24 @@ def test_app_startup_loads_template_catalog() -> None:
     assert "bess_module" in catalog
 
 
+def test_grid_regions_endpoint_returns_config() -> None:
+    """GET /edp-api/grid/regions returns the parsed grid_regions.yaml."""
+    # Arrange
+    app_module = _app()
+    app = app_module.create_app()
+    client = TestClient(app)
+
+    # Act
+    response = client.get("/edp-api/grid/regions")
+
+    # Assert
+    assert response.status_code == 200
+    body = response.json()
+    assert body["defaults"]["distribution_limit_mw"] == 20
+    assert body["regions"]["ercot"]["dg_export_max_mw"] == 10
+    assert "standard" in body["flex_levels"]
+
+
 def test_healthz_returns_deep_status_with_catalog_and_manifest_info() -> None:
     """GET /healthz returns JSON with version, catalog size, manifest_url."""
     # Arrange

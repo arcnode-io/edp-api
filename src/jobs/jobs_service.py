@@ -16,6 +16,7 @@ from uuid import UUID, uuid4
 
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_service import ManifestService
+from src.grid.region_validation import validate_against_regions
 from src.jobs.job_record import JobRecord
 from src.jobs.job_store import JobStore
 from src.module_resolver.module_resolver_service import ModuleResolverService
@@ -23,6 +24,7 @@ from src.pipeline.artifact_urls import build_artifact_urls_from_resolved
 from src.pipeline.pipeline_service import PipelineService
 from src.shared.schemas.artifact import JobCreated, JobResult, JobStatus
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
+from src.shared.schemas.grid_regions import GridRegionsConfig
 
 logger = logging.getLogger(__name__)
 
@@ -37,14 +39,22 @@ class JobsService:
         client: ManifestClient,
         pipeline: PipelineService,
         store: JobStore,
+        regions: GridRegionsConfig,
     ) -> None:
         self._resolver = resolver
         self._client = client
         self._pipeline = pipeline
         self._store = store
+        self._regions = regions
 
     def create(self, payload: ConfiguratorPayload) -> JobCreated:
-        """Fetch + pin manifest, resolve, build URLs, store as RUNNING, return 202 body."""
+        """Validate region-dependent rules, resolve, build URLs, store as RUNNING.
+
+        Raises ValueError on the first region-dependent rule violation
+        (V4b/V6/SP/FL) — the controller maps that to a 422, same as pydantic's
+        own structural validators.
+        """
+        validate_against_regions(payload, self._regions)
         resolution = self._resolver.resolve(payload)
         manifest = self._client.fetch_manifest()
         resolved = ManifestService(manifest=manifest).resolve(
