@@ -38,13 +38,35 @@ Sections most relevant to edp-api:
 | ADR-009 | Hardware↔edp-api contract artifacts | Pins the `bom.yaml` (input) + `bom.json` (output) shapes. Drives `manifest_models.py` + `bom_models.py`. |
 | ADR-011 | Manifest URL versioning deferred | Documents the in-flight torn-read risk + the per-job-fetch-and-pin mitigation that landed in commit 87c18dd. |
 
+## config/grid_regions.yaml
+
+Single source of truth for every region-dependent sizing/validation
+threshold — distribution limits, DG export caps, market programs,
+settlement points, flex-level presets. Each value carries a `source:` +
+`as_of:` comment. Loaded once at startup (`GridRegionsLoader`, fail-fast);
+`src/grid/region_validation.py` and `src/sizing/` are its only consumers.
+Website (`arc-node.html`) keeps a **mock copy** as a JS object — this file
+wins on any drift.
+
+The math behind the sizing preview (`src/sizing/sizing_internals.py`,
+`sizing_flags.py`) cites `claude/der_integration_brief.md` in the PM spec
+it came from — that file is **not on disk** in any repo (confirmed
+2026-09-11); the working source is the configurator-grid contract itself
+(`/tmp/handoffs/handoff-configurator-grid-CONTRACT-2026-09-11.md` at time
+of writing) plus the code comments here.
+
 ## Open items
 
 - **Wholesale market scope beyond ERCOT/HB_NORTH** — depends on
   `ems-analyst-server` (🤖 ai-engineer) certifying each ISO's
   gridstatus.io dataset + LMP filter logic. Cross-role; edp-api owns
-  only the validator surface. See
-  `ConfiguratorPayload.market_hub_supported`.
+  only the validator surface. See `config/grid_regions.yaml` (regions
+  other than `ercot` ship empty `market_programs`/`settlement_points`)
+  and `src/grid/region_validation.py`.
+- **H100_SXM `container_kw` (62.6 kW)** — derived from CMP-NODE-001's
+  (B200) first-principles breakdown by TDP substitution only; not yet
+  checked against a real H100_SXM node datasheet. See the source comment
+  in `src/sizing/sizing_internals.py`. PM/PO to confirm.
 - **DNP3 master_external leaf template** + `equipment/GRD-UTM-001/`
   spec — both repos are ⚡ power-engineer scope, but the point map +
   whether GRD-UTM-001 is a separate physical relay or a second DNP3
