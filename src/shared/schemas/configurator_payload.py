@@ -32,6 +32,7 @@ class ConfiguratorPayload(BaseModel):
 
     bess_coupling: BessCoupling
     bess_capacity_mwh: float = Field(ge=0)
+    ride_through_hours: float = Field(ge=0, default=0)
 
     climate_zone: ClimateZone
     deployment_context: DeploymentContext
@@ -90,5 +91,14 @@ class ConfiguratorPayload(BaseModel):
         if self.grid.intentional_islanding and self.bess_coupling == BessCoupling.NONE:
             raise ValueError(
                 "grid.intentional_islanding=true requires bess_coupling != none"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def islanding_requires_ride_through_hours(self) -> "ConfiguratorPayload":
+        """V10: intentional islanding requires a positive ride-through reserve."""
+        if self.grid.intentional_islanding and self.ride_through_hours <= 0:
+            raise ValueError(
+                "grid.intentional_islanding=true requires ride_through_hours > 0"
             )
         return self

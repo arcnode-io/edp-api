@@ -48,6 +48,7 @@ class _PayloadKwargs(TypedDict):
     target_gpu_count: int
     bess_coupling: BessCoupling
     bess_capacity_mwh: float
+    ride_through_hours: float
     climate_zone: ClimateZone
     deployment_context: DeploymentContext
     aws_partition: AwsPartition
@@ -63,6 +64,7 @@ def _kwargs(
     capacity_mwh: float = 5.0,
     partition: AwsPartition = AwsPartition.STANDARD,
     grid: Grid = _OFF_GRID,
+    ride_through_hours: float = 0.0,
 ) -> _PayloadKwargs:
     return _PayloadKwargs(
         deployment_id=DEPLOYMENT_ID,
@@ -74,6 +76,7 @@ def _kwargs(
         target_gpu_count=56,
         bess_coupling=coupling,
         bess_capacity_mwh=capacity_mwh,
+        ride_through_hours=ride_through_hours,
         climate_zone=ClimateZone.TEMPERATE,
         deployment_context=context,
         aws_partition=partition,
@@ -180,8 +183,45 @@ def test_islanding_requires_bess() -> None:
 
 
 def test_islanding_with_bess_is_valid() -> None:
-    """V9 happy path: intentional_islanding=true is fine with a real BESS."""
+    """V9/V10 happy path: intentional_islanding=true needs BESS + a positive reserve."""
     # Arrange
+    grid = Grid(
+        path=GridPath.FIRM,
+        service_type=ServiceType.FIRM,
+        wires_owner=WiresOwner(id="oncor", name="Oncor", type=WiresOwnerType.TDSP),
+        market_region=MarketRegion.ERCOT,
+        intentional_islanding=True,
+    )
+    kw = _kwargs(
+        coupling=BessCoupling.AC_COUPLED,
+        capacity_mwh=5.0,
+        grid=grid,
+        ride_through_hours=2.0,
+    )
+
+    # Act
+    payload = ConfiguratorPayload(**kw)
+
+    # Assert
+    assert payload.grid.intentional_islanding is True
+    assert payload.ride_through_hours == 2.0
+
+
+def test_ride_through_hours_defaults_to_zero() -> None:
+    """ride_through_hours is optional, sibling of bess_capacity_mwh."""
+    # Arrange
+    kw = _kwargs()
+
+    # Act
+    payload = ConfiguratorPayload(**kw)
+
+    # Assert
+    assert payload.ride_through_hours == 0.0
+
+
+def test_islanding_requires_ride_through_hours() -> None:
+    """V10: intentional_islanding=true + ride_through_hours=0 -> ValidationError."""
+    # Arrange — BESS present so V9 passes; ride_through_hours left at default 0
     grid = Grid(
         path=GridPath.FIRM,
         service_type=ServiceType.FIRM,
@@ -191,8 +231,8 @@ def test_islanding_with_bess_is_valid() -> None:
     )
     kw = _kwargs(coupling=BessCoupling.AC_COUPLED, capacity_mwh=5.0, grid=grid)
 
-    # Act
-    payload = ConfiguratorPayload(**kw)
-
-    # Assert
-    assert payload.grid.intentional_islanding is True
+    # Act / Assert
+    with pytest.raises(
+        ValidationError, match="intentional_islanding=true requires ride_through_hours"
+    ):
+        ConfiguratorPayload(**kw)
