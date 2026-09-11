@@ -1,4 +1,5 @@
-"""ConfiguratorPayload validator unit tests."""
+"""ConfiguratorPayload validator unit tests (top-level rules only — grid rules in
+test_configurator_grid.py)."""
 
 from typing import TypedDict
 from uuid import UUID
@@ -11,15 +12,28 @@ from src.shared.enums import (
     BessCoupling,
     ClimateZone,
     DeploymentContext,
-    EnergySource,
     GpuVariant,
-    GridConnection,
+    GridPath,
+    MarketRegion,
+    OnsiteGenerationType,
     PrimaryWorkload,
-    WholesaleMarket,
+    ServiceType,
+    WiresOwnerType,
+)
+from src.shared.schemas.configurator_grid import (
+    Grid,
+    OnsiteGeneration,
+    Site,
+    SiteLocation,
+    WiresOwner,
 )
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 
 DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000001")
+
+_SITE = Site(location=SiteLocation(lat=32.7, lon=-96.8), country="US", state="TX")
+_NO_GEN = OnsiteGeneration(type=OnsiteGenerationType.NONE, capacity_mw=None)
+_OFF_GRID = Grid(path=GridPath.OFF_GRID)
 
 
 class _PayloadKwargs(TypedDict):
@@ -29,20 +43,17 @@ class _PayloadKwargs(TypedDict):
     operator_org: str
     deployment_site_name: str
     contact_email: str
-    energy_source: EnergySource
-    source_capacity_mw: float
     primary_workload: PrimaryWorkload
     gpu_variant: GpuVariant
     target_gpu_count: int
     bess_coupling: BessCoupling
     bess_capacity_mwh: float
-    grid_connection: GridConnection
     climate_zone: ClimateZone
     deployment_context: DeploymentContext
     aws_partition: AwsPartition
-    wholesale_market: WholesaleMarket | None
-    settlement_point: str | None
-    der_utility: str | None
+    site: Site
+    onsite_generation: OnsiteGeneration
+    grid: Grid
 
 
 def _kwargs(
@@ -51,34 +62,28 @@ def _kwargs(
     coupling: BessCoupling = BessCoupling.AC_COUPLED,
     capacity_mwh: float = 5.0,
     partition: AwsPartition = AwsPartition.STANDARD,
-    market: WholesaleMarket | None = WholesaleMarket.ERCOT,
-    settlement_point: str | None = "HB_NORTH",
-    der_utility: str | None = None,
+    grid: Grid = _OFF_GRID,
 ) -> _PayloadKwargs:
     return _PayloadKwargs(
         deployment_id=DEPLOYMENT_ID,
         operator_org="acme",
         deployment_site_name="brookside dc-1",
         contact_email="ops@example.com",
-        energy_source=EnergySource.GRID_HYBRID,
-        source_capacity_mw=10.0,
         primary_workload=PrimaryWorkload.AI_TRAINING,
         gpu_variant=GpuVariant.H100_SXM,
         target_gpu_count=56,
         bess_coupling=coupling,
         bess_capacity_mwh=capacity_mwh,
-        grid_connection=GridConnection.GRID_TIED,
         climate_zone=ClimateZone.TEMPERATE,
         deployment_context=context,
         aws_partition=partition,
-        wholesale_market=market,
-        settlement_point=settlement_point,
-        der_utility=der_utility,
+        site=_SITE,
+        onsite_generation=_NO_GEN,
+        grid=grid,
     )
 
 
 def test_rejects_bess_none_with_nonzero_capacity() -> None:
-    """bess_coupling=NONE + capacity>0 -> ValidationError."""
     # Arrange
     kw = _kwargs(coupling=BessCoupling.NONE, capacity_mwh=5.0)
 
@@ -90,7 +95,6 @@ def test_rejects_bess_none_with_nonzero_capacity() -> None:
 
 
 def test_rejects_bess_coupled_with_zero_capacity() -> None:
-    """bess_coupling=AC_COUPLED + capacity=0 -> ValidationError."""
     # Arrange
     kw = _kwargs(coupling=BessCoupling.AC_COUPLED, capacity_mwh=0.0)
 
@@ -102,7 +106,6 @@ def test_rejects_bess_coupled_with_zero_capacity() -> None:
 
 
 def test_rejects_standard_partition_for_federal() -> None:
-    """aws_partition=standard + sovereign_government -> ValidationError."""
     # Arrange
     kw = _kwargs(
         context=DeploymentContext.SOVEREIGN_GOVERNMENT,
@@ -118,7 +121,6 @@ def test_rejects_standard_partition_for_federal() -> None:
 
 
 def test_rejects_defense_forward_dc_integrated_pcs() -> None:
-    """defense_forward + dc_integrated_pcs -> ValidationError (CATL exclusion)."""
     # Arrange
     kw = _kwargs(
         context=DeploymentContext.DEFENSE_FORWARD,
@@ -133,11 +135,7 @@ def test_rejects_defense_forward_dc_integrated_pcs() -> None:
 
 
 def test_rejects_sovereign_government_dc_integrated_pcs() -> None:
-    """sovereign_government + dc_integrated_pcs -> same CATL exclusion as defense.
-
-    Both contexts resolve to the same DEFENSE_* hardware variants, so the
-    no-CATL constraint applies uniformly.
-    """
+    """Both federal contexts resolve to the same DEFENSE_* hardware variants."""
     # Arrange
     kw = _kwargs(
         context=DeploymentContext.SOVEREIGN_GOVERNMENT,
@@ -152,7 +150,7 @@ def test_rejects_sovereign_government_dc_integrated_pcs() -> None:
 
 
 def test_accepts_no_bess_with_zero_capacity() -> None:
-    """Happy path for the no-BESS branch."""
+    """Happy path for the no-BESS, off-grid branch."""
     # Arrange
     kw = _kwargs(coupling=BessCoupling.NONE, capacity_mwh=0.0)
 
@@ -161,100 +159,40 @@ def test_accepts_no_bess_with_zero_capacity() -> None:
 
     # Assert
     assert payload.bess_coupling == BessCoupling.NONE
+    assert payload.grid.path == GridPath.OFF_GRID
 
 
-def test_rejects_caiso_until_v2() -> None:
-    """Non-ERCOT markets reserved in the enum but rejected by validator."""
-    # Arrange
-    kw = _kwargs(market=WholesaleMarket.CAISO, settlement_point="TH_NP15_GEN-APND")
-
-    # Act / Assert
-    with pytest.raises(ValidationError, match=r"not supported yet"):
-        ConfiguratorPayload(**kw)
-
-
-def test_rejects_ercot_with_unsupported_hub() -> None:
-    """ERCOT is enabled but only HB_NORTH is supported in v1."""
-    # Arrange
-    kw = _kwargs(market=WholesaleMarket.ERCOT, settlement_point="HB_HOUSTON")
-
-    # Act / Assert
-    with pytest.raises(ValidationError, match=r"not supported yet"):
-        ConfiguratorPayload(**kw)
-
-
-def test_accepts_ercot_hb_north() -> None:
-    """v1 happy path: ERCOT + HB_NORTH."""
-    # Arrange
-    kw = _kwargs(market=WholesaleMarket.ERCOT, settlement_point="HB_NORTH")
-
-    # Act
-    payload = ConfiguratorPayload(**kw)
-
-    # Assert
-    assert payload.wholesale_market == WholesaleMarket.ERCOT
-    assert payload.settlement_point == "HB_NORTH"
-
-
-# --- DER vs wholesale market: independent, not mutually exclusive ---
-
-
-def test_neither_der_nor_wholesale_market_is_valid() -> None:
-    """Off-grid / no market participation: both unset is a valid payload."""
-    # Arrange
-    kw = _kwargs(market=None, settlement_point=None, der_utility=None)
-
-    # Act
-    payload = ConfiguratorPayload(**kw)
-
-    # Assert
-    assert payload.wholesale_market is None
-    assert payload.der_utility is None
-
-
-def test_accepts_der_utility_alone() -> None:
-    """DER selected, no wholesale market — der_utility is the only signal."""
-    # Arrange
-    kw = _kwargs(market=None, settlement_point=None, der_utility="Oncor")
-
-    # Act
-    payload = ConfiguratorPayload(**kw)
-
-    # Assert
-    assert payload.der_utility == "Oncor"
-    assert payload.wholesale_market is None
-
-
-def test_accepts_der_and_wholesale_market_together() -> None:
-    """Both selected at once — independent, not exclusive."""
-    # Arrange
-    kw = _kwargs(
-        market=WholesaleMarket.ERCOT, settlement_point="HB_NORTH", der_utility="Oncor"
+def test_islanding_requires_bess() -> None:
+    """V9: intentional_islanding=true + bess_coupling=none -> ValidationError."""
+    # Arrange — firm path (off_grid forces islanding false, so this needs grid-tied)
+    grid = Grid(
+        path=GridPath.FIRM,
+        service_type=ServiceType.FIRM,
+        wires_owner=WiresOwner(id="oncor", name="Oncor", type=WiresOwnerType.TDSP),
+        market_region=MarketRegion.ERCOT,
+        intentional_islanding=True,
     )
+    kw = _kwargs(coupling=BessCoupling.NONE, capacity_mwh=0.0, grid=grid)
+
+    # Act / Assert
+    with pytest.raises(ValidationError, match="intentional_islanding=true requires"):
+        ConfiguratorPayload(**kw)
+
+
+def test_islanding_with_bess_is_valid() -> None:
+    """V9 happy path: intentional_islanding=true is fine with a real BESS."""
+    # Arrange
+    grid = Grid(
+        path=GridPath.FIRM,
+        service_type=ServiceType.FIRM,
+        wires_owner=WiresOwner(id="oncor", name="Oncor", type=WiresOwnerType.TDSP),
+        market_region=MarketRegion.ERCOT,
+        intentional_islanding=True,
+    )
+    kw = _kwargs(coupling=BessCoupling.AC_COUPLED, capacity_mwh=5.0, grid=grid)
 
     # Act
     payload = ConfiguratorPayload(**kw)
 
     # Assert
-    assert payload.der_utility == "Oncor"
-    assert payload.wholesale_market == WholesaleMarket.ERCOT
-
-
-def test_rejects_wholesale_market_without_settlement_point() -> None:
-    """wholesale_market set + settlement_point unset -> ValidationError."""
-    # Arrange
-    kw = _kwargs(market=WholesaleMarket.ERCOT, settlement_point=None)
-
-    # Act / Assert
-    with pytest.raises(ValidationError, match="must both be set or both be unset"):
-        ConfiguratorPayload(**kw)
-
-
-def test_rejects_settlement_point_without_wholesale_market() -> None:
-    """settlement_point set + wholesale_market unset -> ValidationError."""
-    # Arrange
-    kw = _kwargs(market=None, settlement_point="HB_NORTH")
-
-    # Act / Assert
-    with pytest.raises(ValidationError, match="must both be set or both be unset"):
-        ConfiguratorPayload(**kw)
+    assert payload.grid.intentional_islanding is True

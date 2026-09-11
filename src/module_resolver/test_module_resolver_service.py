@@ -7,21 +7,62 @@ import pytest
 from src.module_resolver.module_resolver_service import ModuleResolverService
 from src.shared.enums import (
     AwsPartition,
-    WholesaleMarket,
     BessCoupling,
     ClimateZone,
     DeploymentContext,
     DeploymentProfile,
     EmsTarget,
-    EnergySource,
+    ExportMode,
+    FlexLevel,
     GpuVariant,
-    GridConnection,
+    GridPath,
+    MarketAccess,
+    MarketProgram,
+    MarketRegion,
+    OnsiteGenerationType,
     PrimaryWorkload,
+    ServiceType,
     SourcingTier,
+    WiresOwnerType,
+)
+from src.shared.schemas.configurator_grid import (
+    FlexObligation,
+    Grid,
+    OnsiteGeneration,
+    Site,
+    SiteLocation,
+    WiresOwner,
 )
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 
 DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000001")
+
+_OFF_GRID = Grid(path=GridPath.OFF_GRID)
+_FLEXIBLE_GRID = Grid(
+    path=GridPath.FLEXIBLE,
+    service_type=ServiceType.FLEXIBLE,
+    flex_obligation=FlexObligation(
+        level=FlexLevel.STANDARD,
+        depth_pct=50,
+        max_duration_h=4,
+        max_events_yr=40,
+        min_interval_h=20,
+        notice_s=600,
+    ),
+    wires_owner=WiresOwner(id="oncor", name="Oncor", type=WiresOwnerType.TDSP),
+    market_region=MarketRegion.ERCOT,
+)
+_GRID_REVENUE_FIRM_GRID = Grid(
+    path=GridPath.GRID_REVENUE,
+    service_type=ServiceType.FIRM,
+    export_mode=ExportMode.LIMITED_EXPORT,
+    export_limit_mw=5.0,
+    market_access=MarketAccess.AGGREGATED,
+    market_program=MarketProgram.ERCOT_DGR,
+    settlement_point="HB_NORTH",
+    wires_owner=WiresOwner(id="oncor", name="Oncor", type=WiresOwnerType.TDSP),
+    market_region=MarketRegion.ERCOT,
+)
 
 
 def _payload(
@@ -31,27 +72,24 @@ def _payload(
     capacity_mwh: float = 5.0,
     gpu_count: int = 56,
     partition: AwsPartition = AwsPartition.STANDARD,
-    der_utility: str | None = None,
+    grid: Grid = _OFF_GRID,
 ) -> ConfiguratorPayload:
     return ConfiguratorPayload(
         deployment_id=DEPLOYMENT_ID,
         operator_org="acme",
         deployment_site_name="brookside dc-1",
         contact_email="ops@example.com",
-        energy_source=EnergySource.GRID_HYBRID,
-        source_capacity_mw=10.0,
         primary_workload=PrimaryWorkload.AI_TRAINING,
         gpu_variant=GpuVariant.H100_SXM,
         target_gpu_count=gpu_count,
         bess_coupling=coupling,
         bess_capacity_mwh=capacity_mwh,
-        grid_connection=GridConnection.GRID_TIED,
         climate_zone=ClimateZone.TEMPERATE,
         deployment_context=context,
         aws_partition=partition,
-        wholesale_market=WholesaleMarket.ERCOT,
-        settlement_point="HB_NORTH",
-        der_utility=der_utility,
+        site=Site(location=SiteLocation(lat=32.7, lon=-96.8), country="US"),
+        onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
+        grid=grid,
     )
 
 
@@ -190,11 +228,11 @@ def test_grid_container_absent_when_no_bess() -> None:
     assert actual.grid_container_present is False
 
 
-def test_der_enabled_false_when_no_utility_selected() -> None:
-    """der_utility unset -> der_enabled=False."""
+def test_der_enabled_false_for_off_grid() -> None:
+    """path=off_grid -> service_type/market_access both at default -> der_enabled=False."""
     # Arrange
     service = ModuleResolverService()
-    payload = _payload(der_utility=None)
+    payload = _payload(grid=_OFF_GRID)
 
     # Act
     actual = service.resolve(payload)
@@ -203,11 +241,24 @@ def test_der_enabled_false_when_no_utility_selected() -> None:
     assert actual.der_enabled is False
 
 
-def test_der_enabled_true_when_utility_selected() -> None:
-    """der_utility set -> der_enabled=True, independent of wholesale_market."""
+def test_der_enabled_true_for_flexible_service_type() -> None:
+    """D5: service_type=flexible -> der_enabled=True, independent of market_access."""
     # Arrange
     service = ModuleResolverService()
-    payload = _payload(der_utility="Oncor")
+    payload = _payload(grid=_FLEXIBLE_GRID)
+
+    # Act
+    actual = service.resolve(payload)
+
+    # Assert
+    assert actual.der_enabled is True
+
+
+def test_der_enabled_true_for_market_access() -> None:
+    """D5: market_access != none -> der_enabled=True, even with service_type=firm."""
+    # Arrange
+    service = ModuleResolverService()
+    payload = _payload(grid=_GRID_REVENUE_FIRM_GRID)
 
     # Act
     actual = service.resolve(payload)

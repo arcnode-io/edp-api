@@ -8,7 +8,14 @@ from src.module_resolver.deployment_profile import (
     PROFILE,
     TIER_FROM_CONTEXT,
 )
-from src.shared.enums import BessCoupling, DeploymentProfile, EmsTarget, SourcingTier
+from src.shared.enums import (
+    BessCoupling,
+    DeploymentProfile,
+    EmsTarget,
+    MarketAccess,
+    ServiceType,
+    SourcingTier,
+)
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 from src.shared.schemas.module_resolution import ModuleResolution
 
@@ -24,7 +31,10 @@ class ModuleResolverService:
             deployment_profile=self._profile(payload),
             compute_container_count=count,
             grid_container_present=payload.bess_coupling != BessCoupling.NONE,
-            der_enabled=payload.der_utility is not None,
+            der_enabled=(
+                payload.grid.service_type == ServiceType.FLEXIBLE
+                or payload.grid.market_access != MarketAccess.NONE
+            ),
             bess_coupling=payload.bess_coupling,
             bess_capacity_mwh=payload.bess_capacity_mwh,
             sourcing_tier=self._sourcing_tier(payload),

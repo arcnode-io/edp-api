@@ -2,40 +2,29 @@
 
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from src.shared.enums import (
     AwsPartition,
     BessCoupling,
     ClimateZone,
     DeploymentContext,
-    EnergySource,
     GpuVariant,
-    GridConnection,
     PrimaryWorkload,
-    WholesaleMarket,
 )
-
-# v1 ships ERCOT + HB_NORTH only. Other ISO/hub combos are reserved in
-# the enum / form but rejected by the validator below until analyst-server
-# has been validated against each ISO's gridstatus.io datasets + LMP
-# settlement-point dictionaries.
-_V1_SUPPORTED_HUBS: dict[WholesaleMarket, frozenset[str]] = {
-    WholesaleMarket.ERCOT: frozenset({"HB_NORTH"}),
-}
+from src.shared.schemas.configurator_grid import Grid, OnsiteGeneration, Site
 
 
 class ConfiguratorPayload(BaseModel):
     """Single source of truth for a deployment's user-supplied configuration."""
+
+    model_config = ConfigDict(extra="forbid")
 
     deployment_id: UUID
 
     operator_org: str
     deployment_site_name: str
     contact_email: EmailStr
-
-    energy_source: EnergySource
-    source_capacity_mw: float = Field(gt=0)
 
     primary_workload: PrimaryWorkload
     gpu_variant: GpuVariant
@@ -44,22 +33,13 @@ class ConfiguratorPayload(BaseModel):
     bess_coupling: BessCoupling
     bess_capacity_mwh: float = Field(ge=0)
 
-    grid_connection: GridConnection
     climate_zone: ClimateZone
     deployment_context: DeploymentContext
     aws_partition: AwsPartition
 
-    # DER and wholesale-market participation are independent, not mutually
-    # exclusive — a site can select both, either, or neither (e.g. off-grid).
-    der_utility: str | None = None  # non-None => DER selected
-
-    wholesale_market: WholesaleMarket | None = (
-        None  # non-None => wholesale market selected
-    )
-    # Free-form so adding a new hub doesn't need a schema migration; the
-    # market_hub_supported validator below pins the (ISO, hub) pair to
-    # what analyst-server can actually query today.
-    settlement_point: str | None = None
+    site: Site
+    onsite_generation: OnsiteGeneration
+    grid: Grid
 
     @model_validator(mode="after")
     def bess_consistency(self) -> "ConfiguratorPayload":
@@ -83,38 +63,6 @@ class ConfiguratorPayload(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def wholesale_market_settlement_point_paired(self) -> "ConfiguratorPayload":
-        """wholesale_market and settlement_point must both be set or both unset."""
-        if (self.wholesale_market is None) != (self.settlement_point is None):
-            raise ValueError(
-                "wholesale_market and settlement_point must both be set or both be unset"
-            )
-        return self
-
-    @model_validator(mode="after")
-    def market_hub_supported(self) -> "ConfiguratorPayload":
-        """v1 ships ERCOT + HB_NORTH only; reject other ISO/hub combos.
-
-        No-op when wholesale_market is unset (DER-only or neither selected).
-        Expand _V1_SUPPORTED_HUBS as analyst-server gains support for new
-        ISOs (each needs its own gridstatus.io dataset id + LMP filter logic).
-        """
-        if self.wholesale_market is None:
-            return self
-        allowed = _V1_SUPPORTED_HUBS.get(self.wholesale_market, frozenset())
-        if self.settlement_point not in allowed:
-            supported = ", ".join(
-                f"{market.value}={','.join(sorted(hubs))}"
-                for market, hubs in _V1_SUPPORTED_HUBS.items()
-            )
-            raise ValueError(
-                f"wholesale_market={self.wholesale_market.value} + "
-                f"settlement_point={self.settlement_point!r} not supported yet. "
-                f"v1 supports: {supported}"
-            )
-        return self
-
-    @model_validator(mode="after")
     def federal_excludes_dc_integrated_pcs(self) -> "ConfiguratorPayload":
         """Reject sovereign_government / defense_forward + dc_integrated_pcs.
 
@@ -133,5 +81,14 @@ class ConfiguratorPayload(BaseModel):
             raise ValueError(
                 f"{self.deployment_context.value} + dc_integrated_pcs "
                 "is not procurable (CATL exclusion)"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def islanding_requires_bess(self) -> "ConfiguratorPayload":
+        """V9: intentional islanding requires a BESS to ride through the transfer."""
+        if self.grid.intentional_islanding and self.bess_coupling == BessCoupling.NONE:
+            raise ValueError(
+                "grid.intentional_islanding=true requires bess_coupling != none"
             )
         return self

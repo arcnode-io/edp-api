@@ -3,15 +3,6 @@
 from enum import StrEnum
 
 
-class EnergySource(StrEnum):
-    """Primary energy source for the deployment."""
-
-    NUCLEAR = "nuclear"
-    SOLAR = "solar"
-    GRID_HYBRID = "grid_hybrid"
-    OFF_GRID = "off_grid"
-
-
 class PrimaryWorkload(StrEnum):
     """What the GPUs will primarily run."""
 
@@ -34,14 +25,6 @@ class BessCoupling(StrEnum):
     DC_INTEGRATED_PCS = "dc_integrated_pcs"
     DC_EXTERNAL_PCS = "dc_external_pcs"
     NONE = "none"
-
-
-class GridConnection(StrEnum):
-    """Grid interconnection mode."""
-
-    NONE = "none"
-    GRID_TIED = "grid_tied"
-    GRID_BACKUP = "grid_backup"
 
 
 class ClimateZone(StrEnum):
@@ -69,13 +52,47 @@ class AwsPartition(StrEnum):
     NONE = "none"
 
 
-class WholesaleMarket(StrEnum):
-    """ISO / RTO the deployment participates in.
+class OnsiteGenerationType(StrEnum):
+    """Behind-the-meter generation at the site, independent of grid.path."""
 
-    v1 ships ERCOT only. Other ISOs are reserved so the enum doesn't
-    need a schema migration when they come online — the website disables
-    them at the form layer and the ConfiguratorPayload validator rejects
-    them on the backend.
+    NONE = "none"
+    NUCLEAR = "nuclear"
+    SOLAR = "solar"
+
+
+class GridPath(StrEnum):
+    """The customer's chosen grid-participation path — mutually exclusive."""
+
+    OFF_GRID = "off_grid"
+    FLEXIBLE = "flexible"
+    FIRM = "firm"
+    GRID_REVENUE = "grid_revenue"
+
+
+class InterconnectionLevel(StrEnum):
+    """Where the site connects to the utility grid. Server-derived (rule IL)."""
+
+    DISTRIBUTION = "distribution"
+    TRANSMISSION = "transmission"
+
+
+class WiresOwnerType(StrEnum):
+    """Utility ownership structure — drives interconnection process/timeline."""
+
+    IOU = "iou"
+    COOP = "coop"
+    MUNI = "muni"
+    TDSP = "tdsp"
+    FEDERAL = "federal"
+    OTHER = "other"
+
+
+class MarketRegion(StrEnum):
+    """ISO / RTO the deployment's utility sits in, or non_rto.
+
+    Renamed from WholesaleMarket; adds NON_RTO for utilities outside any
+    ISO/RTO footprint. v1 ships ERCOT only — other regions reserved so the
+    enum doesn't need a schema migration when they come online.
     """
 
     ERCOT = "ercot"
@@ -85,6 +102,47 @@ class WholesaleMarket(StrEnum):
     ISO_NE = "isone"
     NYISO = "nyiso"
     SPP = "spp"
+    NON_RTO = "non_rto"
+
+
+class ServiceType(StrEnum):
+    """Firm (always-on) vs flexible (curtailable) grid service."""
+
+    FIRM = "firm"
+    FLEXIBLE = "flexible"
+
+
+class FlexLevel(StrEnum):
+    """Preset flex-obligation depth, or custom for site-specific numbers."""
+
+    LIGHT = "light"
+    STANDARD = "standard"
+    HEAVY = "heavy"
+    CUSTOM = "custom"
+
+
+class ExportMode(StrEnum):
+    """Whether the site exports power back to the grid."""
+
+    NON_EXPORT = "non_export"
+    LIMITED_EXPORT = "limited_export"
+    EXPORT = "export"
+
+
+class MarketAccess(StrEnum):
+    """How the site participates in wholesale market revenue programs."""
+
+    NONE = "none"
+    RETAIL_PROGRAM = "retail_program"
+    AGGREGATED = "aggregated"
+    DIRECT = "direct"
+
+
+class MarketProgram(StrEnum):
+    """Specific ERCOT DER revenue program. Only ERCOT ships programs in v1."""
+
+    ERCOT_ADER = "ercot_ader"
+    ERCOT_DGR = "ercot_dgr"
 
 
 class SourcingTier(StrEnum):

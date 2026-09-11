@@ -8,16 +8,21 @@ from src.jobs.job_store import JobStore
 from src.module_resolver.module_resolver_service import ModuleResolverService
 from src.shared.enums import (
     AwsPartition,
-    WholesaleMarket,
     BessCoupling,
     ClimateZone,
     DeploymentContext,
-    EnergySource,
     GpuVariant,
-    GridConnection,
+    GridPath,
+    OnsiteGenerationType,
     PrimaryWorkload,
 )
 from src.shared.schemas.artifact import JobStatus
+from src.shared.schemas.configurator_grid import (
+    Grid,
+    OnsiteGeneration,
+    Site,
+    SiteLocation,
+)
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 
 JOB_ID: UUID = UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
@@ -35,19 +40,17 @@ def _record(status: JobStatus = JobStatus.RUNNING) -> JobRecord:
         operator_org="acme",
         deployment_site_name="t",
         contact_email="ops@example.com",
-        energy_source=EnergySource.GRID_HYBRID,
-        source_capacity_mw=10.0,
         primary_workload=PrimaryWorkload.AI_TRAINING,
         gpu_variant=GpuVariant.H100_SXM,
         target_gpu_count=56,
         bess_coupling=BessCoupling.AC_COUPLED,
         bess_capacity_mwh=5.0,
-        grid_connection=GridConnection.GRID_TIED,
         climate_zone=ClimateZone.TEMPERATE,
         deployment_context=DeploymentContext.COMMERCIAL,
         aws_partition=AwsPartition.STANDARD,
-        wholesale_market=WholesaleMarket.ERCOT,
-        settlement_point="HB_NORTH",
+        site=Site(location=SiteLocation(lat=32.7, lon=-96.8), country="US"),
+        onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
+        grid=Grid(path=GridPath.OFF_GRID),
     )
     resolution = ModuleResolverService().resolve(payload)
     return JobRecord(

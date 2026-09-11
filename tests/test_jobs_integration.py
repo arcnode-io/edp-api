@@ -13,25 +13,45 @@ from tests.manifest_fixture import commercial_ac_manifest_module
 
 
 def _payload(deployment_id: UUID) -> dict[str, Any]:
-    """Valid ConfiguratorPayload as JSON dict."""
+    """Valid ConfiguratorPayload (v2, off-grid) as JSON dict."""
     return {
         "deployment_id": str(deployment_id),
         "operator_org": "acme",
         "deployment_site_name": "brookside dc-1",
         "contact_email": "ops@example.com",
-        "energy_source": "grid_hybrid",
-        "source_capacity_mw": 10.0,
         "primary_workload": "ai_training",
         "gpu_variant": "h100_sxm",
         "target_gpu_count": 56,
         "bess_coupling": "ac_coupled",
         "bess_capacity_mwh": 5.0,
-        "grid_connection": "grid_tied",
         "climate_zone": "temperate",
         "deployment_context": "commercial",
         "aws_partition": "standard",
-        "wholesale_market": "ercot",
-        "settlement_point": "HB_NORTH",
+        "site": {
+            "location": {"lat": 32.7, "lon": -96.8, "address": None},
+            "country": "US",
+            "state": "TX",
+        },
+        "onsite_generation": {"type": "none", "capacity_mw": None},
+        "grid": {"path": "off_grid"},
+    }
+
+
+def _flexible_grid() -> dict[str, Any]:
+    """A grid block on the flexible path — service_type=flexible triggers der_dispatch."""
+    return {
+        "path": "flexible",
+        "service_type": "flexible",
+        "flex_obligation": {
+            "level": "standard",
+            "depth_pct": 50,
+            "max_duration_h": 4,
+            "max_events_yr": 40,
+            "min_interval_h": 20,
+            "notice_s": 600,
+        },
+        "wires_owner": {"id": "oncor", "name": "Oncor", "type": "tdsp", "eia_id": None},
+        "market_region": "ercot",
     }
 
 
@@ -177,18 +197,18 @@ def test_re_render_endpoint_returns_fresh_svg_for_runtime_dtm() -> None:
     assert 'id="bess_rack_1"' in body
 
 
-def test_der_utility_produces_der_dispatch_device_in_generated_dtm() -> None:
-    """POST with der_utility set -> real generated DTM contains a der_dispatch device.
+def test_flexible_service_type_produces_der_dispatch_device_in_generated_dtm() -> None:
+    """POST with grid.service_type=flexible -> real generated DTM has a der_dispatch device.
 
     End-to-end proof through the actual HTTP pipeline (not just unit-level):
     ems-der-control-api needs this device to exist before its AsyncAPI channels
-    show up for a real site.
+    show up for a real site. D5: service_type=flexible OR market_access != none.
     """
     # Arrange
     client, manifest_module = _client_with_uploads()
     deployment_id = uuid4()
     payload = _payload(deployment_id)
-    payload["der_utility"] = "Oncor"
+    payload["grid"] = _flexible_grid()
 
     # Act
     post = client.post("/edp-api/jobs", json=payload)
