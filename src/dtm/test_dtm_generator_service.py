@@ -163,3 +163,32 @@ def test_generate_unknown_profile_raises() -> None:
         service.generate(
             profile="defense_dc_int", resolution=_resolution(), manifest=_manifest()
         )
+
+
+def test_generate_omits_der_dispatch_when_der_disabled() -> None:
+    # Arrange — der_enabled=False is _resolution()'s default
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+    # Act
+    actual = service.generate(
+        profile="commercial_ac", resolution=_resolution(), manifest=_manifest()
+    )
+    # Assert
+    assert not any(d.template == "der_dispatch" for d in actual.devices.values())
+    assert "der_dispatch" not in actual.templates_used
+
+
+def test_generate_includes_der_dispatch_when_der_enabled() -> None:
+    # Arrange — DER selected at configurator time
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+    # Act
+    actual = service.generate(
+        profile="commercial_ac",
+        resolution=_resolution(der_enabled=True),
+        manifest=_manifest(),
+    )
+    # Assert — singleton leaf device, not parented under any container, unpolled
+    der_devices = [d for d in actual.devices.values() if d.template == "der_dispatch"]
+    assert len(der_devices) == 1
+    assert der_devices[0].parent is None
+    assert der_devices[0].connection is None
+    assert "der_dispatch" in actual.templates_used

@@ -98,6 +98,7 @@ def _resolution() -> ModuleResolution:
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=1,
         grid_container_present=True,
+        der_enabled=False,
         bess_coupling=BessCoupling.AC_COUPLED,
         bess_capacity_mwh=5.0,
         sourcing_tier=SourcingTier.COMMERCIAL,

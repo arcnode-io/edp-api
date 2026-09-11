@@ -1,5 +1,6 @@
 """Jobs HTTP integration tests against a real FastAPI TestClient."""
 
+import json
 from typing import Any, cast
 from uuid import UUID, uuid4
 
@@ -174,6 +175,35 @@ def test_re_render_endpoint_returns_fresh_svg_for_runtime_dtm() -> None:
     body = response.text
     assert body.startswith("<?xml version=")
     assert 'id="bess_rack_1"' in body
+
+
+def test_der_utility_produces_der_dispatch_device_in_generated_dtm() -> None:
+    """POST with der_utility set -> real generated DTM contains a der_dispatch device.
+
+    End-to-end proof through the actual HTTP pipeline (not just unit-level):
+    ems-der-control-api needs this device to exist before its AsyncAPI channels
+    show up for a real site.
+    """
+    # Arrange
+    client, manifest_module = _client_with_uploads()
+    deployment_id = uuid4()
+    payload = _payload(deployment_id)
+    payload["der_utility"] = "Oncor"
+
+    # Act
+    post = client.post("/edp-api/jobs", json=payload)
+
+    # Assert
+    assert post.status_code == 202, post.text
+    created = post.json()
+    dtm_url = next(u["url"] for u in created["edp_artifact_urls"] if u["kind"] == "dtm")
+    stub = cast(_StubManifestClient, manifest_module.client)
+    dtm = json.loads(stub.uploads[dtm_url])
+    der_devices = [
+        d for d in dtm["devices"].values() if d["template"] == "der_dispatch"
+    ]
+    assert len(der_devices) == 1
+    assert "der_dispatch" in dtm["templates_used"]
 
 
 def test_post_rejects_invalid_payload() -> None:

@@ -3,6 +3,7 @@
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
 from src.dtm.dtm_generator_internals import (
+    assign_slug,
     collect_templates_used,
     emit_container,
     sizing,
@@ -83,6 +84,18 @@ class DtmGeneratorService:
                 slug_counter=slug_counter,
                 by_template=by_template,
             )
+
+        if resolution.der_enabled:
+            # DER selected at configurator time — singleton, unpolled (HTTPS
+            # intake publishes to it), not part of any container.
+            der_slug = assign_slug("der_dispatch", slug_counter)
+            devices[der_slug] = Device(
+                device_id=der_slug,
+                template="der_dispatch",
+                parent=None,
+                connection=None,
+            )
+            by_template.setdefault("der_dispatch", []).append(der_slug)
 
         return Dtm(
             deployment_uuid=resolution.deployment_id,

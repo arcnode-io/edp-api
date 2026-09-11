@@ -40,8 +40,9 @@ class _PayloadKwargs(TypedDict):
     climate_zone: ClimateZone
     deployment_context: DeploymentContext
     aws_partition: AwsPartition
-    wholesale_market: WholesaleMarket
-    settlement_point: str
+    wholesale_market: WholesaleMarket | None
+    settlement_point: str | None
+    der_utility: str | None
 
 
 def _kwargs(
@@ -50,8 +51,9 @@ def _kwargs(
     coupling: BessCoupling = BessCoupling.AC_COUPLED,
     capacity_mwh: float = 5.0,
     partition: AwsPartition = AwsPartition.STANDARD,
-    market: WholesaleMarket = WholesaleMarket.ERCOT,
-    settlement_point: str = "HB_NORTH",
+    market: WholesaleMarket | None = WholesaleMarket.ERCOT,
+    settlement_point: str | None = "HB_NORTH",
+    der_utility: str | None = None,
 ) -> _PayloadKwargs:
     return _PayloadKwargs(
         deployment_id=DEPLOYMENT_ID,
@@ -71,6 +73,7 @@ def _kwargs(
         aws_partition=partition,
         wholesale_market=market,
         settlement_point=settlement_point,
+        der_utility=der_utility,
     )
 
 
@@ -191,3 +194,67 @@ def test_accepts_ercot_hb_north() -> None:
     # Assert
     assert payload.wholesale_market == WholesaleMarket.ERCOT
     assert payload.settlement_point == "HB_NORTH"
+
+
+# --- DER vs wholesale market: independent, not mutually exclusive ---
+
+
+def test_neither_der_nor_wholesale_market_is_valid() -> None:
+    """Off-grid / no market participation: both unset is a valid payload."""
+    # Arrange
+    kw = _kwargs(market=None, settlement_point=None, der_utility=None)
+
+    # Act
+    payload = ConfiguratorPayload(**kw)
+
+    # Assert
+    assert payload.wholesale_market is None
+    assert payload.der_utility is None
+
+
+def test_accepts_der_utility_alone() -> None:
+    """DER selected, no wholesale market — der_utility is the only signal."""
+    # Arrange
+    kw = _kwargs(market=None, settlement_point=None, der_utility="Oncor")
+
+    # Act
+    payload = ConfiguratorPayload(**kw)
+
+    # Assert
+    assert payload.der_utility == "Oncor"
+    assert payload.wholesale_market is None
+
+
+def test_accepts_der_and_wholesale_market_together() -> None:
+    """Both selected at once — independent, not exclusive."""
+    # Arrange
+    kw = _kwargs(
+        market=WholesaleMarket.ERCOT, settlement_point="HB_NORTH", der_utility="Oncor"
+    )
+
+    # Act
+    payload = ConfiguratorPayload(**kw)
+
+    # Assert
+    assert payload.der_utility == "Oncor"
+    assert payload.wholesale_market == WholesaleMarket.ERCOT
+
+
+def test_rejects_wholesale_market_without_settlement_point() -> None:
+    """wholesale_market set + settlement_point unset -> ValidationError."""
+    # Arrange
+    kw = _kwargs(market=WholesaleMarket.ERCOT, settlement_point=None)
+
+    # Act / Assert
+    with pytest.raises(ValidationError, match="must both be set or both be unset"):
+        ConfiguratorPayload(**kw)
+
+
+def test_rejects_settlement_point_without_wholesale_market() -> None:
+    """settlement_point set + wholesale_market unset -> ValidationError."""
+    # Arrange
+    kw = _kwargs(market=None, settlement_point="HB_NORTH")
+
+    # Act / Assert
+    with pytest.raises(ValidationError, match="must both be set or both be unset"):
+        ConfiguratorPayload(**kw)

@@ -31,6 +31,7 @@ def _payload(
     capacity_mwh: float = 5.0,
     gpu_count: int = 56,
     partition: AwsPartition = AwsPartition.STANDARD,
+    der_utility: str | None = None,
 ) -> ConfiguratorPayload:
     return ConfiguratorPayload(
         deployment_id=DEPLOYMENT_ID,
@@ -50,6 +51,7 @@ def _payload(
         aws_partition=partition,
         wholesale_market=WholesaleMarket.ERCOT,
         settlement_point="HB_NORTH",
+        der_utility=der_utility,
     )
 
 
@@ -186,6 +188,32 @@ def test_grid_container_absent_when_no_bess() -> None:
 
     # Assert
     assert actual.grid_container_present is False
+
+
+def test_der_enabled_false_when_no_utility_selected() -> None:
+    """der_utility unset -> der_enabled=False."""
+    # Arrange
+    service = ModuleResolverService()
+    payload = _payload(der_utility=None)
+
+    # Act
+    actual = service.resolve(payload)
+
+    # Assert
+    assert actual.der_enabled is False
+
+
+def test_der_enabled_true_when_utility_selected() -> None:
+    """der_utility set -> der_enabled=True, independent of wholesale_market."""
+    # Arrange
+    service = ModuleResolverService()
+    payload = _payload(der_utility="Oncor")
+
+    # Act
+    actual = service.resolve(payload)
+
+    # Assert
+    assert actual.der_enabled is True
 
 
 def test_derives_sourcing_tier_and_ems_target() -> None:

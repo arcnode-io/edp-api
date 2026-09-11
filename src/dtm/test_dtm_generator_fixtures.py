@@ -113,12 +113,15 @@ def _manifest() -> Manifest:
     )
 
 
-def _resolution(*, container_count: int = 1) -> ModuleResolution:
+def _resolution(
+    *, container_count: int = 1, der_enabled: bool = False
+) -> ModuleResolution:
     return ModuleResolution(
         deployment_id=DEPLOYMENT_ID,
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=container_count,
         grid_container_present=True,
+        der_enabled=der_enabled,
         bess_coupling=BessCoupling.AC_COUPLED,
         bess_capacity_mwh=5.0,
         sourcing_tier=SourcingTier.COMMERCIAL,

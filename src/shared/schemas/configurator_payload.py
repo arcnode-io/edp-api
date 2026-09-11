@@ -49,11 +49,17 @@ class ConfiguratorPayload(BaseModel):
     deployment_context: DeploymentContext
     aws_partition: AwsPartition
 
-    wholesale_market: WholesaleMarket
+    # DER and wholesale-market participation are independent, not mutually
+    # exclusive — a site can select both, either, or neither (e.g. off-grid).
+    der_utility: str | None = None  # non-None => DER selected
+
+    wholesale_market: WholesaleMarket | None = (
+        None  # non-None => wholesale market selected
+    )
     # Free-form so adding a new hub doesn't need a schema migration; the
     # market_hub_supported validator below pins the (ISO, hub) pair to
     # what analyst-server can actually query today.
-    settlement_point: str
+    settlement_point: str | None = None
 
     @model_validator(mode="after")
     def bess_consistency(self) -> "ConfiguratorPayload":
@@ -77,12 +83,24 @@ class ConfiguratorPayload(BaseModel):
         return self
 
     @model_validator(mode="after")
+    def wholesale_market_settlement_point_paired(self) -> "ConfiguratorPayload":
+        """wholesale_market and settlement_point must both be set or both unset."""
+        if (self.wholesale_market is None) != (self.settlement_point is None):
+            raise ValueError(
+                "wholesale_market and settlement_point must both be set or both be unset"
+            )
+        return self
+
+    @model_validator(mode="after")
     def market_hub_supported(self) -> "ConfiguratorPayload":
         """v1 ships ERCOT + HB_NORTH only; reject other ISO/hub combos.
 
+        No-op when wholesale_market is unset (DER-only or neither selected).
         Expand _V1_SUPPORTED_HUBS as analyst-server gains support for new
         ISOs (each needs its own gridstatus.io dataset id + LMP filter logic).
         """
+        if self.wholesale_market is None:
+            return self
         allowed = _V1_SUPPORTED_HUBS.get(self.wholesale_market, frozenset())
         if self.settlement_point not in allowed:
             supported = ", ".join(

@@ -24,6 +24,7 @@ class ModuleResolverService:
             deployment_profile=self._profile(payload),
             compute_container_count=count,
             grid_container_present=payload.bess_coupling != BessCoupling.NONE,
+            der_enabled=payload.der_utility is not None,
             bess_coupling=payload.bess_coupling,
             bess_capacity_mwh=payload.bess_capacity_mwh,
             sourcing_tier=self._sourcing_tier(payload),
