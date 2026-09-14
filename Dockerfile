@@ -22,4 +22,5 @@ RUN pip install uv && uv sync --frozen --no-dev --no-install-project
 COPY --from=builder /app/src ./src
 COPY cfg.yml .
 COPY device_templates ./device_templates
+COPY config ./config
 CMD ["uv", "run", "-m", "src.main"]
