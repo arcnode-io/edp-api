@@ -9,6 +9,8 @@ contains:
     qty: 1
   - template: protective_relay
     qty: 1
+  - template: pv_inverter
+    qty: scalable
 
 measurements:
   net_active_power:

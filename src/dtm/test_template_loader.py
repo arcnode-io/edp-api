@@ -119,7 +119,7 @@ def test_load_real_catalog_size() -> None:
     # Assert
     leaves = [t for t in catalog.values() if t.kind.value == "leaf"]
     modules = [t for t in catalog.values() if t.kind.value == "module"]
-    assert len(leaves) == 12
+    assert len(leaves) == 13
     assert len(modules) == 3
 
 
@@ -138,6 +138,54 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
     # bool setpoints carry no bounds/thresholds
     assert dd.measurements["energize_enabled"].type == "bool"
     assert dd.measurements["energize_enabled"].bounds is None
+
+
+def test_load_real_catalog_includes_switchgear_voltage_unbalance() -> None:
+    """Grid HMI screen — line_controller-computed, no direct binding (needs all 3 phases)."""
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    loader = TemplateLoader(root=repo_root / "device_templates")
+    # Act
+    catalog = loader.load_catalog()
+    # Assert
+    unbalance = catalog["switchgear"].measurements["voltage_unbalance_pct"]
+    assert (
+        unbalance.publisher is not None
+        and unbalance.publisher.value == "line_controller"
+    )
+    assert unbalance.binding is None
+
+
+def test_load_real_catalog_includes_protective_relay_islanding_fields() -> None:
+    """Grid HMI screen — anti-islanding/ride-through belong to the protection relay."""
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    loader = TemplateLoader(root=repo_root / "device_templates")
+    # Act
+    catalog = loader.load_catalog()
+    # Assert
+    relay = catalog["protective_relay"].measurements
+    assert relay["anti_islanding_armed"].type == "bool"
+    assert relay["ride_through_enabled"].type == "bool"
+    assert relay["reconnect_delay_s"].type == "float"
+
+
+def test_load_real_catalog_includes_pv_inverter() -> None:
+    """Grid HMI screen — PV output per inverter, scalable member of grid_module."""
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    loader = TemplateLoader(root=repo_root / "device_templates")
+    # Act
+    catalog = loader.load_catalog()
+    # Assert
+    pv = catalog["pv_inverter"]
+    assert pv.kind.value == "leaf"
+    assert pv.measurements["active_power"].type == "float"
+    grid_module = catalog["grid_module"]
+    assert any(
+        c.template == "pv_inverter" and c.qty == "scalable"
+        for c in grid_module.contains
+    )
 
 
 def test_load_real_catalog_includes_compute_and_grid_modules() -> None:

@@ -1,0 +1,41 @@
+template: pv_inverter
+kind: leaf
+equipment_id: GRD-PVI-001
+vendor: Sungrow
+model: SG3125HV-MV (3.125 MW utility-scale string inverter)
+description: >
+  Grid-tied PV string inverter. Scalable member of grid_module — a site
+  typically has 2+ feeding the AC bus. Register addresses are placeholder
+  (SunSpec Modbus is the common convention for this class of inverter);
+  must be verified at commissioning against the actual vendor register map.
+
+measurements:
+  active_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "PV Active Power"
+    iec_61850_ref: MMXU.W
+    binding:
+      protocol: modbus_tcp
+      function_code: 4
+      address: 0
+      data_type: int32
+      word_order: high_low
+      scale: 1.0
+
+install_tasks:
+  - name: set_and_anchor
+    est_minutes: 90
+    crew_role: electrician
+    cx_level: L1
+  - name: wire_dc_pv_input
+    depends_on: [set_and_anchor]
+    est_minutes: 120
+    crew_role: electrician
+    cx_level: L2
+  - name: modbus_commission
+    depends_on: [wire_dc_pv_input]
+    est_minutes: 20
+    crew_role: it
+    cx_level: L3

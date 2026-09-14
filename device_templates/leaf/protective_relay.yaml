@@ -90,6 +90,38 @@ measurements:
       point_index: 110
       point_type: binary_input
 
+  # Grid HMI screen — anti-islanding/ride-through protection state. SEL-351-7
+  # exposes these as additional binary/analog points on the same DNP3 session.
+  anti_islanding_armed:
+    unit: none
+    type: bool
+    poll_rate_hz: 1
+    display_name_default: "Anti-Islanding Armed"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 111
+      point_type: binary_input
+
+  ride_through_enabled:
+    unit: none
+    type: bool
+    poll_rate_hz: 1
+    display_name_default: "Ride-Through Enabled"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 112
+      point_type: binary_input
+
+  reconnect_delay_s:
+    unit: seconds
+    type: float
+    poll_rate_hz: 0.1
+    display_name_default: "Reconnect Delay"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 13
+      point_type: analog_input
+
 install_tasks:
   - name: mount_in_panel
     est_minutes: 60
