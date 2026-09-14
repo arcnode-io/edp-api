@@ -112,11 +112,16 @@ measurements:
       point_index: 112
       point_type: binary_input
 
+  # Reason: system_adr.md §10's unit vocabulary is enum-locked at codegen
+  # time and has no time unit (volts/amps/watts/vars/voltamperes/watt_hours/
+  # hertz/celsius/percent/watts_per_m2/meters_per_second/bar/
+  # liters_per_minute/none) — adding one is a versioned spec change, not
+  # something to slip in here. Field name + display name carry the unit.
   reconnect_delay_s:
-    unit: seconds
+    unit: none
     type: float
     poll_rate_hz: 0.1
-    display_name_default: "Reconnect Delay"
+    display_name_default: "Reconnect Delay (s)"
     binding:
       protocol: dnp3_tcp
       point_index: 13
