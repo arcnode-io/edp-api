@@ -46,6 +46,12 @@ class SizingParams(BaseModel):
     E_BESS_total_kWh: float
     T_coolant_setpoint_C: float
 
+    # Islanding ride-through reserve — an engineering-time value set at order
+    # time (ConfiguratorPayload.ride_through_hours), not live telemetry. See
+    # src.sizing.sizing_internals.reserve_mwh for the E_r formula.
+    ride_through_hours: float = 0.0
+    bess_reserve_floor_mwh: float = 0.0
+
 
 class Connection(BaseModel):
     """Per-device runtime connection params."""

@@ -26,8 +26,10 @@ from src.shared.enums import (
     DeploymentProfile,
     EmsTarget,
     GpuVariant,
+    OnsiteGenerationType,
     SourcingTier,
 )
+from src.shared.schemas.configurator_grid import OnsiteGeneration
 from src.shared.schemas.dtm import EmsMode
 from src.shared.schemas.module_resolution import ModuleResolution
 
@@ -106,6 +108,8 @@ def _resolution() -> ModuleResolution:
         gpu_variant=GpuVariant.H100_SXM,
         gpu_count=56,
         climate_zone=ClimateZone.TEMPERATE,
+        onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
+        ride_through_hours=0.0,
     )
 
 

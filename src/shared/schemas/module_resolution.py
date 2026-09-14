@@ -12,6 +12,7 @@ from src.shared.enums import (
     GpuVariant,
     SourcingTier,
 )
+from src.shared.schemas.configurator_grid import OnsiteGeneration
 
 
 class ModuleResolution(BaseModel):
@@ -34,3 +35,6 @@ class ModuleResolution(BaseModel):
     gpu_variant: GpuVariant
     gpu_count: int
     climate_zone: ClimateZone
+
+    onsite_generation: OnsiteGeneration
+    ride_through_hours: float

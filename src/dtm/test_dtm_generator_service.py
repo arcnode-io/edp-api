@@ -9,7 +9,9 @@ from src.dtm.test_dtm_generator_fixtures import (
     _real_catalog,
     _resolution,
 )
+from src.shared.enums import GpuVariant
 from src.shared.schemas.dtm import EmsMode
+from src.sizing.sizing_internals import grid_peak_mw, reserve_mwh, site_peak_mw
 
 
 def test_generate_emits_sim_mode() -> None:
@@ -21,6 +23,41 @@ def test_generate_emits_sim_mode() -> None:
     )
     # Assert
     assert actual.mode == EmsMode.LIVE
+
+
+def test_sizing_params_reserve_floor_zero_by_default() -> None:
+    # Arrange
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+    # Act
+    actual = service.generate(
+        profile="commercial_ac", resolution=_resolution(), manifest=_manifest()
+    )
+    # Assert
+    assert actual.sizing_params.ride_through_hours == 0.0
+    assert actual.sizing_params.bess_reserve_floor_mwh == 0.0
+
+
+def test_sizing_params_reserve_floor_computed_from_ride_through_hours() -> None:
+    # Arrange — same pure math the sizing-preview endpoint uses (no onsite gen)
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+    resolution = _resolution(container_count=1, ride_through_hours=2.0)
+    expected_grid_peak = grid_peak_mw(
+        site_peak=site_peak_mw(GpuVariant.H100_SXM, 56), firm_onsite=0.0
+    )
+    expected_reserve = reserve_mwh(
+        ride_through_hours=2.0, grid_peak_mw=expected_grid_peak
+    )
+
+    # Act
+    actual = service.generate(
+        profile="commercial_ac", resolution=resolution, manifest=_manifest()
+    )
+
+    # Assert
+    assert actual.sizing_params.ride_through_hours == 2.0
+    assert actual.sizing_params.bess_reserve_floor_mwh == pytest.approx(
+        expected_reserve
+    )
 
 
 def test_generate_dissolves_modules_into_devices() -> None:

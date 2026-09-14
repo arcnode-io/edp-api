@@ -229,8 +229,10 @@ def test_dtm_generator_against_localstack(
         DeploymentProfile,
         EmsTarget,
         GpuVariant,
+        OnsiteGenerationType,
         SourcingTier,
     )
+    from src.shared.schemas.configurator_grid import OnsiteGeneration
     from src.shared.schemas.dtm import EmsMode
     from src.shared.schemas.module_resolution import ModuleResolution
     from src.shared.schemas.template import TemplateKind
@@ -254,6 +256,8 @@ def test_dtm_generator_against_localstack(
         gpu_variant=GpuVariant.B200,
         gpu_count=14,
         climate_zone=ClimateZone.TEMPERATE,
+        onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
+        ride_through_hours=0.0,
     )
 
     # act

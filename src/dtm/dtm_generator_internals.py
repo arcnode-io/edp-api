@@ -20,6 +20,12 @@ from src.shared.schemas.dtm import (
 )
 from src.shared.schemas.module_resolution import ModuleResolution
 from src.shared.schemas.template import DeviceTemplate
+from src.sizing.sizing_internals import (
+    firm_onsite_mw,
+    grid_peak_mw,
+    reserve_mwh,
+    site_peak_mw,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -157,10 +163,25 @@ def _load_alarms_for_template(
 
 
 def sizing(resolution: ModuleResolution) -> SizingParams:
-    """Compute SizingParams from resolution. PUE + per-gpu kW are PM placeholders."""
+    """Compute SizingParams from resolution. PUE + per-gpu kW are PM placeholders.
+
+    Reason: bess_reserve_floor_mwh reuses the same pure sizing_internals math
+    the configurator's sizing-preview endpoint uses (site_peak/grid_peak/E_r) —
+    same inputs (resolution is derived from the same pinned payload), so this
+    is guaranteed identical to what the operator already saw in preview, not
+    a second independent computation that could drift from it.
+    """
     per_gpu_kw = _P_PER_GPU_KW[resolution.gpu_variant]
+    peak = site_peak_mw(resolution.gpu_variant, resolution.gpu_count)
+    firm = firm_onsite_mw(resolution.onsite_generation)
+    g_peak = grid_peak_mw(site_peak=peak, firm_onsite=firm)
+    e_reserve = reserve_mwh(
+        ride_through_hours=resolution.ride_through_hours, grid_peak_mw=g_peak
+    )
     return SizingParams(
         P_compute_total_kW=resolution.gpu_count * per_gpu_kw * _PUE,
         E_BESS_total_kWh=resolution.bess_capacity_mwh * 1000,
         T_coolant_setpoint_C=_T_COOLANT_SETPOINT_C,
+        ride_through_hours=resolution.ride_through_hours,
+        bess_reserve_floor_mwh=e_reserve,
     )

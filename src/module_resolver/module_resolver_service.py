@@ -42,6 +42,8 @@ class ModuleResolverService:
             gpu_variant=payload.gpu_variant,
             gpu_count=count * GPUS_PER_COMPUTE_CONTAINER,
             climate_zone=payload.climate_zone,
+            onsite_generation=payload.onsite_generation,
+            ride_through_hours=payload.ride_through_hours,
         )
 
     def _profile(self, payload: ConfiguratorPayload) -> DeploymentProfile:

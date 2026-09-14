@@ -17,8 +17,10 @@ from src.shared.enums import (
     DeploymentProfile,
     EmsTarget,
     GpuVariant,
+    OnsiteGenerationType,
     SourcingTier,
 )
+from src.shared.schemas.configurator_grid import OnsiteGeneration
 from src.shared.schemas.module_resolution import ModuleResolution
 
 DEPLOYMENT_ID: UUID = UUID("12345678-1234-1234-1234-123456789abc")
@@ -114,7 +116,10 @@ def _manifest() -> Manifest:
 
 
 def _resolution(
-    *, container_count: int = 1, der_enabled: bool = False
+    *,
+    container_count: int = 1,
+    der_enabled: bool = False,
+    ride_through_hours: float = 0.0,
 ) -> ModuleResolution:
     return ModuleResolution(
         deployment_id=DEPLOYMENT_ID,
@@ -129,6 +134,8 @@ def _resolution(
         gpu_variant=GpuVariant.H100_SXM,
         gpu_count=container_count * 56,
         climate_zone=ClimateZone.TEMPERATE,
+        onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
+        ride_through_hours=ride_through_hours,
     )
 
 
