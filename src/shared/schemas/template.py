@@ -62,14 +62,23 @@ class TemplateKind(StrEnum):
 
 
 class Fanout(StrEnum):
-    """Who handles a command that has no direct binding (fans out to children)."""
+    """Who handles a command that has no direct protocol binding.
+
+    LINE_CONTROLLER: fans one logical command out to real child devices.
+    DER_CONTROL_API: a virtual singleton receiver (ems-der-control-api) —
+    no children, nothing polled, but same "no binding" shape. Mirrors
+    Publisher's identical LINE_CONTROLLER/DER_CONTROL_API pairing for
+    measurements (measurement.py).
+    """
 
     LINE_CONTROLLER = "line_controller"
+    DER_CONTROL_API = "der_control_api"
 
 
 class Command(BaseModel):
     """One channel a device receives. Either bound to a protocol or
-    fanned out by line-controller."""
+    handled off-device per Fanout (line-controller distribution or a
+    virtual service receiver)."""
 
     model_config = ConfigDict(extra="forbid")
 

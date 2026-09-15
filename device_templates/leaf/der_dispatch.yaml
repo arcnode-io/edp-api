@@ -38,3 +38,35 @@ measurements:
     display_name_default: "DER Energize Permitted"
     iec_61850_ref: CSIP.opModEnergize
     publisher: der_control_api
+
+  # ADR-002 §16 — der-control-api schedules dispatch at interval.start; in
+  # manual mode it waits for operator approve/reject over MQTT first.
+  dispatch_state:
+    unit: none
+    type: enum
+    poll_rate_hz: 0.0033
+    display_name_default: "Dispatch State"
+    values:
+      0: IDLE
+      1: PENDING
+      2: ARMED
+      3: ACTIVE
+      4: REJECTED
+    publisher: der_control_api
+
+commands:
+  approve_dispatch:
+    verb: enable
+    target: event_active
+    unit: none
+    payload: bool
+    display_name_default: "Approve Dispatch"
+    fanout: der_control_api
+
+  reject_dispatch:
+    verb: disable
+    target: event_active
+    unit: none
+    payload: bool
+    display_name_default: "Reject Dispatch"
+    fanout: der_control_api
