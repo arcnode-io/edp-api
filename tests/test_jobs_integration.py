@@ -225,6 +225,13 @@ def test_flexible_service_type_produces_der_dispatch_device_in_generated_dtm() -
     assert len(der_devices) == 1
     assert "der_dispatch" in dtm["templates_used"]
 
+    # der-control-api's DispatchPublisher hardcodes DEVICE_ID = "der_dispatch"
+    # into its MQTT topic template (system_adr §12/§13/§18) — a compile-time
+    # constant, not something the DTM's slug counter can influence. The DTM
+    # must emit the bare id, not a counter-suffixed "der_dispatch_1", or
+    # subscriptions built off the DTM's device_id silently get nothing.
+    assert der_devices[0]["device_id"] == "der_dispatch"
+
 
 def test_post_rejects_invalid_payload() -> None:
     """Validator rejects defense_forward + dc_integrated_pcs (CATL exclusion)."""

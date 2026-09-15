@@ -3,7 +3,6 @@
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
 from src.dtm.dtm_generator_internals import (
-    assign_slug,
     collect_templates_used,
     emit_container,
     sizing,
@@ -87,8 +86,12 @@ class DtmGeneratorService:
 
         if resolution.der_enabled:
             # DER selected at configurator time — singleton, unpolled (HTTPS
-            # intake publishes to it), not part of any container.
-            der_slug = assign_slug("der_dispatch", slug_counter)
+            # intake publishes to it), not part of any container. Bare id, no
+            # counter suffix: der-control-api's DispatchPublisher hardcodes
+            # DEVICE_ID = "der_dispatch" into its MQTT topic template — a
+            # compile-time constant it can't be told to suffix — so the DTM
+            # must match exactly or device_id-keyed subscriptions get nothing.
+            der_slug = "der_dispatch"
             devices[der_slug] = Device(
                 device_id=der_slug,
                 template="der_dispatch",
