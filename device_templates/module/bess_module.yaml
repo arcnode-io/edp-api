@@ -12,21 +12,21 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Module State of Charge"
-    publisher: line_controller
+    publisher: local_process
 
   active_power:
     unit: watts
     type: float
     poll_rate_hz: 1
     display_name_default: "Module Active Power"
-    publisher: line_controller
+    publisher: local_process
 
   reactive_power:
     unit: vars
     type: float
     poll_rate_hz: 1
     display_name_default: "Module Reactive Power"
-    publisher: line_controller
+    publisher: local_process
 
   # Synthetic headroom measurements — gateway computes from cached MQTT inputs.
   # Placeholders: {site_id} (gateway runtime) and {device_id} (substituted by
@@ -65,14 +65,14 @@ commands:
     unit: watts
     payload: float
     display_name_default: "Set Active Power"
-    fanout: line_controller
+    fanout: local_process
 
   set_reactive_power:
     verb: set
     target: reactive_power
     unit: vars
     payload: float
-    fanout: line_controller
+    fanout: local_process
 
 install_tasks:
   - name: container_set_and_anchor

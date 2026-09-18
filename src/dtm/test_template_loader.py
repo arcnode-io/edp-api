@@ -105,9 +105,9 @@ def test_load_real_catalog_includes_bess_module() -> None:
     assert m.equipment_id is None
     assert m.contains[0].template == "bess_rack"
     pub = m.measurements["state_of_charge"].publisher
-    assert pub is not None and pub.value == "line_controller"
+    assert pub is not None and pub.value == "local_process"
     fanout = m.commands["set_active_power"].fanout
-    assert fanout is not None and fanout.value == "line_controller"
+    assert fanout is not None and fanout.value == "local_process"
 
 
 def test_load_real_catalog_size() -> None:
@@ -141,7 +141,7 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
 
 
 def test_load_real_catalog_includes_switchgear_voltage_unbalance() -> None:
-    """Grid HMI screen — line_controller-computed, no direct binding (needs all 3 phases)."""
+    """Grid HMI screen — local_process-computed, no direct binding (needs all 3 phases)."""
     # Arrange
     repo_root = Path(__file__).resolve().parents[2]
     loader = TemplateLoader(root=repo_root / "device_templates")
@@ -150,8 +150,7 @@ def test_load_real_catalog_includes_switchgear_voltage_unbalance() -> None:
     # Assert
     unbalance = catalog["switchgear"].measurements["voltage_unbalance_pct"]
     assert (
-        unbalance.publisher is not None
-        and unbalance.publisher.value == "line_controller"
+        unbalance.publisher is not None and unbalance.publisher.value == "local_process"
     )
     assert unbalance.binding is None
 
@@ -245,7 +244,7 @@ measurements:
   rollup:
     unit: watts
     type: float
-    publisher: line_controller
+    publisher: local_process
 """.lstrip())
     loader = TemplateLoader(root=tmp_path)
     # Act / Assert

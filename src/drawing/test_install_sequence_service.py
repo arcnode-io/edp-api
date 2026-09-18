@@ -27,7 +27,7 @@ def _module_tpl(slug: str) -> DeviceTemplate:
         description=slug,
         measurements={
             "total": Measurement(
-                unit="watts", type="float", publisher=Publisher.LINE_CONTROLLER
+                unit="watts", type="float", publisher=Publisher.LOCAL_PROCESS
             )
         },
         install_tasks=[

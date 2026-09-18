@@ -64,20 +64,22 @@ class TemplateKind(StrEnum):
 class Fanout(StrEnum):
     """Who handles a command that has no direct protocol binding.
 
-    LINE_CONTROLLER: fans one logical command out to real child devices.
+    LOCAL_PROCESS: a named local process distributes one logical command
+    out to real child devices (e.g. a module-level setpoint fanned out to
+    its racks).
     DER_CONTROL_API: a virtual singleton receiver (ems-der-control-api) —
     no children, nothing polled, but same "no binding" shape. Mirrors
-    Publisher's identical LINE_CONTROLLER/DER_CONTROL_API pairing for
+    Publisher's identical LOCAL_PROCESS/DER_CONTROL_API pairing for
     measurements (measurement.py).
     """
 
-    LINE_CONTROLLER = "line_controller"
+    LOCAL_PROCESS = "local_process"
     DER_CONTROL_API = "der_control_api"
 
 
 class Command(BaseModel):
     """One channel a device receives. Either bound to a protocol or
-    handled off-device per Fanout (line-controller distribution or a
+    handled off-device per Fanout (local-process distribution or a
     virtual service receiver)."""
 
     model_config = ConfigDict(extra="forbid")

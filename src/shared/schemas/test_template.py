@@ -29,7 +29,7 @@ def _ms() -> dict[str, Measurement]:
     """Single publisher SOC measurement — reused in module validator tests."""
     return {
         "soc": Measurement(
-            unit="percent", type="float", publisher=Publisher.LINE_CONTROLLER
+            unit="percent", type="float", publisher=Publisher.LOCAL_PROCESS
         )
     }
 
@@ -40,14 +40,14 @@ def _ms() -> dict[str, Measurement]:
 def test_enum_values() -> None:
     assert TemplateKind.LEAF == "leaf"
     assert TemplateKind.MODULE == "module"
-    assert Publisher.LINE_CONTROLLER == "line_controller"
+    assert Publisher.LOCAL_PROCESS == "local_process"
     assert Publisher.ANALYST == "analyst"
     assert Publisher.DER_CONTROL_API == "der_control_api"
-    assert Fanout.LINE_CONTROLLER == "line_controller"
+    assert Fanout.LOCAL_PROCESS == "local_process"
 
 
 def test_der_control_api_publisher_needs_no_binding() -> None:
-    # Arrange / Act — HTTPS-service publisher, same shape as line_controller
+    # Arrange / Act — HTTPS-service publisher, same shape as local_process
     m = Measurement(unit="watts", type="float", publisher=Publisher.DER_CONTROL_API)
     # Assert
     assert m.publisher == Publisher.DER_CONTROL_API
@@ -84,7 +84,7 @@ def test_device_template_module_minimal() -> None:
         contains=[ContainsEntry(template="bess_rack", qty="scalable")],
         measurements={
             "state_of_charge": Measurement(
-                unit="percent", type="float", publisher=Publisher.LINE_CONTROLLER
+                unit="percent", type="float", publisher=Publisher.LOCAL_PROCESS
             )
         },
     )

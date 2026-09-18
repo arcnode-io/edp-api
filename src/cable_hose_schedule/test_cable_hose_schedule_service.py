@@ -217,7 +217,7 @@ def _compute_module_dtm_with_pdu_and_cdu() -> Dtm:
         ],
         measurements={
             "total_power": Measurement(
-                unit="watts", type="float", publisher=Publisher.LINE_CONTROLLER
+                unit="watts", type="float", publisher=Publisher.LOCAL_PROCESS
             )
         },
     )

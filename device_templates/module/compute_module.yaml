@@ -28,14 +28,14 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Module Total Power"
-    publisher: line_controller
+    publisher: local_process
 
   total_thermal_load:
     unit: watts
     type: float
     poll_rate_hz: 1
     display_name_default: "Module Thermal Load"
-    publisher: line_controller
+    publisher: local_process
 
   pue:
     unit: none

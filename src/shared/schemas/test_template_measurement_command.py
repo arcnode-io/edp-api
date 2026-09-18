@@ -32,9 +32,9 @@ def test_measurement_with_binding() -> None:
 
 def test_measurement_with_publisher() -> None:
     # Arrange / Act
-    m = Measurement(unit="percent", type="float", publisher=Publisher.LINE_CONTROLLER)
+    m = Measurement(unit="percent", type="float", publisher=Publisher.LOCAL_PROCESS)
     # Assert
-    assert m.publisher == Publisher.LINE_CONTROLLER
+    assert m.publisher == Publisher.LOCAL_PROCESS
     assert m.binding is None
 
 
@@ -45,7 +45,7 @@ def test_measurement_rejects_both_binding_and_publisher() -> None:
             unit="volts",
             type="float",
             binding=_modbus_binding(),
-            publisher=Publisher.LINE_CONTROLLER,
+            publisher=Publisher.LOCAL_PROCESS,
         )
 
 
@@ -109,15 +109,15 @@ def test_command_with_fanout() -> None:
         target="active_power",
         unit="watts",
         payload="float",
-        fanout=Fanout.LINE_CONTROLLER,
+        fanout=Fanout.LOCAL_PROCESS,
     )
     # Assert
-    assert c.fanout == Fanout.LINE_CONTROLLER
+    assert c.fanout == Fanout.LOCAL_PROCESS
     assert c.binding is None
 
 
 def test_command_with_der_control_api_fanout() -> None:
-    # Arrange / Act — virtual singleton receiver, same shape as line_controller
+    # Arrange / Act — virtual singleton receiver, same shape as local_process
     c = Command(
         verb="enable",
         target="event_active",
@@ -139,5 +139,5 @@ def test_command_rejects_both_binding_and_fanout() -> None:
             unit="watts",
             payload="float",
             binding=ModbusBinding(protocol="modbus_tcp", function_code=6, address=400),
-            fanout=Fanout.LINE_CONTROLLER,
+            fanout=Fanout.LOCAL_PROCESS,
         )

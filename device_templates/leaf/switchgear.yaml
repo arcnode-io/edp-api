@@ -103,13 +103,13 @@ measurements:
 
   # NEMA MG-1 voltage unbalance: max phase deviation from average / average.
   # Not expressible via the synthetic subtract/sum/mean/max/min primitives —
-  # line_controller computes it from this device's own bus_voltage_a/b/c.
+  # local_process computes it from this device's own bus_voltage_a/b/c.
   voltage_unbalance_pct:
     unit: percent
     type: float
     poll_rate_hz: 1
     display_name_default: "Voltage Unbalance"
-    publisher: line_controller
+    publisher: local_process
 
 install_tasks:
   - name: set_and_anchor

@@ -141,7 +141,7 @@ def test_synthetic_measurement_rejects_non_gateway_publisher() -> None:
             binding=SyntheticBinding(
                 protocol="synthetic", formula="subtract", inputs=["a", "b"]
             ),
-            publisher=Publisher.LINE_CONTROLLER,
+            publisher=Publisher.LOCAL_PROCESS,
         )
 
 

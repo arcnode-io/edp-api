@@ -18,21 +18,21 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Net Active Power"
-    publisher: line_controller
+    publisher: local_process
 
   grid_frequency:
     unit: hertz
     type: float
     poll_rate_hz: 10
     display_name_default: "Grid Frequency"
-    publisher: line_controller
+    publisher: local_process
 
   interconnect_state:
     unit: none
     type: enum
     poll_rate_hz: 0.5
     values: { 0: OPEN, 1: CLOSED, 2: TRIPPED }
-    publisher: line_controller
+    publisher: local_process
 
 install_tasks:
   - name: container_set_and_anchor
