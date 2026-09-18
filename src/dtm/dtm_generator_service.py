@@ -84,22 +84,6 @@ class DtmGeneratorService:
                 by_template=by_template,
             )
 
-        if resolution.der_enabled:
-            # DER selected at configurator time — singleton, unpolled (HTTPS
-            # intake publishes to it), not part of any container. Bare id, no
-            # counter suffix: der-control-api's DispatchPublisher hardcodes
-            # DEVICE_ID = "der_dispatch" into its MQTT topic template — a
-            # compile-time constant it can't be told to suffix — so the DTM
-            # must match exactly or device_id-keyed subscriptions get nothing.
-            der_slug = "der_dispatch"
-            devices[der_slug] = Device(
-                device_id=der_slug,
-                template="der_dispatch",
-                parent=None,
-                connection=None,
-            )
-            by_template.setdefault("der_dispatch", []).append(der_slug)
-
         return Dtm(
             deployment_uuid=resolution.deployment_id,
             sizing_params=sizing(resolution),

@@ -116,20 +116,6 @@ def test_command_with_fanout() -> None:
     assert c.binding is None
 
 
-def test_command_with_der_control_api_fanout() -> None:
-    # Arrange / Act — virtual singleton receiver, same shape as local_process
-    c = Command(
-        verb="enable",
-        target="event_active",
-        unit="none",
-        payload="bool",
-        fanout=Fanout.DER_CONTROL_API,
-    )
-    # Assert
-    assert c.fanout == Fanout.DER_CONTROL_API
-    assert c.binding is None
-
-
 def test_command_rejects_both_binding_and_fanout() -> None:
     # Arrange / Act / Assert
     with pytest.raises(ValidationError, match="exactly one of"):

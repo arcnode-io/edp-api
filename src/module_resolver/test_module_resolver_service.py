@@ -12,57 +12,23 @@ from src.shared.enums import (
     DeploymentContext,
     DeploymentProfile,
     EmsTarget,
-    ExportMode,
-    FlexLevel,
     GpuVariant,
     GridPath,
-    MarketAccess,
-    MarketProgram,
-    MarketRegion,
     OnsiteGenerationType,
     PrimaryWorkload,
-    ServiceType,
     SourcingTier,
-    WiresOwnerType,
 )
 from src.shared.schemas.configurator_grid import (
-    FlexObligation,
     Grid,
     OnsiteGeneration,
     Site,
     SiteLocation,
-    WiresOwner,
 )
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 
 DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000001")
 
 _OFF_GRID = Grid(path=GridPath.OFF_GRID)
-_FLEXIBLE_GRID = Grid(
-    path=GridPath.FLEXIBLE,
-    service_type=ServiceType.FLEXIBLE,
-    flex_obligation=FlexObligation(
-        level=FlexLevel.STANDARD,
-        depth_pct=50,
-        max_duration_h=4,
-        max_events_yr=40,
-        min_interval_h=20,
-        notice_s=600,
-    ),
-    wires_owner=WiresOwner(id="oncor", name="Oncor", type=WiresOwnerType.TDSP),
-    market_region=MarketRegion.ERCOT,
-)
-_GRID_REVENUE_FIRM_GRID = Grid(
-    path=GridPath.GRID_REVENUE,
-    service_type=ServiceType.FIRM,
-    export_mode=ExportMode.LIMITED_EXPORT,
-    export_limit_mw=5.0,
-    market_access=MarketAccess.AGGREGATED,
-    market_program=MarketProgram.ERCOT_DGR,
-    settlement_point="HB_NORTH",
-    wires_owner=WiresOwner(id="oncor", name="Oncor", type=WiresOwnerType.TDSP),
-    market_region=MarketRegion.ERCOT,
-)
 
 
 def _payload(
@@ -226,45 +192,6 @@ def test_grid_container_absent_when_no_bess() -> None:
 
     # Assert
     assert actual.grid_container_present is False
-
-
-def test_der_enabled_false_for_off_grid() -> None:
-    """path=off_grid -> service_type/market_access both at default -> der_enabled=False."""
-    # Arrange
-    service = ModuleResolverService()
-    payload = _payload(grid=_OFF_GRID)
-
-    # Act
-    actual = service.resolve(payload)
-
-    # Assert
-    assert actual.der_enabled is False
-
-
-def test_der_enabled_true_for_flexible_service_type() -> None:
-    """D5: service_type=flexible -> der_enabled=True, independent of market_access."""
-    # Arrange
-    service = ModuleResolverService()
-    payload = _payload(grid=_FLEXIBLE_GRID)
-
-    # Act
-    actual = service.resolve(payload)
-
-    # Assert
-    assert actual.der_enabled is True
-
-
-def test_der_enabled_true_for_market_access() -> None:
-    """D5: market_access != none -> der_enabled=True, even with service_type=firm."""
-    # Arrange
-    service = ModuleResolverService()
-    payload = _payload(grid=_GRID_REVENUE_FIRM_GRID)
-
-    # Act
-    actual = service.resolve(payload)
-
-    # Assert
-    assert actual.der_enabled is True
 
 
 def test_derives_sourcing_tier_and_ems_target() -> None:

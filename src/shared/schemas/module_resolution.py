@@ -24,7 +24,6 @@ class ModuleResolution(BaseModel):
 
     compute_container_count: int = Field(ge=1)
     grid_container_present: bool
-    der_enabled: bool
 
     bess_coupling: BessCoupling
     bess_capacity_mwh: float

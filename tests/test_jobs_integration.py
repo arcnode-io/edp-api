@@ -1,6 +1,5 @@
 """Jobs HTTP integration tests against a real FastAPI TestClient."""
 
-import json
 from typing import Any, cast
 from uuid import UUID, uuid4
 
@@ -34,24 +33,6 @@ def _payload(deployment_id: UUID) -> dict[str, Any]:
         },
         "onsite_generation": {"type": "none", "capacity_mw": None},
         "grid": {"path": "off_grid"},
-    }
-
-
-def _flexible_grid() -> dict[str, Any]:
-    """A grid block on the flexible path — service_type=flexible triggers der_dispatch."""
-    return {
-        "path": "flexible",
-        "service_type": "flexible",
-        "flex_obligation": {
-            "level": "standard",
-            "depth_pct": 50,
-            "max_duration_h": 4,
-            "max_events_yr": 40,
-            "min_interval_h": 20,
-            "notice_s": 600,
-        },
-        "wires_owner": {"id": "oncor", "name": "Oncor", "type": "tdsp", "eia_id": None},
-        "market_region": "ercot",
     }
 
 
@@ -195,42 +176,6 @@ def test_re_render_endpoint_returns_fresh_svg_for_runtime_dtm() -> None:
     body = response.text
     assert body.startswith("<?xml version=")
     assert 'id="bess_rack_1"' in body
-
-
-def test_flexible_service_type_produces_der_dispatch_device_in_generated_dtm() -> None:
-    """POST with grid.service_type=flexible -> real generated DTM has a der_dispatch device.
-
-    End-to-end proof through the actual HTTP pipeline (not just unit-level):
-    ems-der-control-api needs this device to exist before its AsyncAPI channels
-    show up for a real site. D5: service_type=flexible OR market_access != none.
-    """
-    # Arrange
-    client, manifest_module = _client_with_uploads()
-    deployment_id = uuid4()
-    payload = _payload(deployment_id)
-    payload["grid"] = _flexible_grid()
-
-    # Act
-    post = client.post("/edp-api/jobs", json=payload)
-
-    # Assert
-    assert post.status_code == 202, post.text
-    created = post.json()
-    dtm_url = next(u["url"] for u in created["edp_artifact_urls"] if u["kind"] == "dtm")
-    stub = cast(_StubManifestClient, manifest_module.client)
-    dtm = json.loads(stub.uploads[dtm_url])
-    der_devices = [
-        d for d in dtm["devices"].values() if d["template"] == "der_dispatch"
-    ]
-    assert len(der_devices) == 1
-    assert "der_dispatch" in dtm["templates_used"]
-
-    # der-control-api's DispatchPublisher hardcodes DEVICE_ID = "der_dispatch"
-    # into its MQTT topic template (system_adr §12/§13/§18) — a compile-time
-    # constant, not something the DTM's slug counter can influence. The DTM
-    # must emit the bare id, not a counter-suffixed "der_dispatch_1", or
-    # subscriptions built off the DTM's device_id silently get nothing.
-    assert der_devices[0]["device_id"] == "der_dispatch"
 
 
 def test_post_rejects_invalid_payload() -> None:

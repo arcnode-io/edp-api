@@ -118,7 +118,6 @@ def _manifest() -> Manifest:
 def _resolution(
     *,
     container_count: int = 1,
-    der_enabled: bool = False,
     ride_through_hours: float = 0.0,
 ) -> ModuleResolution:
     return ModuleResolution(
@@ -126,7 +125,6 @@ def _resolution(
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=container_count,
         grid_container_present=True,
-        der_enabled=der_enabled,
         bess_coupling=BessCoupling.AC_COUPLED,
         bess_capacity_mwh=5.0,
         sourcing_tier=SourcingTier.COMMERCIAL,
