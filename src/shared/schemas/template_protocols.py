@@ -75,7 +75,7 @@ class SyntheticBinding(BaseModel):
     Synthetic channels do NOT poll a south-side device. The gateway subscribes
     to the topics listed in `inputs`, caches latest values per topic, ticks at
     the measurement's `poll_rate_hz`, and publishes the result of applying
-    `formula` to the cached input values. Holds (no publish) until every
+    `operation` to the cached input values. Holds (no publish) until every
     input has at least one cached sample.
 
     Input topic strings may contain `{site_id}` (substituted at gateway runtime
@@ -86,7 +86,7 @@ class SyntheticBinding(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     protocol: Literal["synthetic"]
-    formula: Literal["subtract", "sum", "mean", "max", "min"]
+    operation: Literal["subtract", "sum", "mean", "max", "min"]
     inputs: list[str]
 
 

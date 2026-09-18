@@ -105,14 +105,14 @@ def test_synthetic_binding_happy_path() -> None:
     # Arrange / Act
     b = SyntheticBinding(
         protocol="synthetic",
-        formula="subtract",
+        operation="subtract",
         inputs=[
             "sites/{site_id}/devices/operating_envelope/measurements/import_limit/watts",
             "sites/{site_id}/devices/{device_id}/measurements/active_power/watts",
         ],
     )
     # Assert
-    assert b.formula == "subtract"
+    assert b.operation == "subtract"
     assert len(b.inputs) == 2
 
 
@@ -125,7 +125,7 @@ def test_synthetic_measurement_requires_publisher_gateway() -> None:
             unit="watts",
             type="float",
             binding=SyntheticBinding(
-                protocol="synthetic", formula="subtract", inputs=["a", "b"]
+                protocol="synthetic", operation="subtract", inputs=["a", "b"]
             ),
         )
 
@@ -139,7 +139,7 @@ def test_synthetic_measurement_rejects_non_gateway_publisher() -> None:
             unit="watts",
             type="float",
             binding=SyntheticBinding(
-                protocol="synthetic", formula="subtract", inputs=["a", "b"]
+                protocol="synthetic", operation="subtract", inputs=["a", "b"]
             ),
             publisher=Publisher.LOCAL_PROCESS,
         )
@@ -151,7 +151,7 @@ def test_synthetic_measurement_with_gateway_publisher_validates() -> None:
         unit="watts",
         type="float",
         binding=SyntheticBinding(
-            protocol="synthetic", formula="subtract", inputs=["a", "b"]
+            protocol="synthetic", operation="subtract", inputs=["a", "b"]
         ),
         publisher=Publisher.GATEWAY,
     )

@@ -28,7 +28,7 @@ class Publisher(StrEnum):
     utility DER dispatch and republishes setpoints directly to MQTT — no binding,
     nothing polls it. Same shape as LOCAL_PROCESS.
     GATEWAY: a gateway-computed synthetic channel; ALWAYS paired with
-    `binding.protocol="synthetic"` carrying the formula + inputs.
+    `binding.protocol="synthetic"` carrying the operation + inputs.
     """
 
     LOCAL_PROCESS = "local_process"
