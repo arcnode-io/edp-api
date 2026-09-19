@@ -123,12 +123,38 @@ class DistributeBinding(BaseModel):
     No target-measurement field: verb + target are inherited from whichever
     Command this binding lives on, resolved per-child by ems-device-api
     matching verb+target against each child's own commands (not modeled here).
+
+    The three envelope-guard fields are optional and all-or-nothing: a plain
+    distribute binding (module setpoint fanout, no envelope guard) omits all
+    three. When present, they carry the tunable control-law numbers for
+    envelope-constrained actuation (ramp rate, hysteresis) — the concrete
+    values live in ems-industrial-gateway's cfg.yml, not hardcoded; this
+    schema just accepts the shape.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     protocol: Literal["distribute"]
     allocation_policy: Literal["equal_split", "soc_weighted"]
+    ramp_rate_per_sec: float | None = None
+    hysteresis_margin: float | None = None
+    hysteresis_dwell_secs: float | None = None
+
+    @model_validator(mode="after")
+    def _envelope_guard_all_or_nothing(self) -> "DistributeBinding":
+        """The 3 envelope-guard fields must be all present or all absent."""
+        fields = (
+            self.ramp_rate_per_sec,
+            self.hysteresis_margin,
+            self.hysteresis_dwell_secs,
+        )
+        present = sum(f is not None for f in fields)
+        if present not in (0, 3):
+            raise ValueError(
+                "distribute binding's envelope-guard fields (ramp_rate_per_sec, "
+                "hysteresis_margin, hysteresis_dwell_secs) require all three or none"
+            )
+        return self
 
 
 Binding = Annotated[
