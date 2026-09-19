@@ -66,6 +66,39 @@ def test_device_template_leaf_minimal() -> None:
     assert t.equipment_id == "GRD-MTR-001"
 
 
+def test_device_template_capacity_kwh_defaults_none() -> None:
+    # Arrange / Act
+    t = DeviceTemplate(
+        template="revenue_meter",
+        kind=TemplateKind.LEAF,
+        equipment_id="GRD-MTR-001",
+        vendor="Schneider Electric",
+        model="ION9000",
+        description="test",
+        measurements={
+            "voltage_a": Measurement(unit="volts", type="float", binding=_mb())
+        },
+    )
+    # Assert
+    assert t.capacity_kwh is None
+
+
+def test_device_template_capacity_kwh_accepts_nameplate_value() -> None:
+    # Arrange / Act — bess_rack's 4 MWh nameplate, as capacity_kwh
+    t = DeviceTemplate(
+        template="bess_rack",
+        kind=TemplateKind.LEAF,
+        equipment_id="EXT-BESS-001",
+        vendor="Tesla",
+        model="Megapack 2 XL",
+        description="test",
+        capacity_kwh=4000.0,
+        measurements={"soc": Measurement(unit="percent", type="float", binding=_mb())},
+    )
+    # Assert
+    assert t.capacity_kwh == 4000.0
+
+
 def test_device_template_module_minimal() -> None:
     # Arrange / Act
     t = DeviceTemplate(

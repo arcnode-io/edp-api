@@ -6,7 +6,7 @@ Owns the 5 per-measurement binding models and the Binding discriminated-union al
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ModbusBinding(BaseModel):
@@ -72,22 +72,63 @@ class CanopenBinding(BaseModel):
 class SyntheticBinding(BaseModel):
     """Gateway-side pure-function derivation from cached MQTT inputs.
 
-    Synthetic channels do NOT poll a south-side device. The gateway subscribes
-    to the topics listed in `inputs`, caches latest values per topic, ticks at
-    the measurement's `poll_rate_hz`, and publishes the result of applying
-    `operation` to the cached input values. Holds (no publish) until every
-    input has at least one cached sample.
+    Synthetic channels do NOT poll a south-side device. Exactly one of two
+    input-source modes applies:
 
-    Input topic strings may contain `{site_id}` (substituted at gateway runtime
-    from deployment config) and `{device_id}` (substituted at ems-device-api
-    AsyncAPI generation time with the instantiating device's id).
+    - `inputs`: a fixed list of topics. The gateway subscribes to each,
+      caches latest values, ticks at the measurement's `poll_rate_hz`, and
+      publishes the result of applying `operation`. Holds (no publish) until
+      every input has at least one cached sample. Topic strings may contain
+      `{site_id}` (gateway runtime) and `{device_id}` (ems-device-api
+      AsyncAPI-gen substitution).
+    - `source_measurement`: names a measurement projected across every child
+      of the device this binding lives on. Resolving children into concrete
+      topics is ems-device-api's job, not modeled here.
+
+    `weighted_mean` (capacity_kwh-weighted, per DeviceTemplate.capacity_kwh
+    on each child) is only meaningful across children, so it requires
+    `source_measurement` mode. `subtract` is only ever between two fixed
+    topics (e.g. envelope limit minus module draw), so it requires `inputs`
+    mode. `sum`/`mean`/`max`/`min` work in either mode.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     protocol: Literal["synthetic"]
-    operation: Literal["subtract", "sum", "mean", "max", "min"]
-    inputs: list[str]
+    operation: Literal["subtract", "sum", "mean", "max", "min", "weighted_mean"]
+    inputs: list[str] | None = None
+    source_measurement: str | None = None
+
+    @model_validator(mode="after")
+    def _inputs_xor_source_measurement(self) -> "SyntheticBinding":
+        """Exactly one input-source mode; operation must match its mode."""
+        has_inputs = self.inputs is not None
+        has_source = self.source_measurement is not None
+        if has_inputs == has_source:
+            raise ValueError(
+                "synthetic binding requires exactly one of `inputs:` (fixed "
+                "topic list) or `source_measurement:` (projected across children)"
+            )
+        if self.operation == "weighted_mean" and not has_source:
+            raise ValueError("operation=weighted_mean requires source_measurement mode")
+        if self.operation == "subtract" and not has_inputs:
+            raise ValueError("operation=subtract requires inputs mode")
+        return self
+
+
+class DistributeBinding(BaseModel):
+    """Command-distribution binding — fans a module-level setpoint out to
+    children per `allocation_policy`.
+
+    No target-measurement field: verb + target are inherited from whichever
+    Command this binding lives on, resolved per-child by ems-device-api
+    matching verb+target against each child's own commands (not modeled here).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    protocol: Literal["distribute"]
+    allocation_policy: Literal["equal_split", "soc_weighted"]
 
 
 Binding = Annotated[
@@ -96,6 +137,7 @@ Binding = Annotated[
     | SnmpBinding
     | RedfishBinding
     | CanopenBinding
-    | SyntheticBinding,
+    | SyntheticBinding
+    | DistributeBinding,
     Field(discriminator="protocol"),
 ]

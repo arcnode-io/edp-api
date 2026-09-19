@@ -23,6 +23,7 @@ from src.shared.schemas.template_protocols import (
     Binding,
     CanopenBinding,
     Dnp3Binding,
+    DistributeBinding,
     ModbusBinding,
     RedfishBinding,
     SnmpBinding,
@@ -38,6 +39,7 @@ __all__ = [
     "ContainsEntry",
     "CxLevel",
     "DeviceTemplate",
+    "DistributeBinding",
     "Dnp3Binding",
     "Fanout",
     "InstallTask",
@@ -127,6 +129,7 @@ class DeviceTemplate(BaseModel):
     equipment_id: str | None = None
     vendor: str | None = None
     model: str | None = None
+    capacity_kwh: float | None = None  # nameplate fact, for capacity-weighted rollups
     description: str
     contains: list[ContainsEntry] = Field(default_factory=list)
     measurements: dict[str, Measurement] = Field(default_factory=dict)

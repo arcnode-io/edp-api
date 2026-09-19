@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from src.shared.schemas.template import (
     CanopenBinding,
+    DistributeBinding,
     Dnp3Binding,
     Measurement,
     ModbusBinding,
@@ -71,6 +72,20 @@ def test_binding_canopen() -> None:
     assert b.byte_length == 2
 
 
+def test_binding_distribute_equal_split() -> None:
+    # Arrange / Act
+    b = DistributeBinding(protocol="distribute", allocation_policy="equal_split")
+    # Assert
+    assert b.allocation_policy == "equal_split"
+
+
+def test_binding_distribute_soc_weighted() -> None:
+    # Arrange / Act
+    b = DistributeBinding(protocol="distribute", allocation_policy="soc_weighted")
+    # Assert
+    assert b.allocation_policy == "soc_weighted"
+
+
 def test_measurement_binding_dict_dispatches_to_modbus() -> None:
     # Arrange / Act — validate from dict so discriminator resolves protocol → ModbusBinding
     m = Measurement.model_validate(
@@ -113,7 +128,65 @@ def test_synthetic_binding_happy_path() -> None:
     )
     # Assert
     assert b.operation == "subtract"
+    assert b.inputs is not None
     assert len(b.inputs) == 2
+
+
+def test_synthetic_binding_source_measurement_mode() -> None:
+    # Arrange / Act — projects one measurement across the device's children
+    b = SyntheticBinding(
+        protocol="synthetic",
+        operation="weighted_mean",
+        source_measurement="state_of_charge",
+    )
+    # Assert
+    assert b.operation == "weighted_mean"
+    assert b.source_measurement == "state_of_charge"
+    assert b.inputs is None
+
+
+def test_synthetic_binding_rejects_both_inputs_and_source_measurement() -> None:
+    # Arrange / Act / Assert
+    with pytest.raises(ValidationError, match="exactly one of"):
+        SyntheticBinding(
+            protocol="synthetic",
+            operation="sum",
+            inputs=["a", "b"],
+            source_measurement="active_power",
+        )
+
+
+def test_synthetic_binding_rejects_neither_inputs_nor_source_measurement() -> None:
+    # Arrange / Act / Assert
+    with pytest.raises(ValidationError, match="exactly one of"):
+        SyntheticBinding(protocol="synthetic", operation="sum")
+
+
+def test_synthetic_binding_weighted_mean_requires_source_measurement_mode() -> None:
+    # Arrange / Act / Assert — weighted_mean can't pair with a fixed inputs list
+    with pytest.raises(ValidationError, match="weighted_mean requires"):
+        SyntheticBinding(
+            protocol="synthetic", operation="weighted_mean", inputs=["a", "b"]
+        )
+
+
+def test_synthetic_binding_subtract_requires_inputs_mode() -> None:
+    # Arrange / Act / Assert — subtract can't pair with source_measurement
+    with pytest.raises(ValidationError, match="subtract requires"):
+        SyntheticBinding(
+            protocol="synthetic",
+            operation="subtract",
+            source_measurement="active_power",
+        )
+
+
+def test_synthetic_binding_sum_valid_in_source_measurement_mode() -> None:
+    # Arrange / Act — sum/mean/max/min work in either mode
+    b = SyntheticBinding(
+        protocol="synthetic", operation="sum", source_measurement="active_power"
+    )
+    # Assert
+    assert b.operation == "sum"
 
 
 def test_synthetic_measurement_requires_publisher_gateway() -> None:
