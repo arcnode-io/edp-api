@@ -7,26 +7,41 @@ contains:
     qty: scalable
 
 measurements:
+  # Rollups project a bess_rack measurement across however many racks this
+  # module's contains[] actually resolves to at deployment time — gateway
+  # resolves the child list, edp-api just declares the aggregation.
   state_of_charge:
     unit: percent
     type: float
     poll_rate_hz: 1
     display_name_default: "Module State of Charge"
-    publisher: local_process
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      operation: weighted_mean
+      source_measurement: state_of_charge
 
   active_power:
     unit: watts
     type: float
     poll_rate_hz: 1
     display_name_default: "Module Active Power"
-    publisher: local_process
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      operation: sum
+      source_measurement: active_power
 
   reactive_power:
     unit: vars
     type: float
     poll_rate_hz: 1
     display_name_default: "Module Reactive Power"
-    publisher: local_process
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      operation: sum
+      source_measurement: reactive_power
 
   # Synthetic headroom measurements — gateway computes from cached MQTT inputs.
   # Placeholders: {site_id} (gateway runtime) and {device_id} (substituted by
@@ -59,13 +74,24 @@ measurements:
         - sites/{site_id}/devices/{device_id}/measurements/active_power/watts
 
 commands:
+  # soc_weighted (not equal_split): consistent with state_of_charge's own
+  # weighted_mean rollup above — an equal split would ignore per-rack SOC
+  # and let racks diverge instead of balancing them via dispatch.
+  # ramp_rate_per_sec/hysteresis_margin/hysteresis_dwell_secs are the
+  # control-law defaults from handoff-envelope-control-law-RESPONSE-
+  # 2026-09-18.md — engineering judgment pending real IEEE 1547 numbers.
   set_active_power:
     verb: set
     target: active_power
     unit: watts
     payload: float
     display_name_default: "Set Active Power"
-    fanout: local_process
+    binding:
+      protocol: distribute
+      allocation_policy: soc_weighted
+      ramp_rate_per_sec: 0.10
+      hysteresis_margin: 0.05
+      hysteresis_dwell_secs: 30.0
 
   set_reactive_power:
     verb: set

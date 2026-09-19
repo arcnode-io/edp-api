@@ -4,6 +4,7 @@ equipment_id: EXT-BESS-001
 vendor: Tesla
 model: Megapack 2 XL (PN 1848844-XX-Y)
 description: Tesla Megapack 2 XL 4 MWh AC-coupled BESS with grid-forming inverter via Modbus TCP
+capacity_kwh: 4000.0
 
 # Reason: No commercial-ac topology entry for BESS (customer-supplied equipment per ADR-001).
 # Register addresses are placeholder (0-based) — actual map is gated by Tesla sales.

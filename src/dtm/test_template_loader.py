@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from src.dtm.template_loader import TemplateLoader, TemplateLoadError
+from src.shared.schemas.template import DistributeBinding, SyntheticBinding
 
 
 def test_load_catalog_empty_dir(tmp_path: Path) -> None:
@@ -92,6 +93,16 @@ def test_load_real_catalog_includes_revenue_meter() -> None:
     assert "kwh_delivered" in rm.measurements
 
 
+def test_load_real_catalog_includes_bess_rack_capacity_kwh() -> None:
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    loader = TemplateLoader(root=repo_root / "device_templates")
+    # Act
+    catalog = loader.load_catalog()
+    # Assert — Tesla Megapack 2 XL's own description says "4 MWh"
+    assert catalog["bess_rack"].capacity_kwh == 4000.0
+
+
 def test_load_real_catalog_includes_bess_module() -> None:
     # Arrange
     repo_root = Path(__file__).resolve().parents[2]
@@ -104,10 +115,41 @@ def test_load_real_catalog_includes_bess_module() -> None:
     assert m.kind.value == "module"
     assert m.equipment_id is None
     assert m.contains[0].template == "bess_rack"
-    pub = m.measurements["state_of_charge"].publisher
-    assert pub is not None and pub.value == "local_process"
-    fanout = m.commands["set_active_power"].fanout
-    assert fanout is not None and fanout.value == "local_process"
+
+    # Rollup measurements are real synthetic bindings now, not bare local_process
+    active_power = m.measurements["active_power"]
+    assert active_power.publisher is not None
+    assert active_power.publisher.value == "gateway"
+    ap_binding = active_power.binding
+    assert isinstance(ap_binding, SyntheticBinding)
+    assert ap_binding.operation == "sum"
+    assert ap_binding.source_measurement == "active_power"
+
+    reactive_power = m.measurements["reactive_power"]
+    rp_binding = reactive_power.binding
+    assert isinstance(rp_binding, SyntheticBinding)
+    assert rp_binding.operation == "sum"
+    assert rp_binding.source_measurement == "reactive_power"
+
+    soc = m.measurements["state_of_charge"]
+    soc_binding = soc.binding
+    assert isinstance(soc_binding, SyntheticBinding)
+    assert soc_binding.operation == "weighted_mean"
+    assert soc_binding.source_measurement == "state_of_charge"
+
+    # set_active_power fans out via the real distribute binding + control law
+    set_active_power = m.commands["set_active_power"]
+    dist_binding = set_active_power.binding
+    assert isinstance(dist_binding, DistributeBinding)
+    assert dist_binding.allocation_policy == "soc_weighted"
+    assert dist_binding.ramp_rate_per_sec == 0.10
+    assert dist_binding.hysteresis_margin == 0.05
+    assert dist_binding.hysteresis_dwell_secs == 30.0
+
+    # set_reactive_power untouched — still the generic local-process fanout
+    set_reactive_power = m.commands["set_reactive_power"]
+    assert set_reactive_power.fanout is not None
+    assert set_reactive_power.fanout.value == "local_process"
 
 
 def test_load_real_catalog_size() -> None:
