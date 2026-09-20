@@ -198,6 +198,18 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
     assert shortfall.publisher is not None
     assert shortfall.publisher.value == "der_control_api"
 
+    # Gateway-computed, no binding: it sums whatever distribute-parent
+    # devices exist (ems-industrial-gateway/src/der_dispatch.rs), a formula
+    # that doesn't fit either existing synthetic mode (der_dispatch has no
+    # contains: relationship to bess_module — siblings, not parent/child).
+    # local_process, not gateway: Publisher.GATEWAY's own docstring promises
+    # it's always paired with a synthetic binding, which doesn't apply here.
+    actual = dd.measurements["actual_active_power"]
+    assert actual.type == "float"
+    assert actual.publisher is not None
+    assert actual.publisher.value == "local_process"
+    assert actual.binding is None
+
     approve = dd.commands["approve_dispatch"]
     assert approve.verb == "enable"
     assert approve.target == "event_active"

@@ -64,6 +64,25 @@ measurements:
     display_name_default: "Dispatch Shortfall"
     publisher: der_control_api
 
+  # Phase III — site-level real delivered power, gateway-computed by summing
+  # whatever distribute-parent devices this deployment has (today: bess_module
+  # instances; correct at any count, since it walks the resolved topology by
+  # structural trait, not a fixed template list — see
+  # ems-industrial-gateway/src/der_dispatch.rs). No binding: der_dispatch has
+  # no contains: relationship to those devices (siblings, not parent/child),
+  # so neither existing synthetic mode fits — inputs is a fixed topic list,
+  # source_measurement only projects across a declared parent's children.
+  # publisher: local_process, not gateway — GATEWAY's own docstring promises
+  # it's always paired with a synthetic binding, which doesn't apply here.
+  actual_active_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1                # matches the gateway's tick cadence
+    display_name_default: "DER Actual Active Power"
+    bounds: { min: -10000000, max: 10000000, nominal: 0 }
+    thresholds: { warn_min: -9500000, warn_max: 9500000, alarm_min: -10000000, alarm_max: 10000000 }
+    publisher: local_process
+
 commands:
   approve_dispatch:
     verb: enable
