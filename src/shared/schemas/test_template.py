@@ -42,7 +42,9 @@ def test_enum_values() -> None:
     assert TemplateKind.MODULE == "module"
     assert Publisher.LOCAL_PROCESS == "local_process"
     assert Publisher.ANALYST == "analyst"
+    assert Publisher.DER_CONTROL_API == "der_control_api"
     assert Fanout.LOCAL_PROCESS == "local_process"
+    assert Fanout.DER_CONTROL_API == "der_control_api"
 
 
 # --- DeviceTemplate happy paths ---

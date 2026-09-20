@@ -24,12 +24,16 @@ class Publisher(StrEnum):
 
     LOCAL_PROCESS / ANALYST: a derived rollup, no binding (the named process
     knows what to compute).
+    DER_CONTROL_API: an HTTPS intake service (ems-der-control-api) that receives
+    utility DER dispatch and republishes setpoints directly to MQTT — no binding,
+    nothing polls it. Same shape as LOCAL_PROCESS.
     GATEWAY: a gateway-computed synthetic channel; ALWAYS paired with
     `binding.protocol="synthetic"` carrying the operation + inputs.
     """
 
     LOCAL_PROCESS = "local_process"
     ANALYST = "analyst"
+    DER_CONTROL_API = "der_control_api"
     GATEWAY = "gateway"
 
 

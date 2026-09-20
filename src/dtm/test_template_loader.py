@@ -161,8 +161,52 @@ def test_load_real_catalog_size() -> None:
     # Assert
     leaves = [t for t in catalog.values() if t.kind.value == "leaf"]
     modules = [t for t in catalog.values() if t.kind.value == "module"]
-    assert len(leaves) == 12
+    assert len(leaves) == 13
     assert len(modules) == 3
+
+
+def test_load_real_catalog_includes_der_dispatch() -> None:
+    """Recreated to match ems-der-control-api's post-clean-slate rebuild
+    (DispatchPublisher/DispatchState/DispatchCommandSubscriber) — not the
+    old shape resurrected blindly, verified against that repo's real code.
+    """
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    loader = TemplateLoader(root=repo_root / "device_templates")
+    # Act
+    catalog = loader.load_catalog()
+    # Assert
+    dd = catalog["der_dispatch"]
+    assert dd.kind.value == "leaf"
+
+    tap = dd.measurements["target_active_power"]
+    assert tap.publisher is not None and tap.publisher.value == "der_control_api"
+    assert tap.binding is None
+
+    dispatch_state = dd.measurements["dispatch_state"]
+    assert dispatch_state.type == "enum"
+    assert dispatch_state.values == {
+        0: "IDLE",
+        1: "PENDING",
+        2: "ARMED",
+        3: "ACTIVE",
+        4: "REJECTED",
+    }
+
+    shortfall = dd.measurements["dispatch_shortfall"]
+    assert shortfall.type == "bool"
+    assert shortfall.publisher is not None
+    assert shortfall.publisher.value == "der_control_api"
+
+    approve = dd.commands["approve_dispatch"]
+    assert approve.verb == "enable"
+    assert approve.target == "event_active"
+    assert approve.fanout is not None and approve.fanout.value == "der_control_api"
+
+    reject = dd.commands["reject_dispatch"]
+    assert reject.verb == "disable"
+    assert reject.target == "event_active"
+    assert reject.fanout is not None and reject.fanout.value == "der_control_api"
 
 
 def test_load_real_catalog_includes_switchgear_voltage_unbalance() -> None:
