@@ -183,9 +183,9 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
     assert tap.publisher is not None and tap.publisher.value == "der_control_api"
     assert tap.binding is None
 
-    dispatch_state = dd.measurements["dispatch_state"]
-    assert dispatch_state.type == "enum"
-    assert dispatch_state.values == {
+    der_event_state = dd.measurements["der_event_state"]
+    assert der_event_state.type == "enum"
+    assert der_event_state.values == {
         0: "IDLE",
         1: "PENDING",
         2: "ARMED",

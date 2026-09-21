@@ -33,12 +33,15 @@ measurements:
 
   # ADR-002 §16 — reflects der-control-api's own DispatchMode (auto/manual)
   # policy, not just the utility's raw status. Register order = enum ordinal
-  # order in ems-der-control-api's DispatchState.java — ground truth there.
-  dispatch_state:
+  # order in ems-der-control-api's DerEventState.java — ground truth there.
+  # Named der_event_state, not dispatch_state, to avoid colliding with
+  # ems-industrial-gateway's own unrelated dispatch_state (a generic
+  # per-command execution ack, different topic family, same word).
+  der_event_state:
     unit: none
     type: enum
     poll_rate_hz: 0.0033
-    display_name_default: "Dispatch State"
+    display_name_default: "DER Event State"
     values:
       0: IDLE
       1: PENDING
@@ -55,7 +58,7 @@ measurements:
     iec_61850_ref: CSIP.opModEnergize
     publisher: der_control_api
 
-  # Phase III — sustained non-delivery detection. Orthogonal to dispatch_state:
+  # Phase III — sustained non-delivery detection. Orthogonal to der_event_state:
   # a physical delivery shortfall is not a policy/authorization concern.
   dispatch_shortfall:
     unit: none
