@@ -49,12 +49,12 @@ _STATUS_INDICATOR_RADIUS = 3.0
 def _role_for_template(template_slug: str) -> str | None:
     """Special render-role for utility-side feed templates. Per UTILITY-FEEDS.md §5.
 
-    POI revenue meter and DLR feed get distinct visual treatment downstream
+    POI meter and DLR feed get distinct visual treatment downstream
     in the HMI — emitted here as semantic `data-role` markers + (for POI)
     reserved `<text>` slots for live state overlay. Returns None for
     standard device templates.
     """
-    if template_slug == "revenue_meter":
+    if template_slug == "poi_meter":
         return "poi"
     if template_slug == "line_rating":
         return "dlr-badge"
@@ -62,7 +62,7 @@ def _role_for_template(template_slug: str) -> str | None:
 
 
 def _poi_state_slots() -> str:
-    """Reserved text slots for the revenue_meter (POI) live overlay.
+    """Reserved text slots for the poi_meter live overlay.
 
     HMI fills `primary-value` with the settlement reading + DOE direction
     word, and the state row with `DOE` label + status token (OK / STALE /

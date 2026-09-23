@@ -19,9 +19,9 @@ def test_load_catalog_empty_dir(tmp_path: Path) -> None:
     assert catalog == {}
 
 
-def _write_revenue_meter(dir_: Path) -> None:
-    (dir_ / "revenue_meter.yaml").write_text("""
-template: revenue_meter
+def _write_poi_meter(dir_: Path) -> None:
+    (dir_ / "poi_meter.yaml").write_text("""
+template: poi_meter
 kind: leaf
 equipment_id: GRD-MTR-001
 vendor: Schneider Electric
@@ -42,13 +42,13 @@ def test_load_catalog_loads_one_leaf(tmp_path: Path) -> None:
     # Arrange
     (tmp_path / "leaf").mkdir()
     (tmp_path / "module").mkdir()
-    _write_revenue_meter(tmp_path / "leaf")
+    _write_poi_meter(tmp_path / "leaf")
     loader = TemplateLoader(root=tmp_path)
     # Act
     catalog = loader.load_catalog()
     # Assert
-    assert "revenue_meter" in catalog
-    assert catalog["revenue_meter"].equipment_id == "GRD-MTR-001"
+    assert "poi_meter" in catalog
+    assert catalog["poi_meter"].equipment_id == "GRD-MTR-001"
 
 
 def test_load_catalog_raises_on_invalid_yaml(tmp_path: Path) -> None:
@@ -80,15 +80,15 @@ description: empty
         loader.load_catalog()
 
 
-def test_load_real_catalog_includes_revenue_meter() -> None:
+def test_load_real_catalog_includes_poi_meter() -> None:
     # Arrange — real device_templates/ at repo root
     repo_root = Path(__file__).resolve().parents[2]
     loader = TemplateLoader(root=repo_root / "device_templates")
     # Act
     catalog = loader.load_catalog()
     # Assert
-    assert "revenue_meter" in catalog
-    rm = catalog["revenue_meter"]
+    assert "poi_meter" in catalog
+    rm = catalog["poi_meter"]
     assert rm.equipment_id == "GRD-MTR-001"
     assert "kwh_delivered" in rm.measurements
 
@@ -289,9 +289,9 @@ def test_load_catalog_rejects_duplicate_slug(tmp_path: Path) -> None:
     # Arrange — two files claiming the same slug
     (tmp_path / "leaf").mkdir()
     (tmp_path / "module").mkdir()
-    _write_revenue_meter(tmp_path / "leaf")
-    (tmp_path / "leaf" / "revenue_meter_dup.yaml").write_text("""
-template: revenue_meter
+    _write_poi_meter(tmp_path / "leaf")
+    (tmp_path / "leaf" / "poi_meter_dup.yaml").write_text("""
+template: poi_meter
 kind: leaf
 equipment_id: GRD-MTR-001
 vendor: Schneider Electric
@@ -313,7 +313,7 @@ def test_load_catalog_rejects_unresolved_contains(tmp_path: Path) -> None:
     # Arrange — module references a leaf that doesn't exist
     (tmp_path / "leaf").mkdir()
     (tmp_path / "module").mkdir()
-    _write_revenue_meter(tmp_path / "leaf")
+    _write_poi_meter(tmp_path / "leaf")
     (tmp_path / "module" / "broken_module.yaml").write_text("""
 template: broken_module
 kind: module

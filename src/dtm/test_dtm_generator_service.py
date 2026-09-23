@@ -84,7 +84,7 @@ def test_generate_assigns_per_template_indexed_slugs() -> None:
     # Assert
     gpu_slugs = [s for s in actual.devices if s.startswith("gpu_node_")]
     assert sorted(gpu_slugs) == [f"gpu_node_{i}" for i in range(1, 4)]
-    assert "revenue_meter_1" in actual.devices
+    assert "poi_meter_1" in actual.devices
 
 
 def test_generate_parents_leaves_under_modules() -> None:
@@ -96,7 +96,7 @@ def test_generate_parents_leaves_under_modules() -> None:
     )
     # Assert
     assert actual.devices["gpu_node_1"].parent == "compute_module_1"
-    assert actual.devices["revenue_meter_1"].parent == "grid_module_1"
+    assert actual.devices["poi_meter_1"].parent == "grid_module_1"
 
 
 def test_generate_embeds_templates_used() -> None:
@@ -109,7 +109,7 @@ def test_generate_embeds_templates_used() -> None:
     # Assert
     referenced_slugs = {d.template for d in actual.devices.values()}
     assert referenced_slugs <= set(actual.templates_used)
-    assert actual.templates_used["revenue_meter"].equipment_id == "GRD-MTR-001"
+    assert actual.templates_used["poi_meter"].equipment_id == "GRD-MTR-001"
 
 
 def test_generate_attaches_alarms_from_equipment_spec() -> None:
@@ -156,7 +156,7 @@ def test_generate_attaches_alarms_from_equipment_spec() -> None:
     )
 
     # Assert
-    meter_alarms = dtm.templates_used["revenue_meter"].alarms
+    meter_alarms = dtm.templates_used["poi_meter"].alarms
     assert len(meter_alarms) == 1
     assert meter_alarms[0].id == "voltage_anomaly"
     assert meter_alarms[0].priority == AlarmPriority.P2
@@ -174,7 +174,7 @@ def test_generate_expands_bus_members() -> None:
     bus = actual.buses[0]
     member_ids = {m.device_id for m in bus.members}
     assert "switchgear_1" in member_ids
-    assert "revenue_meter_1" in member_ids
+    assert "poi_meter_1" in member_ids
     assert "protective_relay_1" in member_ids
 
 

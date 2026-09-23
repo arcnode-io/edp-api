@@ -53,7 +53,7 @@ def test_enum_values() -> None:
 def test_device_template_leaf_minimal() -> None:
     # Arrange / Act
     t = DeviceTemplate(
-        template="revenue_meter",
+        template="poi_meter",
         kind=TemplateKind.LEAF,
         equipment_id="GRD-MTR-001",
         vendor="Schneider Electric",
@@ -71,7 +71,7 @@ def test_device_template_leaf_minimal() -> None:
 def test_device_template_capacity_kwh_defaults_none() -> None:
     # Arrange / Act
     t = DeviceTemplate(
-        template="revenue_meter",
+        template="poi_meter",
         kind=TemplateKind.LEAF,
         equipment_id="GRD-MTR-001",
         vendor="Schneider Electric",
@@ -126,7 +126,7 @@ def test_device_template_module_minimal() -> None:
 def test_template_slug_format_rejected() -> None:
     with pytest.raises(ValidationError, match="slug"):
         DeviceTemplate(
-            template="Revenue-Meter",  # uppercase + dash → invalid
+            template="Poi-Meter",  # uppercase + dash → invalid
             kind=TemplateKind.LEAF,
             equipment_id="GRD-MTR-001",
             description="test",
@@ -140,7 +140,7 @@ def test_template_slug_format_rejected() -> None:
 def test_device_template_leaf_requires_equipment_id() -> None:
     with pytest.raises(ValidationError, match="equipment_id required"):
         DeviceTemplate(
-            template="revenue_meter",
+            template="poi_meter",
             kind=TemplateKind.LEAF,
             equipment_id=None,
             description="test",
@@ -181,7 +181,7 @@ def test_device_template_must_declare_measurements_or_commands() -> None:
 def test_device_template_leaf_requires_vendor_and_model() -> None:
     with pytest.raises(ValidationError, match="vendor required"):
         DeviceTemplate(
-            template="revenue_meter",
+            template="poi_meter",
             kind=TemplateKind.LEAF,
             equipment_id="GRD-MTR-001",
             model="ION9000",
@@ -190,7 +190,7 @@ def test_device_template_leaf_requires_vendor_and_model() -> None:
         )
     with pytest.raises(ValidationError, match="model required"):
         DeviceTemplate(
-            template="revenue_meter",
+            template="poi_meter",
             kind=TemplateKind.LEAF,
             equipment_id="GRD-MTR-001",
             vendor="Schneider",
@@ -224,7 +224,7 @@ def test_device_template_module_rejects_vendor_and_model() -> None:
 def test_device_template_leaf_rejects_contains() -> None:
     with pytest.raises(ValidationError, match="contains forbidden"):
         DeviceTemplate(
-            template="revenue_meter",
+            template="poi_meter",
             kind=TemplateKind.LEAF,
             equipment_id="GRD-MTR-001",
             vendor="Schneider",

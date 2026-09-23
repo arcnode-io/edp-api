@@ -135,7 +135,7 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
         s for s, d in dtm.devices.items() if d.parent == "compute_module_1"
     ]
     assert len(compute_descendants) == 13
-    # Grid leaves: 3 (switchgear, revenue_meter, protective_relay)
+    # Grid leaves: 3 (switchgear, poi_meter, protective_relay)
     grid_descendants = [
         s for s, d in dtm.devices.items() if d.parent == "grid_module_1"
     ]
@@ -149,7 +149,7 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
     bus = next(b for b in dtm.buses if b.bus_id == "ac_main")
     member_ids = {m.device_id for m in bus.members}
     assert "switchgear_1" in member_ids
-    assert "revenue_meter_1" in member_ids
+    assert "poi_meter_1" in member_ids
     assert "protective_relay_1" in member_ids
 
 

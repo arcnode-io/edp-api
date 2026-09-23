@@ -5,7 +5,7 @@ description: Grid container aggregation — interconnect rollups
 contains:
   - template: switchgear
     qty: 1
-  - template: revenue_meter
+  - template: poi_meter
     qty: 1
   - template: protective_relay
     qty: 1

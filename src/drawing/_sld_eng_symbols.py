@@ -53,7 +53,7 @@ def _author_block(block: BlockLayout, template: DeviceTemplate) -> None:
             _switch_disconnector(block)
         case "protective_relay":
             _relay(block)
-        case "revenue_meter":
+        case "poi_meter":
             _meter(block, glyph="M")
         case "bess_rack" | "bess_module":
             _battery(block)

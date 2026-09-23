@@ -109,15 +109,15 @@ def test_breaker_device_renders_breaker_region() -> None:
     assert 'data-region="breaker"' in svg
 
 
-def test_revenue_meter_emits_poi_role_with_state_slots() -> None:
-    """revenue_meter devices carry data-role="poi" + reserve text slots for the
+def test_poi_meter_emits_poi_role_with_state_slots() -> None:
+    """poi_meter devices carry data-role="poi" + reserve text slots for the
     primary settlement reading and the DOE state row. HMI overlays live values
     onto these IDs without DOM mutation. Per UTILITY-FEEDS.md §5.
     """
     dtm = make_dtm(
-        devices={"poi_meter_1": make_device("poi_meter_1", template="revenue_meter")},
+        devices={"poi_meter_1": make_device("poi_meter_1", template="poi_meter")},
         templates={
-            "revenue_meter": make_template("revenue_meter", iec_61850_ref="MMXU.W"),
+            "poi_meter": make_template("poi_meter", iec_61850_ref="MMXU.W"),
         },
     )
     svc = SldHmiSvgService()

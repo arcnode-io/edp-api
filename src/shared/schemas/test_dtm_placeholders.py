@@ -23,9 +23,9 @@ def _modbus_binding() -> ModbusBinding:
     return ModbusBinding(protocol="modbus_tcp", function_code=4, address=100)
 
 
-def _revenue_meter_template() -> DeviceTemplate:
+def _poi_meter_template() -> DeviceTemplate:
     return DeviceTemplate(
-        template="revenue_meter",
+        template="poi_meter",
         kind=TemplateKind.LEAF,
         equipment_id="GRD-MTR-001",
         vendor="Schneider",
@@ -47,12 +47,12 @@ def _sizing() -> SizingParams:
 
 def _device(
     *,
-    device_id: str = "revenue_meter_1",
+    device_id: str = "poi_meter_1",
     connection: Connection | None = None,
 ) -> Device:
     return Device(
         device_id=device_id,
-        template="revenue_meter",
+        template="poi_meter",
         connection=connection or Connection(host="10.0.0.1", port=502, unit_id="2"),
         blocking=[BlockingKind.LIVE_MODE],
     )
@@ -64,7 +64,7 @@ def _dtm(*, devices: dict[str, Device]) -> Dtm:
         sizing_params=_sizing(),
         devices=devices,
         buses=[],
-        templates_used={"revenue_meter": _revenue_meter_template()},
+        templates_used={"poi_meter": _poi_meter_template()},
     )
 
 
@@ -108,9 +108,9 @@ def test_device_with_sentinel_unit_id_is_sim() -> None:
 
 def test_pending_devices_excludes_fully_provisioned() -> None:
     # Arrange
-    fully_provisioned = _device(device_id="revenue_meter_1")
+    fully_provisioned = _device(device_id="poi_meter_1")
     # Act
-    dtm = _dtm(devices={"revenue_meter_1": fully_provisioned})
+    dtm = _dtm(devices={"poi_meter_1": fully_provisioned})
     # Assert
     assert dtm.pending_devices == []
 
@@ -118,17 +118,17 @@ def test_pending_devices_excludes_fully_provisioned() -> None:
 def test_pending_devices_includes_devices_with_placeholders() -> None:
     # Arrange
     pending = _device(
-        device_id="revenue_meter_1",
+        device_id="poi_meter_1",
         connection=Connection(host=PROVISIONED_AT_COMMISSIONING, port=502),
     )
     ready = _device(
-        device_id="revenue_meter_2",
+        device_id="poi_meter_2",
         connection=Connection(host="10.0.0.2", port=502),
     )
     # Act
-    dtm = _dtm(devices={"revenue_meter_1": pending, "revenue_meter_2": ready})
+    dtm = _dtm(devices={"poi_meter_1": pending, "poi_meter_2": ready})
     # Assert
-    assert [d.device_id for d in dtm.pending_devices] == ["revenue_meter_1"]
+    assert [d.device_id for d in dtm.pending_devices] == ["poi_meter_1"]
 
 
 def test_pending_devices_serializes_in_model_dump() -> None:
@@ -136,7 +136,7 @@ def test_pending_devices_serializes_in_model_dump() -> None:
     pending = _device(
         connection=Connection(host=PROVISIONED_AT_COMMISSIONING, port=502)
     )
-    dtm = _dtm(devices={"revenue_meter_1": pending})
+    dtm = _dtm(devices={"poi_meter_1": pending})
     # Act
     dumped = dtm.model_dump()
     # Assert — computed_field must appear in serialized output
@@ -149,11 +149,11 @@ def test_pending_devices_bus_does_not_affect_sentinel_check() -> None:
     bus = Bus(
         bus_id="ac_main",
         type="ac",
-        members=[BusMember(device_id="revenue_meter_1", port="line")],
+        members=[BusMember(device_id="poi_meter_1", port="line")],
     )
-    fully_provisioned = _device(device_id="revenue_meter_1")
+    fully_provisioned = _device(device_id="poi_meter_1")
     # Act
-    dtm = _dtm(devices={"revenue_meter_1": fully_provisioned})
+    dtm = _dtm(devices={"poi_meter_1": fully_provisioned})
     # Assert — bus presence alone doesn't affect pending_devices
     _ = bus  # confirm bus can coexist; pending list is still empty
     assert dtm.pending_devices == []

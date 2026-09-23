@@ -53,7 +53,7 @@ GRID_TOPOLOGY: dict = {
             "connection": {"host": "mock-modbus-server", "port": 502, "unit_id": "1"},
         },
         {
-            "template": "revenue_meter",
+            "template": "poi_meter",
             "description": "meter",
             "connection": {"host": "mock-modbus-server", "port": 502, "unit_id": "2"},
         },
@@ -69,7 +69,7 @@ GRID_TOPOLOGY: dict = {
             "type": "ac",
             "members": [
                 {"device_template": "switchgear", "port": "line_out"},
-                {"device_template": "revenue_meter", "port": "voltage_in"},
+                {"device_template": "poi_meter", "port": "voltage_in"},
                 {"device_template": "protective_relay", "port": "line_in"},
             ],
         }

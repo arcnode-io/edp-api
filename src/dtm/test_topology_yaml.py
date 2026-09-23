@@ -16,14 +16,14 @@ from src.shared.schemas.dtm import BlockingKind
 def test_topology_device_spec_minimal() -> None:
     # Arrange / Act
     spec = TopologyDeviceSpec(
-        template="revenue_meter",
+        template="poi_meter",
         description="ION9000",
         connection=TopologyConnectionSpec(
             host="mock-modbus-server", port=502, unit_id="2"
         ),
     )
     # Assert
-    assert spec.template == "revenue_meter"
+    assert spec.template == "poi_meter"
     assert spec.connection.host == "mock-modbus-server"
     assert spec.blocking == [BlockingKind.LIVE_MODE]  # default
 
@@ -46,7 +46,7 @@ def test_topology_bus_spec_with_members() -> None:
         type="ac",
         members=[
             TopologyBusMemberSpec(device_template="switchgear", port="line"),
-            TopologyBusMemberSpec(device_template="revenue_meter", port="voltage_in"),
+            TopologyBusMemberSpec(device_template="poi_meter", port="voltage_in"),
         ],
     )
     # Assert
@@ -59,7 +59,7 @@ def test_topology_yaml_full_shape() -> None:
     y = TopologyYaml(
         devices=[
             TopologyDeviceSpec(
-                template="revenue_meter",
+                template="poi_meter",
                 description="meter",
                 connection=TopologyConnectionSpec(
                     host="mock-modbus-server", port=502, unit_id="2"
@@ -72,7 +72,7 @@ def test_topology_yaml_full_shape() -> None:
                 type="ac",
                 members=[
                     TopologyBusMemberSpec(
-                        device_template="revenue_meter", port="voltage_in"
+                        device_template="poi_meter", port="voltage_in"
                     )
                 ],
             )
@@ -96,7 +96,7 @@ def test_topology_device_spec_rejects_unknown_field() -> None:
     with pytest.raises(ValidationError, match="extra"):
         TopologyDeviceSpec.model_validate(
             {
-                "tempate": "revenue_meter",  # typo
+                "tempate": "poi_meter",  # typo
                 "description": "x",
                 "connection": {"host": "h", "port": 1},
             }

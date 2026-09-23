@@ -25,9 +25,9 @@ def _modbus_binding() -> ModbusBinding:
     return ModbusBinding(protocol="modbus_tcp", function_code=4, address=100)
 
 
-def _revenue_meter_template() -> DeviceTemplate:
+def _poi_meter_template() -> DeviceTemplate:
     return DeviceTemplate(
-        template="revenue_meter",
+        template="poi_meter",
         kind=TemplateKind.LEAF,
         equipment_id="GRD-MTR-001",
         vendor="Schneider",
@@ -47,8 +47,8 @@ def _connection() -> Connection:
 
 def _device(
     *,
-    device_id: str = "revenue_meter_1",
-    template: str = "revenue_meter",
+    device_id: str = "poi_meter_1",
+    template: str = "poi_meter",
     parent: str | None = None,
     connection: Connection | None = None,
 ) -> Device:
@@ -75,9 +75,9 @@ def _dtm(
     return Dtm(
         deployment_uuid=DEPLOYMENT_ID,
         sizing_params=_sizing(),
-        devices=devices or {"revenue_meter_1": _device()},
+        devices=devices or {"poi_meter_1": _device()},
         buses=buses or [],
-        templates_used=templates_used or {"revenue_meter": _revenue_meter_template()},
+        templates_used=templates_used or {"poi_meter": _poi_meter_template()},
     )
 
 
@@ -85,8 +85,8 @@ def test_device_id_must_be_snake_case_slug() -> None:
     # Arrange / Act / Assert
     with pytest.raises(ValidationError, match="slug"):
         Device(
-            device_id="RevenueMeter-1",  # invalid slug
-            template="revenue_meter",
+            device_id="PoiMeter-1",  # invalid slug
+            template="poi_meter",
             connection=_connection(),
         )
 
@@ -102,7 +102,7 @@ def test_dtm_devices_keyed_by_device_id() -> None:
     # Arrange / Act
     dtm = _dtm()
     # Assert
-    assert "revenue_meter_1" in dtm.devices
+    assert "poi_meter_1" in dtm.devices
 
 
 def test_dtm_pending_devices_excludes_fully_provisioned() -> None:
@@ -115,29 +115,29 @@ def test_dtm_pending_devices_excludes_fully_provisioned() -> None:
 def test_dtm_pending_devices_includes_devices_with_sentinel() -> None:
     # Arrange
     pending = _device(
-        device_id="revenue_meter_1",
+        device_id="poi_meter_1",
         connection=Connection(host=PROVISIONED_AT_COMMISSIONING, port=502),
     )
     # Act
-    dtm = _dtm(devices={"revenue_meter_1": pending})
+    dtm = _dtm(devices={"poi_meter_1": pending})
     # Assert
-    assert [d.device_id for d in dtm.pending_devices] == ["revenue_meter_1"]
+    assert [d.device_id for d in dtm.pending_devices] == ["poi_meter_1"]
 
 
 def test_dtm_rejects_orphan_parent() -> None:
     # Arrange — child references a parent that's not in devices
-    child = _device(device_id="revenue_meter_1", parent="grid_module_1")
+    child = _device(device_id="poi_meter_1", parent="grid_module_1")
     # Act / Assert
     with pytest.raises(ValidationError, match="parent"):
-        _dtm(devices={"revenue_meter_1": child})
+        _dtm(devices={"poi_meter_1": child})
 
 
 def test_dtm_rejects_orphan_template_ref() -> None:
     # Arrange — device references a template not in templates_used
-    d = _device(device_id="revenue_meter_1", template="not_a_template")
+    d = _device(device_id="poi_meter_1", template="not_a_template")
     # Act / Assert
     with pytest.raises(ValidationError, match="templates_used"):
-        _dtm(devices={"revenue_meter_1": d})
+        _dtm(devices={"poi_meter_1": d})
 
 
 def test_dtm_rejects_orphan_bus_member() -> None:
