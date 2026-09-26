@@ -137,6 +137,15 @@ def test_load_real_catalog_includes_bess_module() -> None:
     assert soc_binding.operation == "weighted_mean"
     assert soc_binding.source_measurement == "state_of_charge"
 
+    # + discharge convention: import is negative P, so import headroom is
+    # import_limit + P; export headroom is export_limit - P.
+    import_headroom = m.measurements["import_headroom"].binding
+    assert isinstance(import_headroom, SyntheticBinding)
+    assert import_headroom.operation == "sum"
+    export_headroom = m.measurements["export_headroom"].binding
+    assert isinstance(export_headroom, SyntheticBinding)
+    assert export_headroom.operation == "subtract"
+
     # set_active_power fans out via the real distribute binding + control law
     set_active_power = m.commands["set_active_power"]
     dist_binding = set_active_power.binding

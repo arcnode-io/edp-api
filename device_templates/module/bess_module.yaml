@@ -47,6 +47,8 @@ measurements:
   # Placeholders: {site_id} (gateway runtime) and {device_id} (substituted by
   # ems-device-api at AsyncAPI generation time with the instantiating module's id).
   # `operating_envelope` is literal — singleton DOE device per site for MVP.
+  # P is + discharge / − charge and import_limit is a positive magnitude, so
+  # import (charging) is −P: headroom = import_limit − (−P) = import_limit + P.
   import_headroom:
     unit: watts
     type: float
@@ -55,7 +57,7 @@ measurements:
     publisher: gateway
     binding:
       protocol: synthetic
-      operation: subtract
+      operation: sum
       inputs:
         - sites/{site_id}/devices/operating_envelope/measurements/import_limit/watts
         - sites/{site_id}/devices/{device_id}/measurements/active_power/watts
