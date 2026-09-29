@@ -23,6 +23,8 @@ class ModbusBinding(BaseModel):
     word_order: Literal["high_low", "low_high"] = "high_low"
     scale: float = 1.0
     offset: float = 0.0
+    # SunSpec sunssf: value = raw * 10^(int16 at this register), read at runtime
+    scale_factor_address: int | None = None
 
 
 class Dnp3Binding(BaseModel):

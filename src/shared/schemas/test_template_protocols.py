@@ -44,6 +44,19 @@ def test_binding_modbus_int64() -> None:
     assert b.data_type == "int64"
 
 
+def test_binding_modbus_sunspec_scale_factor() -> None:
+    # Arrange / Act — SunSpec model 103: W int16 at 40084, W_SF at 40085
+    b = ModbusBinding(
+        protocol="modbus_tcp",
+        function_code=3,
+        address=40084,
+        scale_factor_address=40085,
+    )
+    # Assert
+    assert b.scale_factor_address == 40085
+    assert _modbus_binding().scale_factor_address is None
+
+
 def test_binding_dnp3_tcp() -> None:
     # Arrange / Act
     b = Dnp3Binding(protocol="dnp3_tcp", point_index=10, point_type="analog_input")
