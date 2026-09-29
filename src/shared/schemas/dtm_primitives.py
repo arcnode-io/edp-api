@@ -26,17 +26,6 @@ class EmsMode(StrEnum):
     LIVE = "live"
 
 
-class BlockingKind(StrEnum):
-    """What unresolved placeholders on a device block.
-
-    LIVE_MODE: device must be fully provisioned before site flips to live.
-    COMMISSIONING_COMPLETE: device must be provisioned for site sign-off.
-    """
-
-    LIVE_MODE = "live_mode"
-    COMMISSIONING_COMPLETE = "commissioning_complete"
-
-
 class SizingParams(BaseModel):
     """Aggregate sizing for the deployment — drives EMS bookkeeping."""
 

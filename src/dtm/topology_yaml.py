@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.shared.schemas.dtm import BlockingKind, ProvisionedInt
+from src.shared.schemas.dtm import ProvisionedInt
 
 
 class TopologyConnectionSpec(BaseModel):
@@ -30,9 +30,6 @@ class TopologyDeviceSpec(BaseModel):
     template: str  # references a slug in edp-api/device_templates/
     description: str
     connection: TopologyConnectionSpec
-    blocking: list[BlockingKind] = Field(
-        default_factory=lambda: [BlockingKind.LIVE_MODE]
-    )
 
 
 class TopologyBusMemberSpec(BaseModel):

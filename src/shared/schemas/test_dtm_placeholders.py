@@ -4,7 +4,6 @@ from uuid import UUID
 
 from src.shared.schemas.dtm import (
     PROVISIONED_AT_COMMISSIONING,
-    BlockingKind,
     Bus,
     BusMember,
     Connection,
@@ -54,7 +53,6 @@ def _device(
         device_id=device_id,
         template="poi_meter",
         connection=connection or Connection(host="10.0.0.1", port=502, unit_id="2"),
-        blocking=[BlockingKind.LIVE_MODE],
     )
 
 

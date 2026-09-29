@@ -7,7 +7,6 @@ from pydantic import ValidationError
 
 from src.shared.schemas.dtm import (
     PROVISIONED_AT_COMMISSIONING,
-    BlockingKind,
     Bus,
     BusMember,
     Connection,
@@ -91,11 +90,9 @@ def test_device_id_must_be_snake_case_slug() -> None:
         )
 
 
-def test_device_blocking_default_is_live_mode() -> None:
-    # Arrange / Act
-    d = _device()
-    # Assert
-    assert d.blocking == [BlockingKind.LIVE_MODE]
+def test_device_has_no_blocking_field() -> None:
+    # Arrange / Act / Assert
+    assert "blocking" not in Device.model_fields
 
 
 def test_dtm_devices_keyed_by_device_id() -> None:

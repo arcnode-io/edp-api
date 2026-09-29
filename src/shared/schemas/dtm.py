@@ -13,7 +13,6 @@ from uuid import UUID
 from pydantic import (
     BaseModel,
     ConfigDict,
-    Field,
     computed_field,
     field_validator,
     model_validator,
@@ -21,7 +20,6 @@ from pydantic import (
 
 from src.shared.schemas.dtm_primitives import (
     PROVISIONED_AT_COMMISSIONING,
-    BlockingKind,
     Bus,
     BusMember,
     Connection,
@@ -34,7 +32,6 @@ from src.shared.schemas.template import DeviceTemplate, Measurement
 
 __all__ = [
     "PROVISIONED_AT_COMMISSIONING",
-    "BlockingKind",
     "Bus",
     "BusMember",
     "Connection",
@@ -60,12 +57,6 @@ class Device(BaseModel):
     parent: str | None = None  # FK to another Device.device_id
     display_name: str | None = None
     connection: Connection | None = None  # required for gateway-bound leaves
-    # Reason: defaults to [LIVE_MODE] — most devices block site live transition
-    # until the utility provisions them. Topology authors override to [] for
-    # monitoring-only devices, or add COMMISSIONING_COMPLETE for sign-off-blocking.
-    blocking: list[BlockingKind] = Field(
-        default_factory=lambda: [BlockingKind.LIVE_MODE]
-    )
     extra_measurements: dict[str, Measurement] | None = None  # ADR §7 escape hatch
 
     @field_validator("device_id")

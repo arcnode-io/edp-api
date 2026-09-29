@@ -73,7 +73,6 @@ def emit_container(
                 port=spec.connection.port,
                 unit_id=spec.connection.unit_id,
             ),
-            blocking=list(spec.blocking),
         )
         by_template.setdefault(spec.template, []).append(slug)
 
