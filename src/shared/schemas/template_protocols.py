@@ -16,8 +16,10 @@ class ModbusBinding(BaseModel):
 
     protocol: Literal["modbus_tcp"]
     function_code: int  # 3=holding, 4=input, 6=write_single
-    address: int
-    data_type: Literal["int16", "uint16", "int32", "uint32", "float32"] = "int16"
+    address: int  # 0-based protocol address, not a 4xxxxx reference number
+    data_type: Literal["int16", "uint16", "int32", "uint32", "int64", "float32"] = (
+        "int16"
+    )
     word_order: Literal["high_low", "low_high"] = "high_low"
     scale: float = 1.0
     offset: float = 0.0
@@ -46,6 +48,7 @@ class SnmpBinding(BaseModel):
 
     protocol: Literal["snmp"]
     oid: str
+    scale: float = 1.0
 
 
 class RedfishBinding(BaseModel):

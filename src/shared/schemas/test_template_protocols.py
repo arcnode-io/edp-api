@@ -35,6 +35,15 @@ def test_binding_modbus_tcp() -> None:
     assert b.scale == 0.1
 
 
+def test_binding_modbus_int64() -> None:
+    # Arrange / Act — ION9000 energy registers are INT64 Wh
+    b = ModbusBinding(
+        protocol="modbus_tcp", function_code=3, address=3204, data_type="int64"
+    )
+    # Assert
+    assert b.data_type == "int64"
+
+
 def test_binding_dnp3_tcp() -> None:
     # Arrange / Act
     b = Dnp3Binding(protocol="dnp3_tcp", point_index=10, point_type="analog_input")
@@ -48,6 +57,14 @@ def test_binding_snmp() -> None:
     b = SnmpBinding(protocol="snmp", oid="1.3.6.1.4.1.1718.4.1.3.3.1.7")
     # Assert
     assert b.oid == "1.3.6.1.4.1.1718.4.1.3.3.1.7"
+
+
+def test_binding_snmp_scale() -> None:
+    # Arrange / Act — Sentry4 st4LineCurrent reports hundredth amps
+    b = SnmpBinding(protocol="snmp", oid="1.3.6.1.4.1.1718.4.1.4.3.1.3", scale=0.01)
+    # Assert
+    assert b.scale == 0.01
+    assert SnmpBinding(protocol="snmp", oid="1.3.6.1").scale == 1.0
 
 
 def test_binding_redfish() -> None:
