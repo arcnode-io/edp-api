@@ -5,7 +5,11 @@ from pathlib import Path
 import pytest
 
 from src.dtm.template_loader import TemplateLoader, TemplateLoadError
-from src.shared.schemas.template import DistributeBinding, SyntheticBinding
+from src.shared.schemas.template import (
+    DistributeBinding,
+    ModbusBinding,
+    SyntheticBinding,
+)
 
 
 def test_load_catalog_empty_dir(tmp_path: Path) -> None:
@@ -91,6 +95,11 @@ def test_load_real_catalog_includes_poi_meter() -> None:
     rm = catalog["poi_meter"]
     assert rm.equipment_id == "GRD-MTR-001"
     assert "kwh_delivered" in rm.measurements
+    # POI net power, + = import from grid; envelope limits reference this
+    active_power = rm.measurements["active_power"]
+    assert active_power.unit == "watts"
+    assert isinstance(active_power.binding, ModbusBinding)
+    assert active_power.binding.address == 4030
 
 
 def test_load_real_catalog_includes_bess_rack_capacity_kwh() -> None:

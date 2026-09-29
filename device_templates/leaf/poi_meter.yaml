@@ -32,6 +32,25 @@ measurements:
       data_type: int32
       word_order: high_low
 
+  # POI net power, + = import from grid (same direction as kwh_delivered).
+  # Operating-envelope limits apply here, not at the battery. Address is
+  # the ems-industrial-fixtures mock map, like 4000-4022 — not yet checked
+  # against Schneider's ION9000 map (7EN02-0390).
+  active_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "POI Active Power (+ import, - export)"
+    iec_61850_ref: MMXU.W
+    bounds: { min: -10000000, max: 10000000, nominal: 0 }
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 4030
+      data_type: int32
+      word_order: high_low
+      scale: 1.0
+
   power_factor:
     unit: none
     type: float
