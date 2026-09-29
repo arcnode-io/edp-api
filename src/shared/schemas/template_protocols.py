@@ -39,6 +39,7 @@ class Dnp3Binding(BaseModel):
     # (e.g., 5 for Group 30 Var 5 = 32-bit float). Master polls with default
     # variation when unset; outstation's configured variation governs response.
     variation: int | None = None
+    scale: float = 1.0
 
 
 class SnmpBinding(BaseModel):

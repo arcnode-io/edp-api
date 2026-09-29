@@ -83,6 +83,19 @@ def test_binding_snmp() -> None:
     assert b.oid == "1.3.6.1.4.1.1718.4.1.3.3.1.7"
 
 
+def test_binding_dnp3_scale() -> None:
+    # Arrange / Act — SEL-351-7 reports voltage magnitudes in kV primary
+    b = Dnp3Binding(
+        protocol="dnp3_tcp", point_index=8, point_type="analog_input", scale=1000.0
+    )
+    # Assert
+    assert b.scale == 1000.0
+    assert (
+        Dnp3Binding(protocol="dnp3_tcp", point_index=0, point_type="analog_input").scale
+        == 1.0
+    )
+
+
 def test_binding_redfish_scale() -> None:
     # Arrange / Act — ProcessorMetrics OperatingSpeedMHz published as hertz
     b = RedfishBinding(
