@@ -60,6 +60,21 @@ def test_sizing_params_reserve_floor_computed_from_ride_through_hours() -> None:
     )
 
 
+def test_sizing_params_compute_load_matches_site_peak() -> None:
+    # Arrange — compute load and reserve share one per-container figure
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+    resolution = _resolution(container_count=1, ride_through_hours=2.0)
+    expected_kw = site_peak_mw(GpuVariant.H100_SXM, 56) * 1000
+
+    # Act
+    actual = service.generate(
+        profile="commercial_ac", resolution=resolution, manifest=_manifest()
+    )
+
+    # Assert
+    assert actual.sizing_params.P_compute_total_kW == pytest.approx(expected_kw)
+
+
 def test_generate_dissolves_modules_into_devices() -> None:
     # Arrange
     service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
