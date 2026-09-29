@@ -79,8 +79,9 @@ class SyntheticBinding(BaseModel):
       caches latest values, ticks at the measurement's `poll_rate_hz`, and
       publishes the result of applying `operation`. Holds (no publish) until
       every input has at least one cached sample. Topic strings may contain
-      `{site_id}` (gateway runtime) and `{device_id}` (ems-device-api
-      AsyncAPI-gen substitution).
+      `{site_id}` (gateway runtime), and `{device_id}` / `{poi_meter_device_id}`
+      (ems-device-api AsyncAPI-gen substitution: the instantiating device, and
+      the deployment's single poi_meter-templated device).
     - `source_measurement`: names a measurement projected across every child
       of the device this binding lives on. Resolving children into concrete
       topics is ems-device-api's job, not modeled here.
@@ -88,7 +89,7 @@ class SyntheticBinding(BaseModel):
     `weighted_mean` (capacity_kwh-weighted, per DeviceTemplate.capacity_kwh
     on each child) is only meaningful across children, so it requires
     `source_measurement` mode. `subtract` is only ever between two fixed
-    topics (e.g. envelope limit minus module draw), so it requires `inputs`
+    topics (e.g. envelope import limit minus POI power), so it requires `inputs`
     mode. `sum`/`mean`/`max`/`min` work in either mode.
     """
 

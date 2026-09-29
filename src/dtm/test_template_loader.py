@@ -146,14 +146,25 @@ def test_load_real_catalog_includes_bess_module() -> None:
     assert soc_binding.operation == "weighted_mean"
     assert soc_binding.source_measurement == "state_of_charge"
 
-    # + discharge convention: import is negative P, so import headroom is
-    # import_limit + P; export headroom is export_limit - P.
+    # Headroom is referenced to POI net power (+ = import): import headroom
+    # is import_limit - P_poi, export headroom is export_limit + P_poi.
+    poi_power = (
+        "sites/{site_id}/devices/{poi_meter_device_id}/measurements/active_power/watts"
+    )
     import_headroom = m.measurements["import_headroom"].binding
     assert isinstance(import_headroom, SyntheticBinding)
-    assert import_headroom.operation == "sum"
+    assert import_headroom.operation == "subtract"
+    assert import_headroom.inputs == [
+        "sites/{site_id}/devices/operating_envelope/measurements/import_limit/watts",
+        poi_power,
+    ]
     export_headroom = m.measurements["export_headroom"].binding
     assert isinstance(export_headroom, SyntheticBinding)
-    assert export_headroom.operation == "subtract"
+    assert export_headroom.operation == "sum"
+    assert export_headroom.inputs == [
+        "sites/{site_id}/devices/operating_envelope/measurements/export_limit/watts",
+        poi_power,
+    ]
 
     # set_active_power fans out via the real distribute binding + control law
     set_active_power = m.commands["set_active_power"]

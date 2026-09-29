@@ -44,36 +44,39 @@ measurements:
       source_measurement: reactive_power
 
   # Synthetic headroom measurements — gateway computes from cached MQTT inputs.
-  # Placeholders: {site_id} (gateway runtime) and {device_id} (substituted by
-  # ems-device-api at AsyncAPI generation time with the instantiating module's id).
-  # `operating_envelope` is literal — singleton DOE device per site for MVP.
-  # P is + discharge / − charge and import_limit is a positive magnitude, so
-  # import (charging) is −P: headroom = import_limit − (−P) = import_limit + P.
+  # Envelope limits apply at the connection point, so headroom is referenced to
+  # POI net power P_poi (poi_meter.active_power, + = import from grid), not to
+  # this module's own power. Placeholders: {site_id} (gateway runtime) and
+  # {poi_meter_device_id} (ems-device-api substitutes the single poi_meter-
+  # templated device; generation fails if there isn't exactly one).
+  # `operating_envelope` is literal — singleton DOE device per site.
+  # Import headroom = import_limit − P_poi. Export is −P_poi, so export
+  # headroom = export_limit − (−P_poi) = export_limit + P_poi.
   import_headroom:
     unit: watts
     type: float
     poll_rate_hz: 1
-    display_name_default: "Module Import Headroom"
-    publisher: gateway
-    binding:
-      protocol: synthetic
-      operation: sum
-      inputs:
-        - sites/{site_id}/devices/operating_envelope/measurements/import_limit/watts
-        - sites/{site_id}/devices/{device_id}/measurements/active_power/watts
-
-  export_headroom:
-    unit: watts
-    type: float
-    poll_rate_hz: 1
-    display_name_default: "Module Export Headroom"
+    display_name_default: "POI Import Headroom"
     publisher: gateway
     binding:
       protocol: synthetic
       operation: subtract
       inputs:
+        - sites/{site_id}/devices/operating_envelope/measurements/import_limit/watts
+        - sites/{site_id}/devices/{poi_meter_device_id}/measurements/active_power/watts
+
+  export_headroom:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "POI Export Headroom"
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      operation: sum
+      inputs:
         - sites/{site_id}/devices/operating_envelope/measurements/export_limit/watts
-        - sites/{site_id}/devices/{device_id}/measurements/active_power/watts
+        - sites/{site_id}/devices/{poi_meter_device_id}/measurements/active_power/watts
 
 commands:
   # soc_weighted (not equal_split): consistent with state_of_charge's own
