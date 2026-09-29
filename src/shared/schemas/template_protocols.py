@@ -59,6 +59,7 @@ class RedfishBinding(BaseModel):
     protocol: Literal["redfish"]
     uri: str
     json_pointer: str | None = None
+    scale: float = 1.0
 
 
 class CanopenBinding(BaseModel):

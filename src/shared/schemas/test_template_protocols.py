@@ -83,6 +83,19 @@ def test_binding_snmp() -> None:
     assert b.oid == "1.3.6.1.4.1.1718.4.1.3.3.1.7"
 
 
+def test_binding_redfish_scale() -> None:
+    # Arrange / Act — ProcessorMetrics OperatingSpeedMHz published as hertz
+    b = RedfishBinding(
+        protocol="redfish",
+        uri="/Systems/HGX_Baseboard_0/Processors/GPU_SXM_1/ProcessorMetrics",
+        json_pointer="/OperatingSpeedMHz",
+        scale=1e6,
+    )
+    # Assert
+    assert b.scale == 1e6
+    assert RedfishBinding(protocol="redfish", uri="/Chassis/1").scale == 1.0
+
+
 def test_binding_snmp_scale() -> None:
     # Arrange / Act — Sentry4 st4LineCurrent reports hundredth amps
     b = SnmpBinding(protocol="snmp", oid="1.3.6.1.4.1.1718.4.1.4.3.1.3", scale=0.01)
