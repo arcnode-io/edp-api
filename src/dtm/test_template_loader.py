@@ -39,6 +39,7 @@ measurements:
       protocol: modbus_tcp
       function_code: 4
       address: 100
+      data_type: int16
 """.lstrip())
 
 
@@ -330,7 +331,7 @@ measurements:
   v:
     unit: volts
     type: float
-    binding: { protocol: modbus_tcp, function_code: 4, address: 100 }
+    binding: { protocol: modbus_tcp, function_code: 4, address: 100, data_type: int16 }
 """.lstrip())
     loader = TemplateLoader(root=tmp_path)
     # Act / Assert

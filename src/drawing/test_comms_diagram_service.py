@@ -51,7 +51,9 @@ def multi_protocol_dtm() -> Dtm:
         templates={
             "switchgear": _tpl(
                 "switchgear",
-                ModbusBinding(protocol="modbus_tcp", function_code=3, address=0),
+                ModbusBinding(
+                    protocol="modbus_tcp", function_code=3, address=0, data_type="int16"
+                ),
             ),
             "protective_relay": _tpl(
                 "protective_relay",

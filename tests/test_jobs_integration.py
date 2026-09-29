@@ -160,6 +160,7 @@ def test_re_render_endpoint_returns_fresh_svg_for_runtime_dtm() -> None:
                             "protocol": "modbus_tcp",
                             "function_code": 4,
                             "address": 100,
+                            "data_type": "int16",
                         },
                     }
                 },

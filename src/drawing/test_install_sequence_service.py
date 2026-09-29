@@ -56,7 +56,10 @@ def _pdu_tpl() -> DeviceTemplate:
                 unit="volts",
                 type="float",
                 binding=ModbusBinding(
-                    protocol="modbus_tcp", function_code=4, address=100
+                    protocol="modbus_tcp",
+                    function_code=4,
+                    address=100,
+                    data_type="int16",
                 ),
             )
         },

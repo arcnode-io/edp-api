@@ -13,7 +13,9 @@ from src.shared.schemas.template import (
 
 
 def _modbus_binding() -> ModbusBinding:
-    return ModbusBinding(protocol="modbus_tcp", function_code=4, address=100)
+    return ModbusBinding(
+        protocol="modbus_tcp", function_code=4, address=100, data_type="int16"
+    )
 
 
 def test_measurement_with_binding() -> None:
@@ -96,7 +98,9 @@ def test_command_with_binding() -> None:
         target="counters",
         unit="none",
         payload="trigger",
-        binding=ModbusBinding(protocol="modbus_tcp", function_code=6, address=300),
+        binding=ModbusBinding(
+            protocol="modbus_tcp", function_code=6, address=300, data_type="int16"
+        ),
     )
     # Assert
     assert c.verb == "reset"
@@ -124,6 +128,8 @@ def test_command_rejects_both_binding_and_fanout() -> None:
             target="active_power",
             unit="watts",
             payload="float",
-            binding=ModbusBinding(protocol="modbus_tcp", function_code=6, address=400),
+            binding=ModbusBinding(
+                protocol="modbus_tcp", function_code=6, address=400, data_type="int16"
+            ),
             fanout=Fanout.LOCAL_PROCESS,
         )

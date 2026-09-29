@@ -17,7 +17,9 @@ from src.shared.schemas.template import (
 
 
 def _modbus_binding() -> ModbusBinding:
-    return ModbusBinding(protocol="modbus_tcp", function_code=4, address=100)
+    return ModbusBinding(
+        protocol="modbus_tcp", function_code=4, address=100, data_type="int16"
+    )
 
 
 def test_binding_modbus_tcp() -> None:
@@ -35,6 +37,14 @@ def test_binding_modbus_tcp() -> None:
     assert b.scale == 0.1
 
 
+def test_binding_modbus_requires_data_type() -> None:
+    # Arrange / Act / Assert — no default; the gateway's differed (int32)
+    with pytest.raises(ValidationError, match="data_type"):
+        ModbusBinding.model_validate(
+            {"protocol": "modbus_tcp", "function_code": 3, "address": 0}
+        )
+
+
 def test_binding_modbus_int64() -> None:
     # Arrange / Act — ION9000 energy registers are INT64 Wh
     b = ModbusBinding(
@@ -50,6 +60,7 @@ def test_binding_modbus_sunspec_scale_factor() -> None:
         protocol="modbus_tcp",
         function_code=3,
         address=40084,
+        data_type="int16",
         scale_factor_address=40085,
     )
     # Assert
@@ -157,7 +168,12 @@ def test_measurement_binding_dict_dispatches_to_modbus() -> None:
         {
             "unit": "volts",
             "type": "float",
-            "binding": {"protocol": "modbus_tcp", "function_code": 4, "address": 100},
+            "binding": {
+                "protocol": "modbus_tcp",
+                "function_code": 4,
+                "address": 100,
+                "data_type": "int16",
+            },
         }
     )
     # Assert

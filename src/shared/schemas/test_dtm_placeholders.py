@@ -19,7 +19,9 @@ DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000010")
 
 
 def _modbus_binding() -> ModbusBinding:
-    return ModbusBinding(protocol="modbus_tcp", function_code=4, address=100)
+    return ModbusBinding(
+        protocol="modbus_tcp", function_code=4, address=100, data_type="int16"
+    )
 
 
 def _poi_meter_template() -> DeviceTemplate:

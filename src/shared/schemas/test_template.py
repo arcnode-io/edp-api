@@ -17,7 +17,9 @@ from src.shared.schemas.template import (
 
 
 def _mb() -> ModbusBinding:
-    return ModbusBinding(protocol="modbus_tcp", function_code=4, address=100)
+    return ModbusBinding(
+        protocol="modbus_tcp", function_code=4, address=100, data_type="int16"
+    )
 
 
 def _mv() -> dict[str, Measurement]:

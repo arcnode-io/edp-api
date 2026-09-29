@@ -52,7 +52,9 @@ def three_protocol_dtm() -> Dtm:
         templates={
             "switchgear": _tpl(
                 "switchgear",
-                ModbusBinding(protocol="modbus_tcp", function_code=3, address=0),
+                ModbusBinding(
+                    protocol="modbus_tcp", function_code=3, address=0, data_type="int16"
+                ),
             ),
             "protective_relay": _tpl(
                 "protective_relay",
@@ -147,7 +149,9 @@ def test_cables_terminate_at_local_switch_when_present_in_dtm() -> None:
             ),
             "switchgear": _tpl(
                 "switchgear",
-                ModbusBinding(protocol="modbus_tcp", function_code=3, address=0),
+                ModbusBinding(
+                    protocol="modbus_tcp", function_code=3, address=0, data_type="int16"
+                ),
             ),
             "protective_relay": _tpl(
                 "protective_relay",
