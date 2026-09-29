@@ -125,8 +125,8 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
         resolution=_resolution(),
         manifest=client.fetch_manifest(),
     )
-    # Assert — top-level shape
-    assert dtm.mode == EmsMode.LIVE
+    # Assert — top-level shape; every device ships unprovisioned (ADR §25)
+    assert dtm.mode == EmsMode.SIM
     # Module Devices exist
     assert "compute_module_1" in dtm.devices
     assert "grid_module_1" in dtm.devices
@@ -154,7 +154,7 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
 
 
 @_skip_if_no_assemblies
-def test_e2e_pending_devices_empty_when_topology_has_no_sentinels() -> None:
+def test_e2e_every_leaf_device_ships_unprovisioned() -> None:
     # Arrange
     repo_root = Path(__file__).resolve().parents[1]
     catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
@@ -167,4 +167,6 @@ def test_e2e_pending_devices_empty_when_topology_has_no_sentinels() -> None:
         manifest=client.fetch_manifest(),
     )
     # Assert
-    assert dtm.pending_devices == []
+    leaves = {d.device_id for d in dtm.devices.values() if d.connection is not None}
+    assert {d.device_id for d in dtm.pending_devices} == leaves
+    assert len(leaves) == 16
