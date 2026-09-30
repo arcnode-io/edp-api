@@ -7,6 +7,7 @@ import pytest
 from src.dtm.template_loader import TemplateLoader, TemplateLoadError
 from src.shared.schemas.template import (
     DistributeBinding,
+    Dnp3Binding,
     ModbusBinding,
     SyntheticBinding,
 )
@@ -306,18 +307,32 @@ def test_load_real_catalog_includes_switchgear_voltage_unbalance() -> None:
     assert unbalance.binding is None
 
 
-def test_load_real_catalog_includes_protective_relay_islanding_fields() -> None:
-    """Grid HMI screen — anti-islanding/ride-through belong to the protection relay."""
+def test_load_real_catalog_protective_relay_matches_sel_351_dnp_profile() -> None:
+    """SEL-351-5/-6/-7 DNP3 device profile default map (dnpDP-351R100)."""
     # Arrange
     repo_root = Path(__file__).resolve().parents[2]
-    loader = TemplateLoader(root=repo_root / "device_templates")
-    # Act
-    catalog = loader.load_catalog()
-    # Assert
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
     relay = catalog["protective_relay"].measurements
-    assert relay["anti_islanding_armed"].type == "bool"
-    assert relay["ride_through_enabled"].type == "bool"
-    assert relay["reconnect_delay_s"].type == "float"
+
+    def point(name: str) -> tuple[str, int, float]:
+        binding = relay[name].binding
+        assert isinstance(binding, Dnp3Binding)
+        return (binding.point_type, binding.point_index, binding.scale)
+
+    # Act / Assert — magnitudes only; odd AI indices are angles
+    assert point("phase_a_current") == ("analog_input", 0, 1.0)
+    assert point("phase_b_current") == ("analog_input", 2, 1.0)
+    assert point("phase_c_current") == ("analog_input", 4, 1.0)
+    assert point("phase_voltage_a") == ("analog_input", 8, 1000.0)  # kV primary
+    assert point("phase_voltage_b") == ("analog_input", 10, 1000.0)
+    assert point("phase_voltage_c") == ("analog_input", 12, 1000.0)
+    assert point("trip_status") == ("binary_input", 9, 1.0)
+    assert point("ground_fault") == ("binary_input", 15, 1.0)
+    # User-settable slots, configured into the relay's DNP map at commissioning
+    assert point("anti_islanding_armed") == ("binary_input", 24, 1.0)
+    assert point("ride_through_enabled") == ("binary_input", 25, 1.0)
+    assert "reconnect_delay_s" not in relay
+    assert not any(n.startswith("line_voltage_") for n in relay)
 
 
 def test_load_real_catalog_includes_pv_inverter() -> None:

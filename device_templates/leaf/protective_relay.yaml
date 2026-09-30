@@ -5,8 +5,11 @@ vendor: Schweitzer Engineering Laboratories (SEL)
 model: SEL-351-7
 description: SEL-351-7 feeder protection relay (overcurrent, voltage, frequency, synchrocheck) via DNP3 TCP
 
+# Points from SEL's SEL-351-5/-6/-7 DNP3 device profile (dnpDP-351R100) default
+# map. Odd analog indices are angles; only magnitudes are read. BI 24/25 are
+# user-settable slots that commissioning configures (configure_dnp_map).
+
 measurements:
-  # topology: phase_currents, FC=4, start_address=0, count=3 → analog_input point indices 0-2
   phase_a_current:
     unit: amps
     type: float
@@ -14,7 +17,7 @@ measurements:
     display_name_default: "Phase A Current"
     binding:
       protocol: dnp3_tcp
-      point_index: 0
+      point_index: 0  # IA, A primary
       point_type: analog_input
 
   phase_b_current:
@@ -24,7 +27,7 @@ measurements:
     display_name_default: "Phase B Current"
     binding:
       protocol: dnp3_tcp
-      point_index: 1
+      point_index: 2  # IB
       point_type: analog_input
 
   phase_c_current:
@@ -34,41 +37,42 @@ measurements:
     display_name_default: "Phase C Current"
     binding:
       protocol: dnp3_tcp
-      point_index: 2
+      point_index: 4  # IC
       point_type: analog_input
 
-  # topology: line_voltages, FC=4, start_address=10, count=3 → analog_input point indices 10-12
-  line_voltage_ab:
+  phase_voltage_a:
     unit: volts
     type: float
     poll_rate_hz: 1
-    display_name_default: "Line Voltage A-B"
+    display_name_default: "Phase A Voltage"
     binding:
       protocol: dnp3_tcp
-      point_index: 10
+      point_index: 8  # VA, kV primary
       point_type: analog_input
+      scale: 1000.0
 
-  line_voltage_bc:
+  phase_voltage_b:
     unit: volts
     type: float
     poll_rate_hz: 1
-    display_name_default: "Line Voltage B-C"
+    display_name_default: "Phase B Voltage"
     binding:
       protocol: dnp3_tcp
-      point_index: 11
+      point_index: 10  # VB
       point_type: analog_input
+      scale: 1000.0
 
-  line_voltage_ca:
+  phase_voltage_c:
     unit: volts
     type: float
     poll_rate_hz: 1
-    display_name_default: "Line Voltage C-A"
+    display_name_default: "Phase C Voltage"
     binding:
       protocol: dnp3_tcp
-      point_index: 12
+      point_index: 12  # VC
       point_type: analog_input
+      scale: 1000.0
 
-  # topology: trip_status, FC=3, start_address=100 → binary_input point index 100
   trip_status:
     unit: none
     type: bool
@@ -76,10 +80,9 @@ measurements:
     display_name_default: "Trip Status"
     binding:
       protocol: dnp3_tcp
-      point_index: 100
+      point_index: 9  # TRIP_LED, trip target
       point_type: binary_input
 
-  # topology: ground_fault, FC=3, start_address=110 → binary_input point index 110
   ground_fault:
     unit: none
     type: bool
@@ -87,11 +90,9 @@ measurements:
     display_name_default: "Ground Fault"
     binding:
       protocol: dnp3_tcp
-      point_index: 110
+      point_index: 15  # G target
       point_type: binary_input
 
-  # Grid HMI screen — anti-islanding/ride-through protection state. SEL-351-7
-  # exposes these as additional binary/analog points on the same DNP3 session.
   anti_islanding_armed:
     unit: none
     type: bool
@@ -99,7 +100,7 @@ measurements:
     display_name_default: "Anti-Islanding Armed"
     binding:
       protocol: dnp3_tcp
-      point_index: 111
+      point_index: 24  # user-settable slot
       point_type: binary_input
 
   ride_through_enabled:
@@ -109,23 +110,8 @@ measurements:
     display_name_default: "Ride-Through Enabled"
     binding:
       protocol: dnp3_tcp
-      point_index: 112
+      point_index: 25  # user-settable slot
       point_type: binary_input
-
-  # Reason: system_adr.md §10's unit vocabulary is enum-locked at codegen
-  # time and has no time unit (volts/amps/watts/vars/voltamperes/watt_hours/
-  # hertz/celsius/percent/watts_per_m2/meters_per_second/bar/
-  # liters_per_minute/none) — adding one is a versioned spec change, not
-  # something to slip in here. Field name + display name carry the unit.
-  reconnect_delay_s:
-    unit: none
-    type: float
-    poll_rate_hz: 0.1
-    display_name_default: "Reconnect Delay (s)"
-    binding:
-      protocol: dnp3_tcp
-      point_index: 13
-      point_type: analog_input
 
 install_tasks:
   - name: mount_in_panel
@@ -137,8 +123,13 @@ install_tasks:
     est_minutes: 90
     crew_role: electrician
     cx_level: L2
-  - name: dnp3_commission
+  - name: configure_dnp_map
     depends_on: [wire_ct_pt_inputs]
+    est_minutes: 20
+    crew_role: it
+    cx_level: L3
+  - name: dnp3_commission
+    depends_on: [configure_dnp_map]
     est_minutes: 30
     crew_role: it
     cx_level: L3
