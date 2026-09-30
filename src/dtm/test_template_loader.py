@@ -9,6 +9,7 @@ from src.shared.schemas.template import (
     DistributeBinding,
     Dnp3Binding,
     ModbusBinding,
+    SnmpBinding,
     SyntheticBinding,
 )
 
@@ -114,6 +115,28 @@ def test_load_real_catalog_includes_poi_meter() -> None:
         assert binding.scale == 1.0
         actual[name] = (binding.address, binding.data_type)
     assert actual == expected
+
+
+def test_load_real_catalog_pdu_matches_sentry4_mib() -> None:
+    # Arrange — Sentry4-MIB; index = unit(1).cord(1).line|phase
+    repo_root = Path(__file__).resolve().parents[2]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    pdu = catalog["pdu"].measurements
+    line_current = "1.3.6.1.4.1.1718.4.1.4.3.1.3.1.1."  # st4LineCurrent
+    phase_voltage = "1.3.6.1.4.1.1718.4.1.5.3.1.3.1.1."  # st4PhaseVoltage
+
+    def snmp(name: str) -> tuple[str, float]:
+        binding = pdu[name].binding
+        assert isinstance(binding, SnmpBinding)
+        return (binding.oid, binding.scale)
+
+    # Act / Assert
+    for n in (1, 2, 3):
+        assert snmp(f"input_current_l{n}") == (f"{line_current}{n}", 0.01)
+        assert snmp(f"input_voltage_l{n}") == (f"{phase_voltage}{n}", 0.1)
+    assert set(pdu) == {
+        f"input_{q}_l{n}" for q in ("current", "voltage") for n in (1, 2, 3)
+    }
 
 
 def test_load_real_catalog_dc_external_matches_guentner_gmm_spec() -> None:

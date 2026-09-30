@@ -5,40 +5,69 @@ vendor: Server Technology (Legrand)
 model: PRO3X C3W36RL
 description: Server Tech PRO3X 0U vertical intelligent rack PDU (415V 3ph 60A, 36 outlets, Xerus) via SNMP
 
+# OIDs from Server Technology's Sentry4-MIB. Table index is
+# unit(1 = master).cord(1).line|phase; -1 means not available.
+
 measurements:
-  # oid_maps: input_current
-  input_current:
+  input_current_l1:
     unit: amps
     type: float
     poll_rate_hz: 1
-    display_name_default: "Input Current"
+    display_name_default: "Input Current L1"
     binding:
       protocol: snmp
-      oid: 1.3.6.1.4.1.1718.4.1.3.3.1.7
+      oid: 1.3.6.1.4.1.1718.4.1.4.3.1.3.1.1.1  # st4LineCurrent, hundredth amps
+      scale: 0.01
 
-  # oid_maps: input_voltage
-  input_voltage:
+  input_current_l2:
+    unit: amps
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Input Current L2"
+    binding:
+      protocol: snmp
+      oid: 1.3.6.1.4.1.1718.4.1.4.3.1.3.1.1.2
+      scale: 0.01
+
+  input_current_l3:
+    unit: amps
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Input Current L3"
+    binding:
+      protocol: snmp
+      oid: 1.3.6.1.4.1.1718.4.1.4.3.1.3.1.1.3
+      scale: 0.01
+
+  input_voltage_l1:
     unit: volts
     type: float
     poll_rate_hz: 1
-    display_name_default: "Input Voltage"
+    display_name_default: "Input Voltage L1"
     binding:
       protocol: snmp
-      oid: 1.3.6.1.4.1.1718.4.1.3.3.1.6
+      oid: 1.3.6.1.4.1.1718.4.1.5.3.1.3.1.1.1  # st4PhaseVoltage, tenth volts
+      scale: 0.1
 
-  # oid_maps: outlet_state — per-outlet switched state table row
-  outlet_state:
-    unit: none
-    type: enum
-    poll_rate_hz: 0.5
-    display_name_default: "Outlet State"
-    values:
-      0: "OFF"
-      1: "ON"
-      2: CYCLING
+  input_voltage_l2:
+    unit: volts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Input Voltage L2"
     binding:
       protocol: snmp
-      oid: 1.3.6.1.4.1.1718.4.1.8.5.1.2
+      oid: 1.3.6.1.4.1.1718.4.1.5.3.1.3.1.1.2
+      scale: 0.1
+
+  input_voltage_l3:
+    unit: volts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Input Voltage L3"
+    binding:
+      protocol: snmp
+      oid: 1.3.6.1.4.1.1718.4.1.5.3.1.3.1.1.3
+      scale: 0.1
 
 install_tasks:
   - name: mount_in_rack
