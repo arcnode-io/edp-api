@@ -346,6 +346,15 @@ def test_load_real_catalog_includes_pv_inverter() -> None:
     pv = catalog["pv_inverter"]
     assert pv.kind.value == "leaf"
     assert pv.measurements["active_power"].type == "float"
+    # SunSpec model 103 after Common at base 40000: W at 40084, W_SF at 40085
+    binding = pv.measurements["active_power"].binding
+    assert isinstance(binding, ModbusBinding)
+    assert (binding.function_code, binding.address, binding.data_type) == (
+        3,
+        40084,
+        "int16",
+    )
+    assert binding.scale_factor_address == 40085
     grid_module = catalog["grid_module"]
     assert any(
         c.template == "pv_inverter" and c.qty == "scalable"

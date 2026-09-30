@@ -1,13 +1,15 @@
 template: pv_inverter
 kind: leaf
 equipment_id: GRD-PVI-001
-vendor: Sungrow
-model: SG3125HV-MV (3.125 MW utility-scale string inverter)
+vendor: Customer-supplied (any SunSpec-compliant inverter)
+model: SunSpec Model 103 three-phase inverter
 description: >
-  Grid-tied PV string inverter. Scalable member of grid_module — a site
-  typically has 2+ feeding the AC bus. Register addresses are placeholder
-  (SunSpec Modbus is the common convention for this class of inverter);
-  must be verified at commissioning against the actual vendor register map.
+  Customer's grid-tied PV inverter, read over SunSpec Modbus. Scalable member
+  of grid_module — a site typically has 2+ feeding the AC bus.
+
+# SunSpec model 103 (sunspec/models model_103.json). Assumes base 40000 with
+# model 103 directly after Common (model 1, 68 registers), the usual layout;
+# a device with another model order needs its addresses adjusted.
 
 measurements:
   active_power:
@@ -18,11 +20,11 @@ measurements:
     iec_61850_ref: MMXU.W
     binding:
       protocol: modbus_tcp
-      function_code: 4
-      address: 0
-      data_type: int32
+      function_code: 3
+      address: 40084  # W (int16)
+      data_type: int16
       word_order: high_low
-      scale: 1.0
+      scale_factor_address: 40085  # W_SF (sunssf)
 
 install_tasks:
   - name: set_and_anchor
