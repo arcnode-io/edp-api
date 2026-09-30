@@ -7,6 +7,11 @@ checks:
   stage: check
   script:
     - uv run poe checks
+    # Reason: e2e reads real topologies; clone main explicitly (only the
+    # topology files) instead of trusting a shared runner's stale sibling dir.
+    - export EDP_MODULE_ASSEMBLIES_DIR="$(mktemp -d)/edp-module-assemblies"
+    - git clone --quiet --depth 1 --filter=blob:none --sparse https://gitlab.com/arcnode-io/edp-module-assemblies.git "$EDP_MODULE_ASSEMBLIES_DIR"
+    - git -C "$EDP_MODULE_ASSEMBLIES_DIR" sparse-checkout set --no-cone '/assemblies/*/*/topology.yaml'
     - uv run pytest --junitxml=junit.xml
     - uv run poe cover
     - uv run coverage xml

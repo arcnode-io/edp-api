@@ -1,10 +1,10 @@
 """End-to-end DTM generation against real device_templates/ and assemblies/ topologies.
 
-Skipped when the sibling `edp-module-assemblies` checkout isn't available
-(e.g. CI without a multi-repo checkout). Local dev with both repos under
-`~/arcnode/` runs the full pipeline.
+Reads `EDP_MODULE_ASSEMBLIES_DIR` (CI clones main there) or, locally, the
+sibling `~/arcnode/edp-module-assemblies` checkout. Skipped when neither exists.
 """
 
+import os
 from pathlib import Path
 from unittest.mock import MagicMock
 from uuid import UUID
@@ -33,14 +33,19 @@ from src.shared.schemas.configurator_grid import OnsiteGeneration
 from src.shared.schemas.dtm import EmsMode
 from src.shared.schemas.module_resolution import ModuleResolution
 
-# Reason: e2e covers the cross-repo contract; skip when assemblies repo absent.
+# Reason: an explicit clone, not whatever sibling a shared CI runner has lying
+# around — a stale sibling made these tests assert against old topologies.
 # parents[0]=tests/, parents[1]=edp-api/, parents[2]=arcnode/
-_ASSEMBLIES_DIR = (
-    Path(__file__).resolve().parents[2] / "edp-module-assemblies/assemblies"
+_ASSEMBLIES_REPO = Path(
+    os.environ.get(
+        "EDP_MODULE_ASSEMBLIES_DIR",
+        Path(__file__).resolve().parents[2] / "edp-module-assemblies",
+    )
 )
+_ASSEMBLIES_DIR = _ASSEMBLIES_REPO / "assemblies"
 _skip_if_no_assemblies = pytest.mark.skipif(
     not _ASSEMBLIES_DIR.is_dir(),
-    reason="sibling edp-module-assemblies checkout required",
+    reason="edp-module-assemblies checkout required",
 )
 
 
