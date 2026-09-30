@@ -5,11 +5,10 @@ vendor: Güntner (Güntner U.S. LLC)
 model: GFD Series (V-shape, ECM fans, fluid cooler)
 description: Güntner GFD outdoor V-shape dry cooler with EC fan motors via Modbus TCP
 
-# Reason: No commercial-ac topology entry — dry cooler is facility-side on the primary
-# coolant loop. Protocol is bacnet_mstp (primary) or modbus_rtu (per-fan).
-# DTM v1 schema only models modbus_tcp and modbus bindings; no BACnet MSTP or RTU enum.
-# Using Modbus TCP via RS-485/TCP gateway as the v1 integration path.
-# Placeholder addresses 0-based; verify against Güntner GFD manual at commissioning.
+# Registers from Güntner "Interface Specification – Modbus GMM V_3.0" (GMM EC
+# controller); addresses are on-wire decimal. The GMM is Modbus RTU over RS-485,
+# reached through an RS-485/TCP converter. Which sensor sits on AI1/AI2/AI3 is
+# set in the GMM service menu at commissioning.
 
 measurements:
   leaving_fluid_temp:
@@ -20,7 +19,7 @@ measurements:
     binding:
       protocol: modbus_tcp
       function_code: 4
-      address: 0
+      address: 53508  # §4.3.5 scaled value AI1
       data_type: int16
       word_order: high_low
       scale: 0.1
@@ -33,7 +32,7 @@ measurements:
     binding:
       protocol: modbus_tcp
       function_code: 4
-      address: 1
+      address: 53511  # §4.3.8 scaled value AI2
       data_type: int16
       word_order: high_low
       scale: 0.1
@@ -46,7 +45,7 @@ measurements:
     binding:
       protocol: modbus_tcp
       function_code: 4
-      address: 2
+      address: 53513  # §4.3.11 scaled value AI3 (GTF210)
       data_type: int16
       word_order: high_low
       scale: 0.1
@@ -59,10 +58,9 @@ measurements:
     binding:
       protocol: modbus_tcp
       function_code: 4
-      address: 10
+      address: 53633  # §4.3.25 fan speed % of max, fan 1
       data_type: uint16
       word_order: high_low
-      scale: 0.1
 
   fan_2_speed:
     unit: percent
@@ -72,28 +70,44 @@ measurements:
     binding:
       protocol: modbus_tcp
       function_code: 4
-      address: 11
+      address: 53634  # §4.3.25 fan 2
       data_type: uint16
       word_order: high_low
-      scale: 0.1
 
-  unit_state:
+  operating_mode:
     unit: none
     type: enum
     poll_rate_hz: 0.5
-    display_name_default: "Unit Operating State"
+    display_name_default: "Operating Mode"
     values:
-      0: "OFF"
-      1: RUNNING
-      2: FAULT
+      0: AUTOMATIC_INTERNAL
+      1: AUTOMATIC_EXTERNAL_ANALOG
+      2: AUTOMATIC_EXTERNAL_BUS
+      3: SLAVE_EXTERNAL_ANALOG
+      4: SLAVE_EXTERNAL_BUS
     binding:
       protocol: modbus_tcp
       function_code: 3
-      address: 20
+      address: 53249  # §4.2.2
+      data_type: uint16
+      word_order: high_low
+
+  # §4.3.23 bitfield: b0-b3 AI1-AI4 error, b6 no sensor selected, b14 no EC
+  # controller status word, b15 hardware fault.
+  fault_word:
+    unit: none
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "GMM Fault Word"
+    binding:
+      protocol: modbus_tcp
+      function_code: 4
+      address: 53616
       data_type: uint16
       word_order: high_low
 
 commands:
+  # §4.2.4.1 Setpoint 1; only drives the GMM in AUTOMATIC_EXTERNAL_BUS mode.
   set_leaving_fluid_temp:
     verb: set
     target: leaving_fluid_temp
@@ -103,8 +117,8 @@ commands:
     binding:
       protocol: modbus_tcp
       function_code: 6
-      address: 30
-      data_type: int16
+      address: 53257
+      data_type: uint16
       word_order: high_low
       scale: 0.1
 

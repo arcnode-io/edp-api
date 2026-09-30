@@ -103,6 +103,46 @@ def test_load_real_catalog_includes_poi_meter() -> None:
     assert active_power.binding.address == 4030
 
 
+def test_load_real_catalog_dc_external_matches_guentner_gmm_spec() -> None:
+    # Arrange — Güntner "Modbus GMM" interface spec V3.0
+    repo_root = Path(__file__).resolve().parents[2]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    dc = catalog["dc_external"]
+
+    def modbus(name: str) -> ModbusBinding:
+        binding = dc.measurements[name].binding
+        assert isinstance(binding, ModbusBinding)
+        return binding
+
+    # Act / Assert
+    assert (
+        modbus("leaving_fluid_temp").function_code,
+        modbus("leaving_fluid_temp").address,
+    ) == (4, 53508)
+    assert modbus("entering_fluid_temp").address == 53511
+    assert modbus("ambient_temp").address == 53513
+    assert (modbus("fan_1_speed").address, modbus("fan_2_speed").address) == (
+        53633,
+        53634,
+    )
+    assert (
+        modbus("operating_mode").function_code,
+        modbus("operating_mode").address,
+    ) == (3, 53249)
+    assert dc.measurements["operating_mode"].values == {
+        0: "AUTOMATIC_INTERNAL",
+        1: "AUTOMATIC_EXTERNAL_ANALOG",
+        2: "AUTOMATIC_EXTERNAL_BUS",
+        3: "SLAVE_EXTERNAL_ANALOG",
+        4: "SLAVE_EXTERNAL_BUS",
+    }
+    assert modbus("fault_word").address == 53616
+    assert "unit_state" not in dc.measurements
+    setpoint = dc.commands["set_leaving_fluid_temp"].binding
+    assert isinstance(setpoint, ModbusBinding)
+    assert (setpoint.function_code, setpoint.address, setpoint.scale) == (6, 53257, 0.1)
+
+
 def test_load_real_catalog_includes_bess_rack_capacity_kwh() -> None:
     # Arrange
     repo_root = Path(__file__).resolve().parents[2]
