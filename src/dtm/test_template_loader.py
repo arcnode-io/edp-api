@@ -96,12 +96,24 @@ def test_load_real_catalog_includes_poi_meter() -> None:
     assert "poi_meter" in catalog
     rm = catalog["poi_meter"]
     assert rm.equipment_id == "GRD-MTR-001"
-    assert "kwh_delivered" in rm.measurements
-    # POI net power, + = import from grid; envelope limits reference this
-    active_power = rm.measurements["active_power"]
-    assert active_power.unit == "watts"
-    assert isinstance(active_power.binding, ModbusBinding)
-    assert active_power.binding.address == 4030
+    # ION9000 Modbus map 004.005.000; the meter answers FC3 only as a slave
+    expected = {
+        "active_power": (3060, "float32"),  # + = imported/delivered
+        "kwh_delivered": (3204, "int64"),
+        "kwh_received": (3208, "int64"),
+        "power_factor": (3150, "float32"),
+        "thd_voltage_a": (21330, "float32"),
+        "thd_voltage_b": (21332, "float32"),
+        "thd_voltage_c": (21334, "float32"),
+    }
+    actual = {}
+    for name in expected:
+        binding = rm.measurements[name].binding
+        assert isinstance(binding, ModbusBinding)
+        assert binding.function_code == 3
+        assert binding.scale == 1.0
+        actual[name] = (binding.address, binding.data_type)
+    assert actual == expected
 
 
 def test_load_real_catalog_dc_external_matches_guentner_gmm_spec() -> None:
