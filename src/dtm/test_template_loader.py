@@ -9,6 +9,7 @@ from src.shared.schemas.template import (
     DistributeBinding,
     Dnp3Binding,
     ModbusBinding,
+    RedfishBinding,
     SnmpBinding,
     SyntheticBinding,
 )
@@ -163,6 +164,44 @@ def test_load_real_catalog_network_switch_reads_standard_mibs() -> None:
         assert isinstance(binding, SnmpBinding)
         assert binding.oid.startswith("1.3.6.1.2.1.99.1.1.1.4.")  # entPhySensorValue
     assert set(switch) == {"port_link_status", "inlet_temp", "asic_temp"}
+
+
+def test_load_real_catalog_gpu_node_reads_nvidia_hgx_per_gpu() -> None:
+    # Arrange — NVIDIA DGX B200 Redfish docs + NVIDIA/bmcweb nvidia_processor.hpp
+    repo_root = Path(__file__).resolve().parents[2]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    gpu = catalog["gpu_node"].measurements
+    base = "/Systems/HGX_Baseboard_0/Processors/GPU_SXM_"
+
+    def redfish(name: str) -> RedfishBinding:
+        binding = gpu[name].binding
+        assert isinstance(binding, RedfishBinding)
+        return binding
+
+    # Act / Assert
+    for n in range(1, 9):
+        power = redfish(f"gpu_{n}_power")
+        assert (power.uri, power.json_pointer) == (
+            f"{base}{n}/EnvironmentMetrics",
+            "/PowerWatts/Reading",
+        )
+        limit = redfish(f"gpu_{n}_power_limit")
+        assert limit.json_pointer == "/PowerLimitWatts/SetPoint"
+        clock = redfish(f"gpu_{n}_clock")
+        assert (clock.uri, clock.json_pointer, clock.scale) == (
+            f"{base}{n}/ProcessorMetrics",
+            "/OperatingSpeedMHz",
+            1e6,
+        )
+        throttle = redfish(f"gpu_{n}_throttle_reason")
+        assert throttle.json_pointer == "/Oem/Nvidia/ThrottleReasons/0"
+        assert throttle.value_map is not None
+        assert throttle.value_map["SWPowerCap"] == 1
+        assert gpu[f"gpu_{n}_throttle_reason"].values is not None
+    total = gpu["gpu_power_watts"].binding
+    assert isinstance(total, SyntheticBinding)
+    assert total.operation == "sum"
+    assert total.inputs is not None and len(total.inputs) == 8
 
 
 def test_load_real_catalog_dc_external_matches_guentner_gmm_spec() -> None:

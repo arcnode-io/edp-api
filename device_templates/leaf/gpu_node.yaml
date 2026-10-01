@@ -5,69 +5,180 @@ vendor: Supermicro (Super Micro Computer Inc.)
 model: SYS-421GE-NBRT-LCC
 description: 4U liquid-cooled HGX B200 GPU server (8× NVIDIA B200 SXM) with Redfish BMC
 
+# Node: Supermicro X13 Redfish (/Chassis/1/Power is deprecated from X14 but
+# served on X13). Per GPU: NVIDIA HGX Redfish — EnvironmentMetrics per the DGX
+# B200 user guide; ProcessorMetrics (OperatingSpeedMHz, Oem.Nvidia.
+# ThrottleReasons) per NVIDIA/bmcweb nvidia_processor.hpp. ThrottleReasons is a
+# list (["NA"] when not throttled); index 0 is read, filled in bit order so
+# SWPowerCap (power cap) comes first when present.
+
 measurements:
-  # resource_maps: power → /Chassis/{N}/Power
   power_consumed:
     unit: watts
     type: float
     poll_rate_hz: 1
     display_name_default: "Power Consumed"
-    binding:
-      protocol: redfish
-      uri: /Chassis/1/Power
-      json_pointer: /PowerControl/0/PowerConsumedWatts
+    binding: { protocol: redfish, uri: /Chassis/1/Power, json_pointer: /PowerControl/0/PowerConsumedWatts }
 
   power_limit:
     unit: watts
     type: float
     poll_rate_hz: 0.1
     display_name_default: "Power Limit"
-    binding:
-      protocol: redfish
-      uri: /Chassis/1/Power
-      json_pointer: /PowerControl/0/PowerLimit/LimitInWatts
+    binding: { protocol: redfish, uri: /Chassis/1/Power, json_pointer: /PowerControl/0/PowerLimit/LimitInWatts }
 
-  # resource_maps: thermal → /Chassis/{N}/Thermal
   inlet_temp:
     unit: celsius
     type: float
     poll_rate_hz: 0.5
     display_name_default: "Inlet Temperature"
-    binding:
-      protocol: redfish
-      uri: /Chassis/1/Thermal
-      json_pointer: /Temperatures/0/ReadingCelsius
-
-  exhaust_temp:
-    unit: celsius
-    type: float
-    poll_rate_hz: 0.5
-    display_name_default: "Exhaust Temperature"
-    binding:
-      protocol: redfish
-      uri: /Chassis/1/Thermal
-      json_pointer: /Temperatures/1/ReadingCelsius
+    binding: { protocol: redfish, uri: /Chassis/1/Sensors/InletTemp, json_pointer: /Reading }
 
   fan_speed:
     unit: percent
     type: float
     poll_rate_hz: 0.5
     display_name_default: "Fan Speed"
-    binding:
-      protocol: redfish
-      uri: /Chassis/1/Thermal
-      json_pointer: /Fans/0/Reading
+    binding: { protocol: redfish, uri: /Chassis/1/Thermal, json_pointer: /Fans/0/Reading }
 
-  # resource_maps: gpus → /Chassis/{N}/Processors
   gpu_power_watts:
     unit: watts
     type: float
     poll_rate_hz: 1
     display_name_default: "GPU Total Power"
+    publisher: gateway
     binding:
-      protocol: redfish
-      uri: /Chassis/1/Processors
-      json_pointer: /Members/0/Oem/Nvidia/TotalPowerWatts
+      protocol: synthetic
+      operation: sum
+      inputs:
+        - sites/{site_id}/devices/{device_id}/measurements/gpu_1_power/watts
+        - sites/{site_id}/devices/{device_id}/measurements/gpu_2_power/watts
+        - sites/{site_id}/devices/{device_id}/measurements/gpu_3_power/watts
+        - sites/{site_id}/devices/{device_id}/measurements/gpu_4_power/watts
+        - sites/{site_id}/devices/{device_id}/measurements/gpu_5_power/watts
+        - sites/{site_id}/devices/{device_id}/measurements/gpu_6_power/watts
+        - sites/{site_id}/devices/{device_id}/measurements/gpu_7_power/watts
+        - sites/{site_id}/devices/{device_id}/measurements/gpu_8_power/watts
+
+  gpu_1_power:
+    { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 1 Power",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_1/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
+  gpu_1_power_limit:
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 1 Power Limit",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_1/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
+  gpu_1_clock:
+    { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 1 Clock",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_1/ProcessorMetrics, json_pointer: /OperatingSpeedMHz, scale: 1000000.0 } }
+  gpu_1_throttle_reason:
+    { unit: none, type: enum, poll_rate_hz: 1, display_name_default: "GPU 1 Throttle Reason",
+      values: { 0: NA, 1: SW_POWER_CAP, 2: HW_SLOWDOWN, 3: HW_THERMAL_SLOWDOWN, 4: HW_POWER_BRAKE_SLOWDOWN, 5: SYNC_BOOST, 6: CLOCK_OPTIMIZED_FOR_POWER, 7: CLOCK_OPTIMIZED_FOR_THERMAL_ENGAGE, 8: GPU_THERMAL_OVERT },
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_1/ProcessorMetrics, json_pointer: /Oem/Nvidia/ThrottleReasons/0,
+        value_map: { "NA": 0, "SWPowerCap": 1, "HWSlowdown": 2, "HWThermalSlowdown": 3, "HWPowerBrakeSlowdown": 4, "SyncBoost": 5, "ClockOptimizedForPower": 6, "ClockOptimizedForThermalEngage": 7, "Current GPU temperature above the GPU Max Operating Temperature or Current memory temperature above the Memory Max Operating Temperature": 8 } } }
+
+  gpu_2_power:
+    { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 2 Power",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_2/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
+  gpu_2_power_limit:
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 2 Power Limit",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_2/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
+  gpu_2_clock:
+    { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 2 Clock",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_2/ProcessorMetrics, json_pointer: /OperatingSpeedMHz, scale: 1000000.0 } }
+  gpu_2_throttle_reason:
+    { unit: none, type: enum, poll_rate_hz: 1, display_name_default: "GPU 2 Throttle Reason",
+      values: { 0: NA, 1: SW_POWER_CAP, 2: HW_SLOWDOWN, 3: HW_THERMAL_SLOWDOWN, 4: HW_POWER_BRAKE_SLOWDOWN, 5: SYNC_BOOST, 6: CLOCK_OPTIMIZED_FOR_POWER, 7: CLOCK_OPTIMIZED_FOR_THERMAL_ENGAGE, 8: GPU_THERMAL_OVERT },
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_2/ProcessorMetrics, json_pointer: /Oem/Nvidia/ThrottleReasons/0,
+        value_map: { "NA": 0, "SWPowerCap": 1, "HWSlowdown": 2, "HWThermalSlowdown": 3, "HWPowerBrakeSlowdown": 4, "SyncBoost": 5, "ClockOptimizedForPower": 6, "ClockOptimizedForThermalEngage": 7, "Current GPU temperature above the GPU Max Operating Temperature or Current memory temperature above the Memory Max Operating Temperature": 8 } } }
+
+  gpu_3_power:
+    { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 3 Power",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_3/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
+  gpu_3_power_limit:
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 3 Power Limit",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_3/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
+  gpu_3_clock:
+    { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 3 Clock",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_3/ProcessorMetrics, json_pointer: /OperatingSpeedMHz, scale: 1000000.0 } }
+  gpu_3_throttle_reason:
+    { unit: none, type: enum, poll_rate_hz: 1, display_name_default: "GPU 3 Throttle Reason",
+      values: { 0: NA, 1: SW_POWER_CAP, 2: HW_SLOWDOWN, 3: HW_THERMAL_SLOWDOWN, 4: HW_POWER_BRAKE_SLOWDOWN, 5: SYNC_BOOST, 6: CLOCK_OPTIMIZED_FOR_POWER, 7: CLOCK_OPTIMIZED_FOR_THERMAL_ENGAGE, 8: GPU_THERMAL_OVERT },
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_3/ProcessorMetrics, json_pointer: /Oem/Nvidia/ThrottleReasons/0,
+        value_map: { "NA": 0, "SWPowerCap": 1, "HWSlowdown": 2, "HWThermalSlowdown": 3, "HWPowerBrakeSlowdown": 4, "SyncBoost": 5, "ClockOptimizedForPower": 6, "ClockOptimizedForThermalEngage": 7, "Current GPU temperature above the GPU Max Operating Temperature or Current memory temperature above the Memory Max Operating Temperature": 8 } } }
+
+  gpu_4_power:
+    { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 4 Power",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_4/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
+  gpu_4_power_limit:
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 4 Power Limit",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_4/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
+  gpu_4_clock:
+    { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 4 Clock",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_4/ProcessorMetrics, json_pointer: /OperatingSpeedMHz, scale: 1000000.0 } }
+  gpu_4_throttle_reason:
+    { unit: none, type: enum, poll_rate_hz: 1, display_name_default: "GPU 4 Throttle Reason",
+      values: { 0: NA, 1: SW_POWER_CAP, 2: HW_SLOWDOWN, 3: HW_THERMAL_SLOWDOWN, 4: HW_POWER_BRAKE_SLOWDOWN, 5: SYNC_BOOST, 6: CLOCK_OPTIMIZED_FOR_POWER, 7: CLOCK_OPTIMIZED_FOR_THERMAL_ENGAGE, 8: GPU_THERMAL_OVERT },
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_4/ProcessorMetrics, json_pointer: /Oem/Nvidia/ThrottleReasons/0,
+        value_map: { "NA": 0, "SWPowerCap": 1, "HWSlowdown": 2, "HWThermalSlowdown": 3, "HWPowerBrakeSlowdown": 4, "SyncBoost": 5, "ClockOptimizedForPower": 6, "ClockOptimizedForThermalEngage": 7, "Current GPU temperature above the GPU Max Operating Temperature or Current memory temperature above the Memory Max Operating Temperature": 8 } } }
+
+  gpu_5_power:
+    { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 5 Power",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_5/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
+  gpu_5_power_limit:
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 5 Power Limit",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_5/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
+  gpu_5_clock:
+    { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 5 Clock",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_5/ProcessorMetrics, json_pointer: /OperatingSpeedMHz, scale: 1000000.0 } }
+  gpu_5_throttle_reason:
+    { unit: none, type: enum, poll_rate_hz: 1, display_name_default: "GPU 5 Throttle Reason",
+      values: { 0: NA, 1: SW_POWER_CAP, 2: HW_SLOWDOWN, 3: HW_THERMAL_SLOWDOWN, 4: HW_POWER_BRAKE_SLOWDOWN, 5: SYNC_BOOST, 6: CLOCK_OPTIMIZED_FOR_POWER, 7: CLOCK_OPTIMIZED_FOR_THERMAL_ENGAGE, 8: GPU_THERMAL_OVERT },
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_5/ProcessorMetrics, json_pointer: /Oem/Nvidia/ThrottleReasons/0,
+        value_map: { "NA": 0, "SWPowerCap": 1, "HWSlowdown": 2, "HWThermalSlowdown": 3, "HWPowerBrakeSlowdown": 4, "SyncBoost": 5, "ClockOptimizedForPower": 6, "ClockOptimizedForThermalEngage": 7, "Current GPU temperature above the GPU Max Operating Temperature or Current memory temperature above the Memory Max Operating Temperature": 8 } } }
+
+  gpu_6_power:
+    { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 6 Power",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_6/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
+  gpu_6_power_limit:
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 6 Power Limit",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_6/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
+  gpu_6_clock:
+    { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 6 Clock",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_6/ProcessorMetrics, json_pointer: /OperatingSpeedMHz, scale: 1000000.0 } }
+  gpu_6_throttle_reason:
+    { unit: none, type: enum, poll_rate_hz: 1, display_name_default: "GPU 6 Throttle Reason",
+      values: { 0: NA, 1: SW_POWER_CAP, 2: HW_SLOWDOWN, 3: HW_THERMAL_SLOWDOWN, 4: HW_POWER_BRAKE_SLOWDOWN, 5: SYNC_BOOST, 6: CLOCK_OPTIMIZED_FOR_POWER, 7: CLOCK_OPTIMIZED_FOR_THERMAL_ENGAGE, 8: GPU_THERMAL_OVERT },
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_6/ProcessorMetrics, json_pointer: /Oem/Nvidia/ThrottleReasons/0,
+        value_map: { "NA": 0, "SWPowerCap": 1, "HWSlowdown": 2, "HWThermalSlowdown": 3, "HWPowerBrakeSlowdown": 4, "SyncBoost": 5, "ClockOptimizedForPower": 6, "ClockOptimizedForThermalEngage": 7, "Current GPU temperature above the GPU Max Operating Temperature or Current memory temperature above the Memory Max Operating Temperature": 8 } } }
+
+  gpu_7_power:
+    { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 7 Power",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_7/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
+  gpu_7_power_limit:
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 7 Power Limit",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_7/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
+  gpu_7_clock:
+    { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 7 Clock",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_7/ProcessorMetrics, json_pointer: /OperatingSpeedMHz, scale: 1000000.0 } }
+  gpu_7_throttle_reason:
+    { unit: none, type: enum, poll_rate_hz: 1, display_name_default: "GPU 7 Throttle Reason",
+      values: { 0: NA, 1: SW_POWER_CAP, 2: HW_SLOWDOWN, 3: HW_THERMAL_SLOWDOWN, 4: HW_POWER_BRAKE_SLOWDOWN, 5: SYNC_BOOST, 6: CLOCK_OPTIMIZED_FOR_POWER, 7: CLOCK_OPTIMIZED_FOR_THERMAL_ENGAGE, 8: GPU_THERMAL_OVERT },
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_7/ProcessorMetrics, json_pointer: /Oem/Nvidia/ThrottleReasons/0,
+        value_map: { "NA": 0, "SWPowerCap": 1, "HWSlowdown": 2, "HWThermalSlowdown": 3, "HWPowerBrakeSlowdown": 4, "SyncBoost": 5, "ClockOptimizedForPower": 6, "ClockOptimizedForThermalEngage": 7, "Current GPU temperature above the GPU Max Operating Temperature or Current memory temperature above the Memory Max Operating Temperature": 8 } } }
+
+  gpu_8_power:
+    { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 8 Power",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_8/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
+  gpu_8_power_limit:
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 8 Power Limit",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_8/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
+  gpu_8_clock:
+    { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 8 Clock",
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_8/ProcessorMetrics, json_pointer: /OperatingSpeedMHz, scale: 1000000.0 } }
+  gpu_8_throttle_reason:
+    { unit: none, type: enum, poll_rate_hz: 1, display_name_default: "GPU 8 Throttle Reason",
+      values: { 0: NA, 1: SW_POWER_CAP, 2: HW_SLOWDOWN, 3: HW_THERMAL_SLOWDOWN, 4: HW_POWER_BRAKE_SLOWDOWN, 5: SYNC_BOOST, 6: CLOCK_OPTIMIZED_FOR_POWER, 7: CLOCK_OPTIMIZED_FOR_THERMAL_ENGAGE, 8: GPU_THERMAL_OVERT },
+      binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_8/ProcessorMetrics, json_pointer: /Oem/Nvidia/ThrottleReasons/0,
+        value_map: { "NA": 0, "SWPowerCap": 1, "HWSlowdown": 2, "HWThermalSlowdown": 3, "HWPowerBrakeSlowdown": 4, "SyncBoost": 5, "ClockOptimizedForPower": 6, "ClockOptimizedForThermalEngage": 7, "Current GPU temperature above the GPU Max Operating Temperature or Current memory temperature above the Memory Max Operating Temperature": 8 } } }
 
 install_tasks:
   - name: rack_install
