@@ -18,6 +18,10 @@ See [`arcnode`](https://gitlab.com/arcnode-io/arcnode) for system overview.
 See [`platform-api`](https://gitlab.com/arcnode-io/platform-api) for platform api.
 See [`docs/external-references.md`](docs/external-references.md) for the cross-repo ADRs, standards, and contracts this codebase consumes.
 
+### Device template bindings
+
+Register addresses, OIDs, DNP3 points and Redfish paths in `device_templates/` come from vendor documentation (cited in each template and in `edp-module-assemblies` equipment specs). They have **not been tested against real hardware** — only against `ems-industrial-fixtures`. Bindings marked UNVERIFIED (device-specific indices/ids) and `bess_rack` (placeholder; Tesla's map is gated) must be confirmed at commissioning.
+
 ## DTM Data Flow
 
 DTM = stitched from two sources:
@@ -193,7 +197,7 @@ src/
 └── main.py
 
 device_templates/                    # bundled with image, loaded at startup
-├── leaf/                            # 11 leaf templates (gpu_node, bess_rack, switchgear, ...)
+├── leaf/                            # 13 leaf templates (gpu_node, bess_rack, switchgear, ...)
 └── module/                          # 3 module templates (compute_module, bess_module, grid_module)
 ```
 
