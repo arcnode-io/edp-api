@@ -197,7 +197,7 @@ src/
 └── main.py
 
 device_templates/                    # bundled with image, loaded at startup
-├── leaf/                            # 13 leaf templates (gpu_node, bess_rack, switchgear, ...)
+├── leaf/                            # 12 leaf templates (gpu_node, bess_rack, switchgear, ...)
 └── module/                          # 3 module templates (compute_module, bess_module, grid_module)
 ```
 

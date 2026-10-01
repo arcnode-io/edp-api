@@ -371,8 +371,10 @@ def test_load_real_catalog_size() -> None:
     # Assert
     leaves = [t for t in catalog.values() if t.kind.value == "leaf"]
     modules = [t for t in catalog.values() if t.kind.value == "module"]
-    assert len(leaves) == 13
+    assert len(leaves) == 12
     assert len(modules) == 3
+    # DLR line rating is the utility/DERMS's equipment, not ours
+    assert "line_rating" not in catalog
 
 
 def test_load_real_catalog_includes_der_dispatch() -> None:

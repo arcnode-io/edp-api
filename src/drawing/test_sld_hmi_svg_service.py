@@ -130,24 +130,6 @@ def test_poi_meter_emits_poi_role_with_state_slots() -> None:
     assert 'data-region="state-token"' in svg
 
 
-def test_line_rating_emits_dlr_badge_role() -> None:
-    """line_rating devices carry data-role="dlr-badge" — HMI styles them as
-    compact mid-conductor badges (vs full device-node card). Per UTILITY-FEEDS.md §5.
-    """
-    dtm = make_dtm(
-        devices={"dlr_feed_1": make_device("dlr_feed_1", template="line_rating")},
-        templates={"line_rating": make_template("line_rating")},
-    )
-    svc = SldHmiSvgService()
-
-    svg = svc.generate(dtm).decode()
-
-    assert 'data-role="dlr-badge"' in svg
-    # Badge keeps the device-node id/tap-target contract so it can be tapped
-    # like any other device for detail navigation.
-    assert 'id="dlr_feed_1"' in svg
-
-
 def test_standard_device_has_no_special_role_attr() -> None:
     """Regression: bess_rack / inverter / etc. must NOT carry data-role —
     the attr is reserved for utility-side feeds with special visual treatment.
