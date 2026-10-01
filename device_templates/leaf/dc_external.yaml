@@ -91,6 +91,12 @@ measurements:
       address: 53249  # §4.2.2
       data_type: uint16
       word_order: high_low
+      value_map:
+        "0": AUTOMATIC_INTERNAL
+        "1": AUTOMATIC_EXTERNAL_ANALOG
+        "2": AUTOMATIC_EXTERNAL_BUS
+        "3": SLAVE_EXTERNAL_ANALOG
+        "4": SLAVE_EXTERNAL_BUS
 
   # §4.3.23 bitfield: b0-b3 AI1-AI4 error, b6 no sensor selected, b14 no EC
   # controller status word, b15 hardware fault.

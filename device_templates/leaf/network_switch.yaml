@@ -28,6 +28,14 @@ measurements:
     binding:
       protocol: snmp
       oid: 1.3.6.1.2.1.2.2.1.8.1  # IF-MIB ifOperStatus.<ifIndex>
+      value_map:
+        "1": UP
+        "2": DOWN
+        "3": TESTING
+        "4": UNKNOWN
+        "5": DORMANT
+        "6": NOT_PRESENT
+        "7": LOWER_LAYER_DOWN
 
   inlet_temp:
     unit: celsius

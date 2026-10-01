@@ -23,6 +23,7 @@ class ModbusBinding(BaseModel):
     offset: float = 0.0
     # SunSpec sunssf: value = raw * 10^(int16 at this register), read at runtime
     scale_factor_address: int | None = None
+    value_map: dict[str, str] | None = None  # enum: raw value (as string) → label
 
 
 class Dnp3Binding(BaseModel):
@@ -40,6 +41,7 @@ class Dnp3Binding(BaseModel):
     # variation when unset; outstation's configured variation governs response.
     variation: int | None = None
     scale: float = 1.0
+    value_map: dict[str, str] | None = None  # enum: raw value (as string) → label
 
 
 class SnmpBinding(BaseModel):
@@ -50,6 +52,7 @@ class SnmpBinding(BaseModel):
     protocol: Literal["snmp"]
     oid: str
     scale: float = 1.0
+    value_map: dict[str, str] | None = None  # enum: raw value (as string) → label
 
 
 class RedfishBinding(BaseModel):
@@ -61,8 +64,8 @@ class RedfishBinding(BaseModel):
     uri: str
     json_pointer: str | None = None
     scale: float = 1.0
-    # Text readings (e.g. Status/State) map to numbers; unmapped text is a read error
-    value_map: dict[str, float] | None = None
+    # enum: raw device text → label; an unmapped value is a read error
+    value_map: dict[str, str] | None = None
 
 
 class CanopenBinding(BaseModel):

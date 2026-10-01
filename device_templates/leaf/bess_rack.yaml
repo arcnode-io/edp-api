@@ -125,6 +125,12 @@ measurements:
       address: 40
       data_type: uint16
       word_order: high_low
+      value_map:
+        "0": STANDBY
+        "1": CHARGING
+        "2": DISCHARGING
+        "3": FAULT
+        "4": OFFLINE
 
 commands:
   set_active_power:

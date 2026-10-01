@@ -76,19 +76,19 @@ measurements:
       uri: /ThermalEquipment/CDUs/1/Pumps/1
       json_pointer: /Status/State
       value_map:
-        Enabled: 0
-        Disabled: 1
-        StandbyOffline: 2
-        StandbySpare: 3
-        InTest: 4
-        Starting: 5
-        Absent: 6
-        UnavailableOffline: 7
-        Deferring: 8
-        Quiesced: 9
-        Updating: 10
-        Qualified: 11
-        Degraded: 12
+        Enabled: ENABLED
+        Disabled: DISABLED
+        StandbyOffline: STANDBY_OFFLINE
+        StandbySpare: STANDBY_SPARE
+        InTest: IN_TEST
+        Starting: STARTING
+        Absent: ABSENT
+        UnavailableOffline: UNAVAILABLE_OFFLINE
+        Deferring: DEFERRING
+        Quiesced: QUIESCED
+        Updating: UPDATING
+        Qualified: QUALIFIED
+        Degraded: DEGRADED
 
 install_tasks:
   - name: mount_in_rack

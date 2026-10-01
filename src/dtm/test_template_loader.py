@@ -196,7 +196,7 @@ def test_load_real_catalog_gpu_node_reads_nvidia_hgx_per_gpu() -> None:
         throttle = redfish(f"gpu_{n}_throttle_reason")
         assert throttle.json_pointer == "/Oem/Nvidia/ThrottleReasons/0"
         assert throttle.value_map is not None
-        assert throttle.value_map["SWPowerCap"] == 1
+        assert throttle.value_map["SWPowerCap"] == "SW_POWER_CAP"
         assert gpu[f"gpu_{n}_throttle_reason"].values is not None
     total = gpu["gpu_power_watts"].binding
     assert isinstance(total, SyntheticBinding)
@@ -226,7 +226,7 @@ def test_load_real_catalog_cdu_reads_dmtf_cooling_unit() -> None:
     state = cdu["pump_state"].binding
     assert isinstance(state, RedfishBinding) and state.value_map is not None
     assert len(state.value_map) == 13  # every DMTF Resource.State value
-    assert state.value_map["Enabled"] == 0
+    assert state.value_map["Enabled"] == "ENABLED"
 
 
 def test_load_real_catalog_operating_envelope_is_published_by_der_control_api() -> None:
@@ -241,6 +241,27 @@ def test_load_real_catalog_operating_envelope_is_published_by_der_control_api() 
         assert m.binding is None
         assert m.publisher is not None and m.publisher.value == "der_control_api"
     assert envelope.install_tasks == []
+
+
+def test_every_polled_enum_maps_raw_values_to_its_labels() -> None:
+    # Arrange — the gateway publishes value_map[raw]; JSON Schema enum = `values`
+    repo_root = Path(__file__).resolve().parents[2]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    polled_enums = [
+        (t.template, name, m)
+        for t in catalog.values()
+        for name, m in t.measurements.items()
+        if m.type == "enum"
+        and m.binding is not None
+        and not isinstance(m.binding, SyntheticBinding)
+    ]
+    # Act / Assert
+    assert polled_enums
+    for template, name, m in polled_enums:
+        value_map = getattr(m.binding, "value_map", None)
+        assert value_map, f"{template}.{name} has no value_map"
+        assert m.values is not None
+        assert set(value_map.values()) == set(m.values.values()), f"{template}.{name}"
 
 
 def test_load_real_catalog_dc_external_matches_guentner_gmm_spec() -> None:
