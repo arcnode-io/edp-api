@@ -204,6 +204,31 @@ def test_load_real_catalog_gpu_node_reads_nvidia_hgx_per_gpu() -> None:
     assert total.inputs is not None and len(total.inputs) == 8
 
 
+def test_load_real_catalog_cdu_reads_dmtf_cooling_unit() -> None:
+    # Arrange — DMTF CoolingUnit / CoolantConnector / Pump; MCDU-10 lists Redfish
+    repo_root = Path(__file__).resolve().parents[2]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    cdu = catalog["cdu"].measurements
+    connector = "/ThermalEquipment/CDUs/1/SecondaryCoolantConnectors/1"
+    pump = "/ThermalEquipment/CDUs/1/Pumps/1"
+
+    def redfish(name: str) -> tuple[str, str | None]:
+        binding = cdu[name].binding
+        assert isinstance(binding, RedfishBinding)
+        return (binding.uri, binding.json_pointer)
+
+    # Act / Assert
+    assert redfish("supply_temp") == (connector, "/SupplyTemperatureCelsius/Reading")
+    assert redfish("return_temp") == (connector, "/ReturnTemperatureCelsius/Reading")
+    assert redfish("pump_flow_rate") == (connector, "/FlowLitersPerMinute/Reading")
+    assert redfish("pump_speed") == (pump, "/PumpSpeedPercent/Reading")
+    assert redfish("pump_state") == (pump, "/Status/State")
+    state = cdu["pump_state"].binding
+    assert isinstance(state, RedfishBinding) and state.value_map is not None
+    assert len(state.value_map) == 13  # every DMTF Resource.State value
+    assert state.value_map["Enabled"] == 0
+
+
 def test_load_real_catalog_dc_external_matches_guentner_gmm_spec() -> None:
     # Arrange — Güntner "Modbus GMM" interface spec V3.0
     repo_root = Path(__file__).resolve().parents[2]

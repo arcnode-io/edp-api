@@ -5,8 +5,12 @@ vendor: Motivair (a Schneider Electric company)
 model: MCDU-10 (19" model)
 description: Motivair MCDU-10 210kW rack-mount liquid-to-liquid CDU with Redfish supervisory control
 
+# DMTF Redfish CoolingUnit (/ThermalEquipment/CDUs), CoolantConnector and Pump
+# schemas; the MCDU-10 datasheet lists Redfish. UNVERIFIED: CDU, connector and
+# pump ids ("1") are the usual defaults — Motivair's Redfish guide isn't public.
+# Secondary loop = the rack (DLC) side.
+
 measurements:
-  # resource_maps: thermal → /Chassis/CDU/Thermal
   supply_temp:
     unit: celsius
     type: float
@@ -14,8 +18,8 @@ measurements:
     display_name_default: "Coolant Supply Temperature"
     binding:
       protocol: redfish
-      uri: /Chassis/CDU/Thermal
-      json_pointer: /Temperatures/0/ReadingCelsius
+      uri: /ThermalEquipment/CDUs/1/SecondaryCoolantConnectors/1
+      json_pointer: /SupplyTemperatureCelsius/Reading
 
   return_temp:
     unit: celsius
@@ -24,10 +28,9 @@ measurements:
     display_name_default: "Coolant Return Temperature"
     binding:
       protocol: redfish
-      uri: /Chassis/CDU/Thermal
-      json_pointer: /Temperatures/1/ReadingCelsius
+      uri: /ThermalEquipment/CDUs/1/SecondaryCoolantConnectors/1
+      json_pointer: /ReturnTemperatureCelsius/Reading
 
-  # resource_maps: pumps → /Chassis/CDU/Pumps
   pump_flow_rate:
     unit: liters_per_minute
     type: float
@@ -35,8 +38,8 @@ measurements:
     display_name_default: "Pump Flow Rate"
     binding:
       protocol: redfish
-      uri: /Chassis/CDU/Pumps
-      json_pointer: /Members/0/FlowLitersPerMinute
+      uri: /ThermalEquipment/CDUs/1/SecondaryCoolantConnectors/1
+      json_pointer: /FlowLitersPerMinute/Reading
 
   pump_speed:
     unit: percent
@@ -45,22 +48,47 @@ measurements:
     display_name_default: "Pump Speed"
     binding:
       protocol: redfish
-      uri: /Chassis/CDU/Pumps
-      json_pointer: /Members/0/SpeedPercent
+      uri: /ThermalEquipment/CDUs/1/Pumps/1
+      json_pointer: /PumpSpeedPercent/Reading
 
+  # Values are DMTF Resource.State, verbatim.
   pump_state:
     unit: none
     type: enum
     poll_rate_hz: 0.5
     display_name_default: "Pump State"
     values:
-      0: STOPPED
-      1: RUNNING
-      2: FAULT
+      0: ENABLED
+      1: DISABLED
+      2: STANDBY_OFFLINE
+      3: STANDBY_SPARE
+      4: IN_TEST
+      5: STARTING
+      6: ABSENT
+      7: UNAVAILABLE_OFFLINE
+      8: DEFERRING
+      9: QUIESCED
+      10: UPDATING
+      11: QUALIFIED
+      12: DEGRADED
     binding:
       protocol: redfish
-      uri: /Chassis/CDU/Pumps
-      json_pointer: /Members/0/Status/State
+      uri: /ThermalEquipment/CDUs/1/Pumps/1
+      json_pointer: /Status/State
+      value_map:
+        Enabled: 0
+        Disabled: 1
+        StandbyOffline: 2
+        StandbySpare: 3
+        InTest: 4
+        Starting: 5
+        Absent: 6
+        UnavailableOffline: 7
+        Deferring: 8
+        Quiesced: 9
+        Updating: 10
+        Qualified: 11
+        Degraded: 12
 
 install_tasks:
   - name: mount_in_rack
