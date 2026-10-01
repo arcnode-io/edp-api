@@ -3,19 +3,40 @@ kind: leaf
 equipment_id: CMP-SWITCH-001
 vendor: NVIDIA (Mellanox)
 model: Spectrum-X SN5600
-description: NVIDIA Spectrum-X SN5600 64-port 800GbE ToR switch with Redfish telemetry
+description: NVIDIA Spectrum-X SN5600 64-port 800GbE ToR switch via SNMP (Cumulus Linux)
+
+# The SN5600 runs Cumulus Linux 5.9+, which supports IF-MIB and
+# ENTITY-SENSOR-MIB (NVIDIA "Supported MIBs"); no Redfish is documented.
+# UNVERIFIED: the ifIndex of the uplink and the entPhysicalIndex of each
+# sensor are device-specific; the indices below are defaults to confirm on a
+# real switch. Temperatures assume entPhySensorPrecision 0 (whole °C).
 
 measurements:
-  # resource_maps: thermal → /Chassis/SW1/Thermal
+  port_link_status:
+    unit: none
+    type: enum
+    poll_rate_hz: 0.5
+    display_name_default: "Uplink Port Status"
+    values:
+      1: UP
+      2: DOWN
+      3: TESTING
+      4: UNKNOWN
+      5: DORMANT
+      6: NOT_PRESENT
+      7: LOWER_LAYER_DOWN
+    binding:
+      protocol: snmp
+      oid: 1.3.6.1.2.1.2.2.1.8.1  # IF-MIB ifOperStatus.<ifIndex>
+
   inlet_temp:
     unit: celsius
     type: float
     poll_rate_hz: 0.5
     display_name_default: "Inlet Temperature"
     binding:
-      protocol: redfish
-      uri: /Chassis/SW1/Thermal
-      json_pointer: /Temperatures/0/ReadingCelsius
+      protocol: snmp
+      oid: 1.3.6.1.2.1.99.1.1.1.4.1  # ENTITY-SENSOR-MIB entPhySensorValue.<index>
 
   asic_temp:
     unit: celsius
@@ -23,44 +44,8 @@ measurements:
     poll_rate_hz: 0.5
     display_name_default: "ASIC Temperature"
     binding:
-      protocol: redfish
-      uri: /Chassis/SW1/Thermal
-      json_pointer: /Temperatures/1/ReadingCelsius
-
-  fan_speed:
-    unit: percent
-    type: float
-    poll_rate_hz: 0.5
-    display_name_default: "Fan Speed"
-    binding:
-      protocol: redfish
-      uri: /Chassis/SW1/Thermal
-      json_pointer: /Fans/0/Reading
-
-  # resource_maps: ports → /Fabric/SW1/Ports
-  active_port_count:
-    unit: none
-    type: float
-    poll_rate_hz: 0.1
-    display_name_default: "Active Port Count"
-    binding:
-      protocol: redfish
-      uri: /Fabric/SW1/Ports
-      json_pointer: /Members@odata.count
-
-  port_link_status:
-    unit: none
-    type: enum
-    poll_rate_hz: 0.5
-    display_name_default: "Uplink Port Status"
-    values:
-      0: DOWN
-      1: UP
-      2: TESTING
-    binding:
-      protocol: redfish
-      uri: /Fabric/SW1/Ports
-      json_pointer: /Members/0/LinkStatus
+      protocol: snmp
+      oid: 1.3.6.1.2.1.99.1.1.1.4.2  # entPhySensorValue.<index>
 
 install_tasks:
   - name: rack_install
@@ -72,7 +57,7 @@ install_tasks:
     est_minutes: 30
     crew_role: it
     cx_level: L2
-  - name: redfish_commission
+  - name: snmp_commission
     depends_on: [uplink_terminate]
     est_minutes: 15
     crew_role: it

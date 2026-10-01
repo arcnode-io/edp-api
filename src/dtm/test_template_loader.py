@@ -139,6 +139,33 @@ def test_load_real_catalog_pdu_matches_sentry4_mib() -> None:
     }
 
 
+def test_load_real_catalog_network_switch_reads_standard_mibs() -> None:
+    # Arrange — SN5600 runs Cumulus Linux: IF-MIB + ENTITY-SENSOR-MIB, no Redfish
+    repo_root = Path(__file__).resolve().parents[2]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    switch = catalog["network_switch"].measurements
+    # Act / Assert
+    for binding in (m.binding for m in switch.values()):
+        assert isinstance(binding, SnmpBinding)
+    port = switch["port_link_status"]
+    assert isinstance(port.binding, SnmpBinding)
+    assert port.binding.oid.startswith("1.3.6.1.2.1.2.2.1.8.")  # ifOperStatus
+    assert port.values == {
+        1: "UP",
+        2: "DOWN",
+        3: "TESTING",
+        4: "UNKNOWN",
+        5: "DORMANT",
+        6: "NOT_PRESENT",
+        7: "LOWER_LAYER_DOWN",
+    }
+    for temp in ("inlet_temp", "asic_temp"):
+        binding = switch[temp].binding
+        assert isinstance(binding, SnmpBinding)
+        assert binding.oid.startswith("1.3.6.1.2.1.99.1.1.1.4.")  # entPhySensorValue
+    assert set(switch) == {"port_link_status", "inlet_temp", "asic_temp"}
+
+
 def test_load_real_catalog_dc_external_matches_guentner_gmm_spec() -> None:
     # Arrange — Güntner "Modbus GMM" interface spec V3.0
     repo_root = Path(__file__).resolve().parents[2]
