@@ -61,6 +61,8 @@ class RedfishBinding(BaseModel):
     uri: str
     json_pointer: str | None = None
     scale: float = 1.0
+    # Text readings (e.g. Status/State) map to numbers; unmapped text is a read error
+    value_map: dict[str, float] | None = None
 
 
 class CanopenBinding(BaseModel):

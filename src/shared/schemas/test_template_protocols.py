@@ -109,6 +109,19 @@ def test_binding_redfish_scale() -> None:
     assert RedfishBinding(protocol="redfish", uri="/Chassis/1").scale == 1.0
 
 
+def test_binding_redfish_value_map() -> None:
+    # Arrange / Act — Redfish reports text (e.g. Status/State); map to enum keys
+    b = RedfishBinding(
+        protocol="redfish",
+        uri="/ThermalEquipment/CDUs/1/Pumps/1",
+        json_pointer="/Status/State",
+        value_map={"Enabled": 1, "Disabled": 0},
+    )
+    # Assert
+    assert b.value_map == {"Enabled": 1, "Disabled": 0}
+    assert RedfishBinding(protocol="redfish", uri="/Chassis/1").value_map is None
+
+
 def test_binding_snmp_scale() -> None:
     # Arrange / Act — Sentry4 st4LineCurrent reports hundredth amps
     b = SnmpBinding(protocol="snmp", oid="1.3.6.1.4.1.1718.4.1.4.3.1.3", scale=0.01)
