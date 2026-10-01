@@ -229,6 +229,20 @@ def test_load_real_catalog_cdu_reads_dmtf_cooling_unit() -> None:
     assert state.value_map["Enabled"] == 0
 
 
+def test_load_real_catalog_operating_envelope_is_published_by_der_control_api() -> None:
+    # Arrange — the DOE arrives as an IEEE 2030.5 DERControl to ems-der-control-api,
+    # which publishes it (DispatchPublisher); the DNP3 RTU is mock DERMS, not ours.
+    repo_root = Path(__file__).resolve().parents[2]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    envelope = catalog["operating_envelope"]
+    # Act / Assert
+    for name in ("import_limit", "export_limit", "status"):
+        m = envelope.measurements[name]
+        assert m.binding is None
+        assert m.publisher is not None and m.publisher.value == "der_control_api"
+    assert envelope.install_tasks == []
+
+
 def test_load_real_catalog_dc_external_matches_guentner_gmm_spec() -> None:
     # Arrange — Güntner "Modbus GMM" interface spec V3.0
     repo_root = Path(__file__).resolve().parents[2]

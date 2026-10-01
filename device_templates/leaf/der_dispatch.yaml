@@ -5,8 +5,8 @@ vendor: ARCNODE
 model: DER Dispatch Intake (IEEE 2030.5 DERControl)
 description: >
   Utility/aggregator DER dispatch per IEEE 2030.5 DERControlBase, received over HTTPS by
-  ems-der-control-api and republished to MQTT. Singleton per site. IP-native twin of
-  operating_envelope (which carries the DNP3/DOE path). Runtime-onboarded via device-api
+  ems-der-control-api and republished to MQTT. Singleton per site. Sibling of
+  operating_envelope (the utility's limits, same intake). Runtime-onboarded via device-api
   POST /topology — not DTM-emitted.
 
 # Reason: target_active_power bounds sized for datacenter-scale POI (1-10 MW).
