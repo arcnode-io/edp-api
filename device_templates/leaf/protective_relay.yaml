@@ -73,6 +73,26 @@ measurements:
       point_type: analog_input
       scale: 1000.0
 
+  breaker_closed:
+    unit: none
+    type: bool
+    poll_rate_hz: 1
+    display_name_default: "Breaker Closed"
+    binding:
+      protocol: dnp3_tcp
+      point_index: 0  # 52A, breaker auxiliary contact
+      point_type: binary_input
+
+  # NEMA MG-1 voltage unbalance: max phase deviation from average / average.
+  # Not expressible via the synthetic primitives; local_process computes it
+  # from phase_voltage_a/b/c.
+  voltage_unbalance_pct:
+    unit: percent
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Voltage Unbalance"
+    publisher: local_process
+
   trip_status:
     unit: none
     type: bool

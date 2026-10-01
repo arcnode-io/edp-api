@@ -417,15 +417,20 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
     assert reject.fanout is not None and reject.fanout.value == "der_control_api"
 
 
-def test_load_real_catalog_includes_switchgear_voltage_unbalance() -> None:
-    """Grid HMI screen — local_process-computed, no direct binding (needs all 3 phases)."""
+def test_load_real_catalog_switchgear_is_passive_relay_carries_its_readings() -> None:
+    """SafeGear has no comms; the SEL relay in it reports breaker and bus values."""
     # Arrange
     repo_root = Path(__file__).resolve().parents[2]
-    loader = TemplateLoader(root=repo_root / "device_templates")
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
     # Act
-    catalog = loader.load_catalog()
+    switchgear = catalog["switchgear"]
+    relay = catalog["protective_relay"].measurements
     # Assert
-    unbalance = catalog["switchgear"].measurements["voltage_unbalance_pct"]
+    assert switchgear.measurements == {} and switchgear.commands == {}
+    breaker = relay["breaker_closed"].binding
+    assert isinstance(breaker, Dnp3Binding)
+    assert (breaker.point_type, breaker.point_index) == ("binary_input", 0)  # 52A
+    unbalance = relay["voltage_unbalance_pct"]
     assert (
         unbalance.publisher is not None and unbalance.publisher.value == "local_process"
     )

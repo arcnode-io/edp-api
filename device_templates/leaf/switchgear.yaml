@@ -5,111 +5,9 @@ vendor: ABB
 model: SafeGear 15kV / 1200A / 50kA (single section, indoor)
 description: ABB SafeGear 15kV arc-resistant metal-clad MV switchgear with integrated protective relay
 
-measurements:
-  breaker_state:
-    unit: none
-    type: enum
-    poll_rate_hz: 1
-    display_name_default: "Breaker State"
-    values:
-      0: OPEN
-      1: CLOSED
-      2: TRIPPED
-      3: UNKNOWN
-    binding:
-      protocol: modbus_tcp
-      function_code: 3
-      address: 0
-      data_type: uint16
-      word_order: high_low
-
-  bus_voltage_a:
-    unit: volts
-    type: float
-    poll_rate_hz: 1
-    display_name_default: "Bus Voltage Phase A"
-    binding:
-      protocol: modbus_tcp
-      function_code: 4
-      address: 100
-      data_type: int16
-      word_order: high_low
-      scale: 0.1
-
-  bus_voltage_b:
-    unit: volts
-    type: float
-    poll_rate_hz: 1
-    display_name_default: "Bus Voltage Phase B"
-    binding:
-      protocol: modbus_tcp
-      function_code: 4
-      address: 101
-      data_type: int16
-      word_order: high_low
-      scale: 0.1
-
-  bus_voltage_c:
-    unit: volts
-    type: float
-    poll_rate_hz: 1
-    display_name_default: "Bus Voltage Phase C"
-    binding:
-      protocol: modbus_tcp
-      function_code: 4
-      address: 102
-      data_type: int16
-      word_order: high_low
-      scale: 0.1
-
-  bus_current_a:
-    unit: amps
-    type: float
-    poll_rate_hz: 1
-    display_name_default: "Bus Current Phase A"
-    binding:
-      protocol: modbus_tcp
-      function_code: 4
-      address: 110
-      data_type: int16
-      word_order: high_low
-      scale: 0.1
-
-  bus_current_b:
-    unit: amps
-    type: float
-    poll_rate_hz: 1
-    display_name_default: "Bus Current Phase B"
-    binding:
-      protocol: modbus_tcp
-      function_code: 4
-      address: 111
-      data_type: int16
-      word_order: high_low
-      scale: 0.1
-
-  bus_current_c:
-    unit: amps
-    type: float
-    poll_rate_hz: 1
-    display_name_default: "Bus Current Phase C"
-    binding:
-      protocol: modbus_tcp
-      function_code: 4
-      address: 112
-      data_type: int16
-      word_order: high_low
-      scale: 0.1
-
-  # NEMA MG-1 voltage unbalance: max phase deviation from average / average.
-  # Not expressible via the synthetic subtract/sum/mean/max/min primitives —
-  # local_process computes it from this device's own bus_voltage_a/b/c.
-  voltage_unbalance_pct:
-    unit: percent
-    type: float
-    poll_rate_hz: 1
-    display_name_default: "Voltage Unbalance"
-    publisher: local_process
+# Passive: drawn on the SLD, never polled. SafeGear has no comms of its own;
+# the SEL relay in it reports breaker position and bus values
+# (see protective_relay).
 
 install_tasks:
   - name: set_and_anchor
@@ -121,8 +19,3 @@ install_tasks:
     est_minutes: 180
     crew_role: electrician
     cx_level: L2
-  - name: modbus_commission
-    depends_on: [terminate_incoming_feeder]
-    est_minutes: 30
-    crew_role: it
-    cx_level: L3
