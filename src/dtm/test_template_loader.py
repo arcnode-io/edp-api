@@ -70,16 +70,15 @@ def test_load_catalog_raises_on_invalid_yaml(tmp_path: Path) -> None:
 
 
 def test_load_catalog_raises_on_validation_failure(tmp_path: Path) -> None:
-    # Arrange — leaf with no measurements/commands
+    # Arrange — leaf missing its required vendor
     (tmp_path / "leaf").mkdir()
     (tmp_path / "module").mkdir()
     (tmp_path / "leaf" / "bad.yaml").write_text("""
-template: empty
+template: no_vendor
 kind: leaf
 equipment_id: GRD-MTR-001
-vendor: Test
 model: T-1
-description: empty
+description: missing vendor
 """.lstrip())
     loader = TemplateLoader(root=tmp_path)
     # Act / Assert

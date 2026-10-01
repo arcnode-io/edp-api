@@ -190,8 +190,12 @@ class DeviceTemplate(BaseModel):
 
     @model_validator(mode="after")
     def must_have_channels(self) -> "DeviceTemplate":
-        """Every template must declare at least one of measurements/commands."""
-        if not self.measurements and not self.commands:
+        """Modules must declare channels; a leaf with none is passive (drawn, not polled)."""
+        if (
+            self.kind == TemplateKind.MODULE
+            and not self.measurements
+            and not self.commands
+        ):
             raise ValueError(
                 f"template {self.template!r} must declare at least one of "
                 "measurements: or commands:"

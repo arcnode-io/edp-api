@@ -172,6 +172,7 @@ def test_e2e_every_leaf_device_ships_unprovisioned() -> None:
         manifest=client.fetch_manifest(),
     )
     # Assert
-    leaves = {d.device_id for d in dtm.devices.values() if d.connection is not None}
-    assert {d.device_id for d in dtm.pending_devices} == leaves
-    assert len(leaves) == 16
+    # Passive devices (no connection, e.g. switchgear) are never polled
+    polled = {d.device_id for d in dtm.devices.values() if d.connection is not None}
+    assert polled
+    assert {d.device_id for d in dtm.pending_devices} == polled

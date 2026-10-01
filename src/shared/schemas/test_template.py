@@ -165,16 +165,29 @@ def test_device_template_module_rejects_equipment_id() -> None:
 # --- Must-have-channels validator ---
 
 
-def test_device_template_must_declare_measurements_or_commands() -> None:
+def test_module_template_must_declare_measurements_or_commands() -> None:
     with pytest.raises(ValidationError, match="must declare at least one"):
         DeviceTemplate(
-            template="empty",
-            kind=TemplateKind.LEAF,
-            equipment_id="GRD-MTR-001",
-            vendor="Acme",
-            model="X1",
+            template="empty_module",
+            kind=TemplateKind.MODULE,
             description="test",
+            contains=[ContainsEntry(template="poi_meter", qty=1)],
         )
+
+
+def test_leaf_template_without_channels_is_passive() -> None:
+    # Arrange / Act — e.g. switchgear: drawn on the SLD, never polled
+    t = DeviceTemplate(
+        template="switchgear",
+        kind=TemplateKind.LEAF,
+        equipment_id="GRD-SWG-001",
+        vendor="ABB",
+        model="SafeGear",
+        description="test",
+    )
+    # Assert
+    assert t.measurements == {}
+    assert t.commands == {}
 
 
 # --- Leaf vendor/model required; module vendor/model forbidden ---

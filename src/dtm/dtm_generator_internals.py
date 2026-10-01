@@ -64,14 +64,15 @@ def emit_container(
 
     for spec in topology.devices:
         slug = assign_slug(spec.template, slug_counter)
+        conn = spec.connection
         devices[slug] = Device(
             device_id=slug,
             template=spec.template,
             parent=module_slug,
-            connection=Connection(
-                host=spec.connection.host,
-                port=spec.connection.port,
-                unit_id=spec.connection.unit_id,
+            connection=(
+                Connection(host=conn.host, port=conn.port, unit_id=conn.unit_id)
+                if conn is not None
+                else None
             ),
         )
         by_template.setdefault(spec.template, []).append(slug)

@@ -29,7 +29,7 @@ class TopologyDeviceSpec(BaseModel):
 
     template: str  # references a slug in edp-api/device_templates/
     description: str
-    connection: TopologyConnectionSpec
+    connection: TopologyConnectionSpec | None = None  # None = passive, never polled
 
 
 class TopologyBusMemberSpec(BaseModel):

@@ -23,7 +23,15 @@ def test_topology_device_spec_minimal() -> None:
     )
     # Assert
     assert spec.template == "poi_meter"
+    assert spec.connection is not None
     assert spec.connection.host == "mock-modbus-server"
+
+
+def test_topology_device_spec_passive_has_no_connection() -> None:
+    # Arrange / Act — passive equipment (e.g. switchgear) is drawn, not polled
+    spec = TopologyDeviceSpec(template="switchgear", description="SafeGear")
+    # Assert
+    assert spec.connection is None
 
 
 def test_topology_connection_accepts_sentinel_port() -> None:
