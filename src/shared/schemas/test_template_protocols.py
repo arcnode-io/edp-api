@@ -276,6 +276,20 @@ def test_synthetic_binding_happy_path() -> None:
     assert len(b.inputs) == 2
 
 
+def test_synthetic_binding_unbalance_over_three_phases() -> None:
+    # Arrange
+    phase_topics: list[str] = [
+        f"sites/{{site_id}}/devices/{{device_id}}/measurements/phase_voltage_{p}/volts"
+        for p in "abc"
+    ]
+    # Act
+    b = SyntheticBinding(
+        protocol="synthetic", operation="unbalance", inputs=phase_topics
+    )
+    # Assert
+    assert (b.operation, b.inputs) == ("unbalance", phase_topics)
+
+
 def test_synthetic_binding_source_measurement_mode() -> None:
     # Arrange / Act — projects one measurement across the device's children
     b = SyntheticBinding(

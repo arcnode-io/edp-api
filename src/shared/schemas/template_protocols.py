@@ -100,13 +100,16 @@ class SyntheticBinding(BaseModel):
     on each child) is only meaningful across children, so it requires
     `source_measurement` mode. `subtract` is only ever between two fixed
     topics (e.g. envelope import limit minus POI power), so it requires `inputs`
-    mode. `sum`/`mean`/`max`/`min` work in either mode.
+    mode. `sum`/`mean`/`max`/`min` work in either mode. `unbalance` is
+    100 * max|x - mean| / mean (NEMA MG-1 style, e.g. three phase voltages).
     """
 
     model_config = ConfigDict(extra="forbid")
 
     protocol: Literal["synthetic"]
-    operation: Literal["subtract", "sum", "mean", "max", "min", "weighted_mean"]
+    operation: Literal[
+        "subtract", "sum", "mean", "max", "min", "weighted_mean", "unbalance"
+    ]
     inputs: list[str] | None = None
     source_measurement: str | None = None
 
