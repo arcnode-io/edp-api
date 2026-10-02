@@ -62,6 +62,9 @@ commands:
     binding:
       protocol: power_cap
       child_template: gpu_node
+      ramp_rate_per_sec: 0.10
+      hysteresis_margin: 0.05
+      hysteresis_dwell_secs: 30.0
       child_commands:
         - set_gpu_1_power_limit
         - set_gpu_2_power_limit

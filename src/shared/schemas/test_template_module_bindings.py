@@ -23,7 +23,13 @@ def test_power_cap_names_the_child_template_and_its_cap_commands() -> None:
     commands = [f"set_gpu_{n}_power_limit" for n in range(1, 9)]
     # Act
     b = PowerCapBinding(
-        protocol="power_cap", child_template="gpu_node", child_commands=commands
+        protocol="power_cap",
+        child_template="gpu_node",
+        child_commands=commands,
+        ramp_rate_per_sec=0.10,
+        hysteresis_margin=0.05,
+        hysteresis_dwell_secs=30.0,
     )
     # Assert
     assert (b.child_template, b.child_commands) == ("gpu_node", commands)
+    assert b.hysteresis_dwell_secs == 30.0

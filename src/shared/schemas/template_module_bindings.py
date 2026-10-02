@@ -110,6 +110,10 @@ class PowerCapBinding(BaseModel):
     Every child of `child_template` gets each of `child_commands` set to
     pct/100 of that command's target-measurement bounds.max (clamped to
     bounds.min). Resolved into per-child entries by ems-device-api.
+
+    The control-law tunables are required, unlike distribute's: whether the
+    gateway sheds on its own is sizing_params.compute_shed_enabled, so a site
+    that turns it on must never find them missing.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -117,3 +121,6 @@ class PowerCapBinding(BaseModel):
     protocol: Literal["power_cap"]
     child_template: str
     child_commands: list[str]
+    ramp_rate_per_sec: float
+    hysteresis_margin: float
+    hysteresis_dwell_secs: float
