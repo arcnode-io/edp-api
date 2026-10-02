@@ -83,15 +83,20 @@ measurements:
       point_index: 0  # 52A, breaker auxiliary contact
       point_type: binary_input
 
-  # NEMA MG-1 style: 100 × max |V − avg| / avg over phase_voltage_a/b/c
-  # (phase-to-neutral; the relay's DNP map has no line-to-line or V1).
-  # Not expressible via the synthetic primitives, so local_process computes it.
+  # Phase-to-neutral inputs: the relay's DNP map has no line-to-line or V1.
   voltage_unbalance_pct:
     unit: percent
     type: float
     poll_rate_hz: 1
     display_name_default: "Voltage Unbalance"
-    publisher: local_process
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      operation: unbalance
+      inputs:
+        - sites/{site_id}/devices/{device_id}/measurements/phase_voltage_a/volts
+        - sites/{site_id}/devices/{device_id}/measurements/phase_voltage_b/volts
+        - sites/{site_id}/devices/{device_id}/measurements/phase_voltage_c/volts
 
   trip_status:
     unit: none

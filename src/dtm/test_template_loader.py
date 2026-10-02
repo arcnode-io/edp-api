@@ -467,11 +467,13 @@ def test_load_real_catalog_switchgear_is_passive_relay_carries_its_readings() ->
     breaker = relay["breaker_closed"].binding
     assert isinstance(breaker, Dnp3Binding)
     assert (breaker.point_type, breaker.point_index) == ("binary_input", 0)  # 52A
-    unbalance = relay["voltage_unbalance_pct"]
-    assert (
-        unbalance.publisher is not None and unbalance.publisher.value == "local_process"
-    )
-    assert unbalance.binding is None
+    unbalance = relay["voltage_unbalance_pct"].binding
+    assert isinstance(unbalance, SyntheticBinding)
+    assert unbalance.operation == "unbalance"
+    assert unbalance.inputs == [
+        f"sites/{{site_id}}/devices/{{device_id}}/measurements/phase_voltage_{p}/volts"
+        for p in "abc"
+    ]
 
 
 def test_load_real_catalog_protective_relay_matches_sel_351_dnp_profile() -> None:
