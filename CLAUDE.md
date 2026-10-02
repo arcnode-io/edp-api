@@ -339,7 +339,7 @@ Trust EquipmentSpec by contract. Sizing coherence is upstream.
 | 🏭 ics-engineer | ems-industrial-gateway, ems-industrial-fixtures |
 | 🤖 ai-engineer | ems-analyst-agent, ems-analyst-mcp, ems-analyst-server |
 | 📊 ml-engineer | ems-analyst-model |
-| 🛰️ embedded-engineer | dlr-rtu-firmware, dlr-tap-regulator-sim |
+| 🛰️ embedded-engineer | dlr-rtu-firmware, dlr-line-loading-sim |
 | 📟 electronics-engineer | dlr-rtu-pcb |
 | 🧔 devops-engineer | ~/engineering-with-ai/tooling-playbooks |
 
