@@ -177,4 +177,5 @@ def sizing(resolution: ModuleResolution) -> SizingParams:
         T_coolant_setpoint_C=_T_COOLANT_SETPOINT_C,
         ride_through_hours=resolution.ride_through_hours,
         bess_reserve_floor_mwh=e_reserve,
+        compute_shed_enabled=resolution.compute_shed_enabled,
     )

@@ -37,3 +37,4 @@ class ModuleResolution(BaseModel):
 
     onsite_generation: OnsiteGeneration
     ride_through_hours: float
+    compute_shed_enabled: bool

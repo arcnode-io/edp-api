@@ -134,6 +134,7 @@ def _resolution(
         climate_zone=ClimateZone.TEMPERATE,
         onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
         ride_through_hours=ride_through_hours,
+        compute_shed_enabled=False,
     )
 
 

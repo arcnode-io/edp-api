@@ -64,7 +64,7 @@ measurements:
     { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 1 Power",
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_1/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
   gpu_1_power_limit:
-    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 1 Power Limit",
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 1 Power Limit", bounds: { min: 200, max: 1000, nominal: 1000 },
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_1/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
   gpu_1_clock:
     { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 1 Clock",
@@ -78,7 +78,7 @@ measurements:
     { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 2 Power",
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_2/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
   gpu_2_power_limit:
-    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 2 Power Limit",
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 2 Power Limit", bounds: { min: 200, max: 1000, nominal: 1000 },
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_2/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
   gpu_2_clock:
     { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 2 Clock",
@@ -92,7 +92,7 @@ measurements:
     { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 3 Power",
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_3/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
   gpu_3_power_limit:
-    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 3 Power Limit",
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 3 Power Limit", bounds: { min: 200, max: 1000, nominal: 1000 },
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_3/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
   gpu_3_clock:
     { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 3 Clock",
@@ -106,7 +106,7 @@ measurements:
     { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 4 Power",
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_4/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
   gpu_4_power_limit:
-    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 4 Power Limit",
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 4 Power Limit", bounds: { min: 200, max: 1000, nominal: 1000 },
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_4/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
   gpu_4_clock:
     { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 4 Clock",
@@ -120,7 +120,7 @@ measurements:
     { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 5 Power",
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_5/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
   gpu_5_power_limit:
-    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 5 Power Limit",
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 5 Power Limit", bounds: { min: 200, max: 1000, nominal: 1000 },
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_5/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
   gpu_5_clock:
     { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 5 Clock",
@@ -134,7 +134,7 @@ measurements:
     { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 6 Power",
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_6/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
   gpu_6_power_limit:
-    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 6 Power Limit",
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 6 Power Limit", bounds: { min: 200, max: 1000, nominal: 1000 },
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_6/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
   gpu_6_clock:
     { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 6 Clock",
@@ -148,7 +148,7 @@ measurements:
     { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 7 Power",
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_7/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
   gpu_7_power_limit:
-    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 7 Power Limit",
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 7 Power Limit", bounds: { min: 200, max: 1000, nominal: 1000 },
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_7/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
   gpu_7_clock:
     { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 7 Clock",
@@ -162,7 +162,7 @@ measurements:
     { unit: watts, type: float, poll_rate_hz: 1, display_name_default: "GPU 8 Power",
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_8/EnvironmentMetrics, json_pointer: /PowerWatts/Reading } }
   gpu_8_power_limit:
-    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 8 Power Limit",
+    { unit: watts, type: float, poll_rate_hz: 0.1, display_name_default: "GPU 8 Power Limit", bounds: { min: 200, max: 1000, nominal: 1000 },
       binding: { protocol: redfish, uri: /Systems/HGX_Baseboard_0/Processors/GPU_SXM_8/EnvironmentMetrics, json_pointer: /PowerLimitWatts/SetPoint } }
   gpu_8_clock:
     { unit: hertz, type: float, poll_rate_hz: 1, display_name_default: "GPU 8 Clock",

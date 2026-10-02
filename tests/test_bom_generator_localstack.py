@@ -257,6 +257,7 @@ def test_dtm_generator_against_localstack(
         climate_zone=ClimateZone.TEMPERATE,
         onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
         ride_through_hours=0.0,
+        compute_shed_enabled=False,
     )
 
     # act

@@ -28,7 +28,13 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Module Total Power"
-    publisher: local_process
+    publisher: gateway
+    # PDUs feed every load in the container, so their input is the module total.
+    binding:
+      protocol: synthetic
+      operation: sum
+      source_measurement: input_power
+      child_template: pdu
 
   total_thermal_load:
     unit: watts
@@ -43,6 +49,28 @@ measurements:
     poll_rate_hz: 0.1
     display_name_default: "Power Usage Effectiveness"
     publisher: analyst
+
+commands:
+  # Every GPU gets the same percent of its max cap; the gateway sets it when
+  # sizing_params.compute_shed_enabled, or an operator sets it by hand.
+  set_power_limit:
+    verb: set
+    target: power_limit
+    unit: percent
+    payload: float
+    display_name_default: "Set GPU Power Limit"
+    binding:
+      protocol: power_cap
+      child_template: gpu_node
+      child_commands:
+        - set_gpu_1_power_limit
+        - set_gpu_2_power_limit
+        - set_gpu_3_power_limit
+        - set_gpu_4_power_limit
+        - set_gpu_5_power_limit
+        - set_gpu_6_power_limit
+        - set_gpu_7_power_limit
+        - set_gpu_8_power_limit
 
 install_tasks:
   - name: container_set_and_anchor

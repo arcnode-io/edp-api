@@ -35,6 +35,19 @@ def test_sizing_params_reserve_floor_zero_by_default() -> None:
     # Assert
     assert actual.sizing_params.ride_through_hours == 0.0
     assert actual.sizing_params.bess_reserve_floor_mwh == 0.0
+    assert actual.sizing_params.compute_shed_enabled is False
+
+
+def test_sizing_params_carry_compute_shed_choice() -> None:
+    # Arrange
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+    resolution = _resolution().model_copy(update={"compute_shed_enabled": True})
+    # Act
+    actual = service.generate(
+        profile="commercial_ac", resolution=resolution, manifest=_manifest()
+    )
+    # Assert
+    assert actual.sizing_params.compute_shed_enabled is True
 
 
 def test_sizing_params_reserve_floor_computed_from_ride_through_hours() -> None:

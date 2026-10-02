@@ -33,6 +33,8 @@ class ConfiguratorPayload(BaseModel):
     bess_coupling: BessCoupling
     bess_capacity_mwh: float = Field(ge=0)
     ride_through_hours: float = Field(ge=0, default=0)
+    # May the EMS cap GPU power on its own to hold the operating envelope?
+    compute_shed_enabled: bool = False
 
     climate_zone: ClimateZone
     deployment_context: DeploymentContext

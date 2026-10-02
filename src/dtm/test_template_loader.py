@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from src.dtm.template_loader import TemplateLoader, TemplateLoadError
+from src.shared.schemas.template_module_bindings import PowerCapBinding
 from src.shared.schemas.template import (
     DistributeBinding,
     Dnp3Binding,
@@ -134,9 +135,10 @@ def test_load_real_catalog_pdu_matches_sentry4_mib() -> None:
     for n in (1, 2, 3):
         assert snmp(f"input_current_l{n}") == (f"{line_current}{n}", 0.01)
         assert snmp(f"input_voltage_l{n}") == (f"{phase_voltage}{n}", 0.1)
+    assert snmp("input_power") == ("1.3.6.1.4.1.1718.4.1.3.3.1.3.1.1", 1.0)
     assert set(pdu) == {
         f"input_{q}_l{n}" for q in ("current", "voltage") for n in (1, 2, 3)
-    }
+    } | {"input_power"}
 
 
 def test_load_real_catalog_network_switch_reads_standard_mibs() -> None:
@@ -219,7 +221,36 @@ def test_load_real_catalog_gpu_node_caps_each_gpu_where_it_reads_the_limit() -> 
             f"gpu_{n}_power_limit",
             "watts",
         )
-        assert command.binding == node.measurements[f"gpu_{n}_power_limit"].binding
+        limit = node.measurements[f"gpu_{n}_power_limit"]
+        assert command.binding == limit.binding
+        assert limit.bounds is not None
+        assert (limit.bounds.min, limit.bounds.max, limit.bounds.nominal) == (
+            200,
+            1000,
+            1000,
+        )
+
+
+def test_load_real_catalog_compute_module_rolls_up_pdus_and_caps_gpus() -> None:
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    module = catalog["compute_module"]
+    # Act
+    total = module.measurements["total_power"].binding
+    cap = module.commands["set_power_limit"]
+    # Assert — PDUs feed everything in the container, so they're the total
+    assert isinstance(total, SyntheticBinding)
+    assert (total.operation, total.source_measurement, total.child_template) == (
+        "sum",
+        "input_power",
+        "pdu",
+    )
+    assert "input_power" in catalog["pdu"].measurements
+    assert isinstance(cap.binding, PowerCapBinding)
+    assert (cap.verb, cap.target, cap.unit) == ("set", "power_limit", "percent")
+    assert cap.binding.child_template == "gpu_node"
+    assert set(cap.binding.child_commands) == set(catalog["gpu_node"].commands)
 
 
 def test_load_real_catalog_cdu_reads_dmtf_cooling_unit() -> None:

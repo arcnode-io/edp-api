@@ -40,6 +40,8 @@ class SizingParams(BaseModel):
     # src.sizing.sizing_internals.reserve_mwh for the E_r formula.
     ride_through_hours: float = 0.0
     bess_reserve_floor_mwh: float = 0.0
+    # Order-time site choice: the gateway may cap GPU power to hold the envelope.
+    compute_shed_enabled: bool = False
 
 
 class Connection(BaseModel):

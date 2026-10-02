@@ -209,3 +209,14 @@ def test_derives_sourcing_tier_and_ems_target() -> None:
     # Assert
     assert actual.sourcing_tier == SourcingTier.FEDERAL_CIVILIAN
     assert actual.ems_target == EmsTarget.AWS_GOVCLOUD
+
+
+def test_carries_the_site_compute_shed_choice() -> None:
+    """compute_shed_enabled is a per-site order-time choice, passed through."""
+    # Arrange
+    service = ModuleResolverService()
+    payload = _payload().model_copy(update={"compute_shed_enabled": True})
+    # Act
+    actual = service.resolve(payload)
+    # Assert
+    assert actual.compute_shed_enabled is True

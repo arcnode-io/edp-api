@@ -38,6 +38,7 @@ class ModuleResolverService:
             climate_zone=payload.climate_zone,
             onsite_generation=payload.onsite_generation,
             ride_through_hours=payload.ride_through_hours,
+            compute_shed_enabled=payload.compute_shed_enabled,
         )
 
     def _profile(self, payload: ConfiguratorPayload) -> DeploymentProfile:
