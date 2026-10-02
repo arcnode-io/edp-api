@@ -83,9 +83,9 @@ measurements:
       point_index: 0  # 52A, breaker auxiliary contact
       point_type: binary_input
 
-  # NEMA MG-1 voltage unbalance: max phase deviation from average / average.
-  # Not expressible via the synthetic primitives; local_process computes it
-  # from phase_voltage_a/b/c.
+  # NEMA MG-1 style: 100 × max |V − avg| / avg over phase_voltage_a/b/c
+  # (phase-to-neutral; the relay's DNP map has no line-to-line or V1).
+  # Not expressible via the synthetic primitives, so local_process computes it.
   voltage_unbalance_pct:
     unit: percent
     type: float
