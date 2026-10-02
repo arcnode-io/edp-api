@@ -204,6 +204,24 @@ def test_load_real_catalog_gpu_node_reads_nvidia_hgx_per_gpu() -> None:
     assert total.inputs is not None and len(total.inputs) == 8
 
 
+def test_load_real_catalog_gpu_node_caps_each_gpu_where_it_reads_the_limit() -> None:
+    """DGX B200 guide: PATCH EnvironmentMetrics PowerLimitWatts.SetPoint per GPU."""
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    node = TemplateLoader(root=repo_root / "device_templates").load_catalog()[
+        "gpu_node"
+    ]
+    # Act / Assert
+    for n in range(1, 9):
+        command = node.commands[f"set_gpu_{n}_power_limit"]
+        assert (command.verb, command.target, command.unit) == (
+            "set",
+            f"gpu_{n}_power_limit",
+            "watts",
+        )
+        assert command.binding == node.measurements[f"gpu_{n}_power_limit"].binding
+
+
 def test_load_real_catalog_cdu_reads_dmtf_cooling_unit() -> None:
     # Arrange — DMTF CoolingUnit / CoolantConnector / Pump; MCDU-10 lists Redfish
     repo_root = Path(__file__).resolve().parents[2]
