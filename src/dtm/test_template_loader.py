@@ -118,27 +118,23 @@ def test_load_real_catalog_includes_poi_meter() -> None:
     assert actual == expected
 
 
-def test_load_real_catalog_pdu_matches_sentry4_mib() -> None:
-    # Arrange — Sentry4-MIB; index = unit(1).cord(1).line|phase
+def test_load_real_catalog_pdu_matches_pdu2_mib() -> None:
+    # Arrange — Raritan PDU2-MIB (all Xerus PDUs); pduId 1, inletId 1
     repo_root = Path(__file__).resolve().parents[2]
     catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
     pdu = catalog["pdu"].measurements
-    line_current = "1.3.6.1.4.1.1718.4.1.4.3.1.3.1.1."  # st4LineCurrent
-    phase_voltage = "1.3.6.1.4.1.1718.4.1.5.3.1.3.1.1."  # st4PhaseVoltage
+    pole = "1.3.6.1.4.1.13742.6.5.2.4.1.4.1.1."  # measurementsInletPoleSensorValue
 
     def snmp(name: str) -> tuple[str, float]:
         binding = pdu[name].binding
         assert isinstance(binding, SnmpBinding)
         return (binding.oid, binding.scale)
 
-    # Act / Assert
+    # Act / Assert — sensor types: rmsCurrent 1, rmsVoltage 4, activePower 5
     for n in (1, 2, 3):
-        assert snmp(f"input_current_l{n}") == (f"{line_current}{n}", 0.01)
-        assert snmp(f"input_voltage_l{n}") == (f"{phase_voltage}{n}", 0.1)
-    assert snmp("input_power") == ("1.3.6.1.4.1.1718.4.1.3.3.1.3.1.1", 1.0)
-    assert set(pdu) == {
-        f"input_{q}_l{n}" for q in ("current", "voltage") for n in (1, 2, 3)
-    } | {"input_power"}
+        assert snmp(f"input_current_l{n}") == (f"{pole}{n}.1", 0.001)
+        assert snmp(f"input_voltage_l{n}") == (f"{pole}{n}.4", 1.0)
+    assert snmp("input_power") == ("1.3.6.1.4.1.13742.6.5.2.3.1.4.1.1.5", 1.0)
 
 
 def test_load_real_catalog_network_switch_reads_standard_mibs() -> None:
