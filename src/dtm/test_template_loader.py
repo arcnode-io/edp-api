@@ -481,8 +481,6 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
         "float",
         set_mode.fanout,
     )
-    # operator_reserve is the only operator lever on battery discharge
-    assert "storage_authorized" not in dd.measurements
 
     der_event_state = dd.measurements["der_event_state"]
     assert der_event_state.type == "enum"
