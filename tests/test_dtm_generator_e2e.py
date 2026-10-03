@@ -136,11 +136,11 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
     # Module Devices exist
     assert "compute_module_1" in dtm.devices
     assert "grid_module_1" in dtm.devices
-    # Compute leaves: 7 gpu_nodes + 1 cdu + 1 network_switch + 4 pdus = 13
+    # Compute leaves: 7 gpu_nodes + 1 cdu + 1 network_switch + 6 pdus = 15
     compute_descendants = [
         s for s, d in dtm.devices.items() if d.parent == "compute_module_1"
     ]
-    assert len(compute_descendants) == 13
+    assert len(compute_descendants) == 15
     # Grid leaves: 3 (switchgear, poi_meter, protective_relay)
     grid_descendants = [
         s for s, d in dtm.devices.items() if d.parent == "grid_module_1"
