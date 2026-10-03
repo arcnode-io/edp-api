@@ -462,6 +462,16 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
     assert tap.binding is None
     present = dd.measurements["target_setpoint_present"]
     assert (present.type, present.publisher) == ("bool", tap.publisher)
+    # Ordinals match DispatchMode.java; set over the broker, not an open PUT
+    mode = dd.measurements["dispatch_mode"]
+    assert (mode.values, mode.publisher) == ({0: "AUTO", 1: "MANUAL"}, tap.publisher)
+    set_mode = dd.commands["set_dispatch_mode"]
+    assert (set_mode.verb, set_mode.target, set_mode.payload) == (
+        "set",
+        "dispatch_mode",
+        "enum",
+    )
+    assert set_mode.fanout == dd.commands["approve_dispatch"].fanout
 
     der_event_state = dd.measurements["der_event_state"]
     assert der_event_state.type == "enum"

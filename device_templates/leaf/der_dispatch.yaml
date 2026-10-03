@@ -59,6 +59,19 @@ measurements:
       4: REJECTED
     publisher: der_control_api
 
+  # Site dispatch policy (ADR-002 §16): MANUAL holds events for operator
+  # approve/reject. Ordinals = DispatchMode.java. Set over the broker via
+  # set_dispatch_mode so it rides the broker's existing auth.
+  dispatch_mode:
+    unit: none
+    type: enum
+    poll_rate_hz: 0.0033          # event-driven; nominal rate only
+    display_name_default: "Dispatch Mode"
+    values:
+      0: AUTO
+      1: MANUAL
+    publisher: der_control_api
+
   energize_enabled:
     unit: none
     type: bool
@@ -110,4 +123,12 @@ commands:
     unit: none
     payload: bool
     display_name_default: "Reject Dispatch"
+    fanout: der_control_api
+
+  set_dispatch_mode:
+    verb: set
+    target: dispatch_mode
+    unit: none
+    payload: enum
+    display_name_default: "Set Dispatch Mode"
     fanout: der_control_api
