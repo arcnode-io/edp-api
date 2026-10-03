@@ -472,6 +472,15 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
         "enum",
     )
     assert set_mode.fanout == dd.commands["approve_dispatch"].fanout
+    # Operator reserve: effective floor = max(supplier floor, operator reserve)
+    reserve = dd.measurements["operator_reserve"]
+    assert (reserve.unit, reserve.publisher) == ("watt_hours", tap.publisher)
+    set_reserve = dd.commands["set_operator_reserve"]
+    assert (set_reserve.target, set_reserve.payload, set_reserve.fanout) == (
+        "operator_reserve",
+        "float",
+        set_mode.fanout,
+    )
     # Operator picks which resource holds the envelope: battery or compute
     storage = dd.measurements["storage_authorized"]
     assert (storage.type, storage.publisher) == ("bool", tap.publisher)

@@ -72,6 +72,18 @@ measurements:
       1: MANUAL
     publisher: der_control_api
 
+  # Site-wide energy held back from answering the operating envelope. Each
+  # battery module's floor = max(supplier floor from sizing_params, its
+  # capacity share of this), so the supplier floor can never be undercut;
+  # compute shed answers what the battery then can't. Never relaxes the
+  # envelope. Absent = no extra reserve.
+  operator_reserve:
+    unit: watt_hours
+    type: float
+    poll_rate_hz: 0.0033          # event-driven; nominal rate only
+    display_name_default: "Operator Energy Reserve"
+    publisher: der_control_api
+
   # The envelope is mandatory; the operator picks which resource holds it.
   # false: guarded battery modules may not discharge (charging still allowed
   # with import headroom), so compute shed takes the overage after its dwell.
@@ -142,6 +154,14 @@ commands:
     unit: none
     payload: enum
     display_name_default: "Set Dispatch Mode"
+    fanout: der_control_api
+
+  set_operator_reserve:
+    verb: set
+    target: operator_reserve
+    unit: watt_hours
+    payload: float
+    display_name_default: "Set Operator Energy Reserve"
     fanout: der_control_api
 
   set_storage_authorized:
