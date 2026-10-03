@@ -472,6 +472,14 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
         "enum",
     )
     assert set_mode.fanout == dd.commands["approve_dispatch"].fanout
+    # Operator picks which resource holds the envelope: battery or compute
+    storage = dd.measurements["storage_authorized"]
+    assert (storage.type, storage.publisher) == ("bool", tap.publisher)
+    set_storage = dd.commands["set_storage_authorized"]
+    assert (set_storage.target, set_storage.fanout) == (
+        "storage_authorized",
+        set_mode.fanout,
+    )
 
     der_event_state = dd.measurements["der_event_state"]
     assert der_event_state.type == "enum"

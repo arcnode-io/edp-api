@@ -72,6 +72,17 @@ measurements:
       1: MANUAL
     publisher: der_control_api
 
+  # The envelope is mandatory; the operator picks which resource holds it.
+  # false: guarded battery modules may not discharge (charging still allowed
+  # with import headroom), so compute shed takes the overage after its dwell.
+  # Absent / never published = true.
+  storage_authorized:
+    unit: none
+    type: bool
+    poll_rate_hz: 0.0033          # event-driven; nominal rate only
+    display_name_default: "Storage Authorized"
+    publisher: der_control_api
+
   energize_enabled:
     unit: none
     type: bool
@@ -131,4 +142,12 @@ commands:
     unit: none
     payload: enum
     display_name_default: "Set Dispatch Mode"
+    fanout: der_control_api
+
+  set_storage_authorized:
+    verb: set
+    target: storage_authorized
+    unit: none
+    payload: bool
+    display_name_default: "Authorize Storage"
     fanout: der_control_api
