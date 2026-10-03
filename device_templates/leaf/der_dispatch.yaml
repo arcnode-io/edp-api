@@ -23,6 +23,15 @@ measurements:
     thresholds: { warn_min: -9500000, warn_max: 9500000, alarm_min: -10000000, alarm_max: 10000000 }
     publisher: der_control_api
 
+  # True when the governing DERControl carries opModTargetW. False means the
+  # 0 on target_active_power is an absence, not a full-curtailment command.
+  target_setpoint_present:
+    unit: none
+    type: bool
+    poll_rate_hz: 0.0033          # event-driven; nominal rate only
+    display_name_default: "DER Target Setpoint In Force"
+    publisher: der_control_api
+
   event_active:
     unit: none
     type: bool

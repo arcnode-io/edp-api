@@ -460,6 +460,8 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
     tap = dd.measurements["target_active_power"]
     assert tap.publisher is not None and tap.publisher.value == "der_control_api"
     assert tap.binding is None
+    present = dd.measurements["target_setpoint_present"]
+    assert (present.type, present.publisher) == ("bool", tap.publisher)
 
     der_event_state = dd.measurements["der_event_state"]
     assert der_event_state.type == "enum"
