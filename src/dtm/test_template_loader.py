@@ -355,8 +355,8 @@ def test_load_real_catalog_includes_bess_rack_capacity_kwh() -> None:
     loader = TemplateLoader(root=repo_root / "device_templates")
     # Act
     catalog = loader.load_catalog()
-    # Assert — Tesla Megapack 2 XL's own description says "4 MWh"
-    assert catalog["bess_rack"].capacity_kwh == 4000.0
+    # Assert — EXT-BESS-001: Megapack 2 XL 2-hour, 1927 kW / 3854 kWh
+    assert catalog["bess_rack"].capacity_kwh == 3854.0
 
 
 def test_load_real_catalog_bess_rack_reports_its_present_power_limits() -> None:
@@ -367,13 +367,13 @@ def test_load_real_catalog_bess_rack_reports_its_present_power_limits() -> None:
     ]
     # Act
     limits = [rack.measurements[n] for n in ("max_charge_power", "max_discharge_power")]
-    # Assert — positive magnitudes in watts, polled off the rack
+    # Assert — positive magnitudes in watts up to the 1927 kW rating, polled
     for limit in limits:
-        assert (limit.unit, limit.bounds is not None and limit.bounds.min) == (
-            "watts",
-            0,
-        )
+        assert limit.unit == "watts" and limit.bounds is not None
+        assert (limit.bounds.min, limit.bounds.max) == (0, 1927000)
         assert isinstance(limit.binding, ModbusBinding)
+    active = rack.measurements["active_power"].bounds
+    assert active is not None and (active.min, active.max) == (-1927000, 1927000)
 
 
 def test_load_real_catalog_includes_bess_module() -> None:
