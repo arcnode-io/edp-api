@@ -43,6 +43,37 @@ measurements:
       word_order: high_low
       scale: 1.0
 
+  # Present limits from the Megapack's own controller (cells + built-in PCS:
+  # derates at the SoC ends, temperature, DC window). Positive magnitudes;
+  # compare against |active_power|.
+  max_charge_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Max Charge Power"
+    bounds: { min: 0, max: 4000000, nominal: 4000000 }
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 60
+      data_type: int32
+      word_order: high_low
+      scale: 1.0
+
+  max_discharge_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Max Discharge Power"
+    bounds: { min: 0, max: 4000000, nominal: 4000000 }
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 62
+      data_type: int32
+      word_order: high_low
+      scale: 1.0
+
   reactive_power:
     unit: vars
     type: float

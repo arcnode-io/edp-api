@@ -359,6 +359,23 @@ def test_load_real_catalog_includes_bess_rack_capacity_kwh() -> None:
     assert catalog["bess_rack"].capacity_kwh == 4000.0
 
 
+def test_load_real_catalog_bess_rack_reports_its_present_power_limits() -> None:
+    # Arrange — the BMS/PCS derate with SoC, so read the limits, don't assume rated
+    repo_root = Path(__file__).resolve().parents[2]
+    rack = TemplateLoader(root=repo_root / "device_templates").load_catalog()[
+        "bess_rack"
+    ]
+    # Act
+    limits = [rack.measurements[n] for n in ("max_charge_power", "max_discharge_power")]
+    # Assert — positive magnitudes in watts, polled off the rack
+    for limit in limits:
+        assert (limit.unit, limit.bounds is not None and limit.bounds.min) == (
+            "watts",
+            0,
+        )
+        assert isinstance(limit.binding, ModbusBinding)
+
+
 def test_load_real_catalog_includes_bess_module() -> None:
     # Arrange
     repo_root = Path(__file__).resolve().parents[2]
