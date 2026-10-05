@@ -129,6 +129,17 @@ def bess_min_mwh(*, e_reserve_mwh: float, e_flex_mwh: float | None) -> float:
     return e_reserve_mwh + (e_flex_mwh or 0.0)
 
 
+def flex_energy_mwh(*, grid_peak_mw: float, flex_obligation: FlexObligation) -> float:
+    """5.4 E_flex = d * P_g * t_e / ETA_D — energy to ride one curtailment event."""
+    d = flex_obligation.depth_pct / 100
+    return d * grid_peak_mw * flex_obligation.max_duration_h / ETA_D
+
+
+def recharge_mw(*, e_flex_mwh: float, flex_obligation: FlexObligation) -> float:
+    """5.4 P_recharge = E_flex / (ETA_C * t_i) — refill before the next event."""
+    return e_flex_mwh / (ETA_C * flex_obligation.min_interval_h)
+
+
 def flex_preview(
     *,
     grid_peak_mw: float,
@@ -139,10 +150,9 @@ def flex_preview(
     """5.4, only called when effective service_type == flexible."""
     d = flex_obligation.depth_pct / 100
     t_e = flex_obligation.max_duration_h
-    t_i = flex_obligation.min_interval_h
-    e_flex = d * grid_peak_mw * t_e / ETA_D
+    e_flex = flex_energy_mwh(grid_peak_mw=grid_peak_mw, flex_obligation=flex_obligation)
     e_min_usable = e_reserve_mwh + e_flex
-    p_recharge = e_flex / (ETA_C * t_i)
+    p_recharge = recharge_mw(e_flex_mwh=e_flex, flex_obligation=flex_obligation)
     p_contract = grid_peak_mw + p_recharge
     if d * grid_peak_mw == 0:
         bess_covers_h = t_e

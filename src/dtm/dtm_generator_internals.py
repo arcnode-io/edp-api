@@ -21,7 +21,9 @@ from src.shared.schemas.module_resolution import ModuleResolution
 from src.shared.schemas.template import DeviceTemplate
 from src.sizing.sizing_internals import (
     firm_onsite_mw,
+    flex_energy_mwh,
     grid_peak_mw,
+    recharge_mw,
     reserve_mwh,
     site_peak_mw,
 )
@@ -171,6 +173,16 @@ def sizing(resolution: ModuleResolution) -> SizingParams:
     e_reserve = reserve_mwh(
         ride_through_hours=resolution.ride_through_hours, grid_peak_mw=g_peak
     )
+    # Reason: Grid guarantees flex_obligation is set iff the path is flexible.
+    flex = resolution.grid.flex_obligation
+    e_flex = (
+        0.0
+        if flex is None
+        else flex_energy_mwh(grid_peak_mw=g_peak, flex_obligation=flex)
+    )
+    p_recharge = (
+        0.0 if flex is None else recharge_mw(e_flex_mwh=e_flex, flex_obligation=flex)
+    )
     return SizingParams(
         P_compute_total_kW=peak * 1000,
         E_BESS_total_kWh=resolution.bess_capacity_mwh * 1000,
@@ -178,4 +190,6 @@ def sizing(resolution: ModuleResolution) -> SizingParams:
         ride_through_hours=resolution.ride_through_hours,
         bess_reserve_floor_mwh=e_reserve,
         compute_shed_enabled=resolution.compute_shed_enabled,
+        bess_readiness_mwh=e_reserve + e_flex,
+        bess_recharge_mw=p_recharge,
     )

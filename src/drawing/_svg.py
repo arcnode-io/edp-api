@@ -121,7 +121,7 @@ def _device_group(dtm: Dtm, pos: DevicePosition) -> str:
         f'text-anchor="middle" fill="currentColor">{device.template}</text>\n'
         f"{poi_slots}"
         f'    <rect data-region="hit-area" '
-        f'x="{-hit_w/2:.2f}" y="{-hit_h/2:.2f}" '
+        f'x="{-hit_w / 2:.2f}" y="{-hit_h / 2:.2f}" '
         f'width="{hit_w:.2f}" height="{hit_h:.2f}" '
         f'fill="transparent" />\n'
         "  </g>"

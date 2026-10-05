@@ -11,8 +11,10 @@ from src.shared.schemas.configurator_grid import FlexObligation, OnsiteGeneratio
 from src.sizing.sizing_internals import (
     ETA_D,
     firm_onsite_mw,
+    flex_energy_mwh,
     flex_preview,
     grid_peak_mw,
+    recharge_mw,
     reserve_mwh,
     site_peak_mw,
 )
@@ -49,6 +51,17 @@ def test_worked_example_one_no_reserve() -> None:
     assert round(preview.e_flex_mwh, 3) == 10.526
     assert round(preview.p_recharge_mw, 3) == 0.554
     assert round(preview.p_contract_mw, 3) == 5.554
+
+
+def test_flex_energy_and_recharge_match_worked_example_one() -> None:
+    """Same 5.4 example, through the pure functions the DTM sizing reuses."""
+    # Arrange
+    flex = _flex()
+    # Act
+    e_flex = flex_energy_mwh(grid_peak_mw=5, flex_obligation=flex)
+    p_recharge = recharge_mw(e_flex_mwh=e_flex, flex_obligation=flex)
+    # Assert
+    assert (round(e_flex, 3), round(p_recharge, 3)) == (10.526, 0.554)
 
 
 def test_worked_example_two_with_reserve() -> None:

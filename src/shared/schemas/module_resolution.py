@@ -12,7 +12,7 @@ from src.shared.enums import (
     GpuVariant,
     SourcingTier,
 )
-from src.shared.schemas.configurator_grid import OnsiteGeneration
+from src.shared.schemas.configurator_grid import Grid, OnsiteGeneration
 
 
 class ModuleResolution(BaseModel):
@@ -38,3 +38,4 @@ class ModuleResolution(BaseModel):
     onsite_generation: OnsiteGeneration
     ride_through_hours: float
     compute_shed_enabled: bool
+    grid: Grid

@@ -1,6 +1,7 @@
 """Shared fixtures and helpers for DtmGeneratorService unit tests."""
 
 from pathlib import Path
+from typing import Final
 from unittest.mock import MagicMock
 from uuid import UUID
 
@@ -17,10 +18,11 @@ from src.shared.enums import (
     DeploymentProfile,
     EmsTarget,
     GpuVariant,
+    GridPath,
     OnsiteGenerationType,
     SourcingTier,
 )
-from src.shared.schemas.configurator_grid import OnsiteGeneration
+from src.shared.schemas.configurator_grid import Grid, OnsiteGeneration
 from src.shared.schemas.module_resolution import ModuleResolution
 
 DEPLOYMENT_ID: UUID = UUID("12345678-1234-1234-1234-123456789abc")
@@ -115,10 +117,14 @@ def _manifest() -> Manifest:
     )
 
 
+_OFF_GRID: Final[Grid] = Grid(path=GridPath.OFF_GRID)
+
+
 def _resolution(
     *,
     container_count: int = 1,
     ride_through_hours: float = 0.0,
+    grid: Grid = _OFF_GRID,
 ) -> ModuleResolution:
     return ModuleResolution(
         deployment_id=DEPLOYMENT_ID,
@@ -135,6 +141,7 @@ def _resolution(
         onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
         ride_through_hours=ride_through_hours,
         compute_shed_enabled=False,
+        grid=grid,
     )
 
 

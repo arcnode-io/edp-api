@@ -42,6 +42,11 @@ class SizingParams(BaseModel):
     bess_reserve_floor_mwh: float = 0.0
     # Order-time site choice: the gateway may cap GPU power to hold the envelope.
     compute_shed_enabled: bool = False
+    # Energy to hold for the next curtailment event (floor + contracted flex
+    # energy; just the floor when not flexible), and the grid-charge rate that
+    # refills it between events. See src.sizing.sizing_internals 5.4.
+    bess_readiness_mwh: float = 0.0
+    bess_recharge_mw: float = 0.0
 
 
 class Connection(BaseModel):

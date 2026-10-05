@@ -26,10 +26,11 @@ from src.shared.enums import (
     DeploymentProfile,
     EmsTarget,
     GpuVariant,
+    GridPath,
     OnsiteGenerationType,
     SourcingTier,
 )
-from src.shared.schemas.configurator_grid import OnsiteGeneration
+from src.shared.schemas.configurator_grid import Grid, OnsiteGeneration
 from src.shared.schemas.dtm import EmsMode
 from src.shared.schemas.module_resolution import ModuleResolution
 
@@ -115,6 +116,7 @@ def _resolution() -> ModuleResolution:
         onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
         ride_through_hours=0.0,
         compute_shed_enabled=False,
+        grid=Grid(path=GridPath.OFF_GRID),
     )
 
 
