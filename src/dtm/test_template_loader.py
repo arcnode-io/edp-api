@@ -357,6 +357,9 @@ def test_load_real_catalog_includes_bess_rack_capacity_kwh() -> None:
     catalog = loader.load_catalog()
     # Assert — EXT-BESS-001: Megapack 2 XL 2-hour, 1927 kW / 3854 kWh
     assert catalog["bess_rack"].capacity_kwh == 3854.0
+    # sizing can hold the pack near full (readiness), so no high-SoC warning
+    soc = catalog["bess_rack"].measurements["state_of_charge"].thresholds
+    assert soc is not None and (soc.warn_max, soc.alarm_max) == (100, 100)
 
 
 def test_load_real_catalog_bess_rack_reports_its_present_power_limits() -> None:

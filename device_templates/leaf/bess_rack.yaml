@@ -18,7 +18,9 @@ measurements:
     display_name_default: "State of Charge"
     iec_61850_ref: ZBAT.BatChaSt
     bounds: { min: 0, max: 100, nominal: 50 }
-    thresholds: { warn_min: 15, warn_max: 90, alarm_min: 5, alarm_max: 95 }
+    # No high-side warning: sizing can hold the pack near full on purpose
+    # (sizing_params.bess_readiness_mwh), and overcharge is the BMS's job.
+    thresholds: { warn_min: 15, warn_max: 100, alarm_min: 5, alarm_max: 100 }
     binding:
       protocol: modbus_tcp
       function_code: 3
