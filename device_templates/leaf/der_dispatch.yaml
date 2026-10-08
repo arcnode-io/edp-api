@@ -59,6 +59,20 @@ measurements:
       4: REJECTED
     publisher: der_control_api
 
+  # Why a curtailment is in force. 2030.5 has no reason field on a DERControl;
+  # purpose comes from the DERProgram the event belongs to. der-control-api maps
+  # program ids to these names in its config. NONE = no event.
+  der_event_program:
+    unit: none
+    type: enum
+    poll_rate_hz: 0.0033
+    display_name_default: "Curtailment Program"
+    values:
+      0: NONE
+      1: DLR_LINE_CONSTRAINT
+      2: ERCOT_FLEX
+    publisher: der_control_api
+
   # Site dispatch policy (ADR-002 §16): MANUAL holds events for operator
   # approve/reject. Ordinals = DispatchMode.java. Set over the broker via
   # set_dispatch_mode so it rides the broker's existing auth.

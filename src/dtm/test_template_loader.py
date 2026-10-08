@@ -511,6 +511,12 @@ def test_load_real_catalog_includes_der_dispatch() -> None:
         3: "ACTIVE",
         4: "REJECTED",
     }
+    # Which DERProgram the governing event came from (2030.5 has no reason field)
+    program = dd.measurements["der_event_program"]
+    assert (program.values, program.publisher) == (
+        {0: "NONE", 1: "DLR_LINE_CONSTRAINT", 2: "ERCOT_FLEX"},
+        tap.publisher,
+    )
 
     shortfall = dd.measurements["dispatch_shortfall"]
     assert shortfall.type == "bool"
