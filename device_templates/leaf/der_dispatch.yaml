@@ -61,7 +61,7 @@ measurements:
 
   # Why a curtailment is in force. 2030.5 has no reason field on a DERControl;
   # purpose comes from the DERProgram the event belongs to. der-control-api maps
-  # program ids to these names in its config. NONE = no event.
+  # program ids to these names in its DerProgram enum. NONE = no event.
   der_event_program:
     unit: none
     type: enum
