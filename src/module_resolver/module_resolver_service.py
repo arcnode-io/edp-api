@@ -16,6 +16,7 @@ from src.shared.enums import (
 )
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 from src.shared.schemas.module_resolution import ModuleResolution
+from src.sizing.sizing_internals import grid_container_count, site_peak_mw
 
 
 class ModuleResolverService:
@@ -28,7 +29,7 @@ class ModuleResolverService:
             deployment_id=payload.deployment_id,
             deployment_profile=self._profile(payload),
             compute_container_count=count,
-            grid_container_present=payload.bess_coupling != BessCoupling.NONE,
+            grid_container_count=self._grid_container_count(payload),
             bess_coupling=payload.bess_coupling,
             bess_capacity_mwh=payload.bess_capacity_mwh,
             sourcing_tier=self._sourcing_tier(payload),
@@ -49,6 +50,12 @@ class ModuleResolverService:
     def _container_count(self, payload: ConfiguratorPayload) -> int:
         # Future rules: tier-min container count, climate derate, etc.
         return ceil(payload.target_gpu_count / GPUS_PER_COMPUTE_CONTAINER)
+
+    def _grid_container_count(self, payload: ConfiguratorPayload) -> int:
+        if payload.bess_coupling == BessCoupling.NONE:
+            return 0
+        peak = site_peak_mw(payload.gpu_variant, payload.target_gpu_count)
+        return grid_container_count(peak)
 
     def _sourcing_tier(self, payload: ConfiguratorPayload) -> SourcingTier:
         return TIER_FROM_CONTEXT[payload.deployment_context]

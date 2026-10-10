@@ -64,6 +64,9 @@ def emit_container(
     if topology is None:
         return
 
+    # Reason: buses join this container's devices only, not every same-template
+    # device emitted so far (a site can hold several grid containers).
+    local_by_template: dict[str, list[str]] = {}
     for spec in topology.devices:
         slug = assign_slug(spec.template, slug_counter)
         conn = spec.connection
@@ -78,8 +81,14 @@ def emit_container(
             ),
         )
         by_template.setdefault(spec.template, []).append(slug)
+        local_by_template.setdefault(spec.template, []).append(slug)
 
-    buses.extend(expand_bus(bus_spec, by_template) for bus_spec in topology.buses)
+    for bus_spec in topology.buses:
+        bus = expand_bus(bus_spec, local_by_template)
+        # Numbered like device slugs, so each container's bus id is unique
+        buses.append(
+            bus.model_copy(update={"bus_id": assign_slug(bus.bus_id, slug_counter)})
+        )
 
 
 def fetch_topology(

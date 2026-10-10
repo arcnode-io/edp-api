@@ -23,7 +23,7 @@ class ModuleResolution(BaseModel):
     deployment_profile: DeploymentProfile
 
     compute_container_count: int = Field(ge=1)
-    grid_container_present: bool
+    grid_container_count: int = Field(ge=0)  # primary + feeders
 
     bess_coupling: BessCoupling
     bess_capacity_mwh: float

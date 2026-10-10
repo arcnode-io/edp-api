@@ -163,3 +163,39 @@ def test_generate_unknown_profile_raises() -> None:
         service.generate(
             profile="defense_dc_int", resolution=_resolution(), manifest=_manifest()
         )
+
+
+def test_feeder_grid_containers_add_relays_but_keep_one_poi_meter() -> None:
+    # Arrange
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+
+    # Act
+    dtm = service.generate(
+        profile="commercial_ac",
+        resolution=_resolution(grid_container_count=3),
+        manifest=_manifest(),
+    )
+
+    # Assert — a site has one POI; every grid container protects its own feeder
+    templates = [d.template for d in dtm.devices.values()]
+    actual = (templates.count("poi_meter"), templates.count("protective_relay"))
+    assert actual == (1, 3)
+
+
+def test_each_grid_container_gets_its_own_bus() -> None:
+    # Arrange
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+
+    # Act
+    dtm = service.generate(
+        profile="commercial_ac",
+        resolution=_resolution(grid_container_count=2),
+        manifest=_manifest(),
+    )
+
+    # Assert — numbered like device slugs; the feeder bus holds only its own gear
+    actual = {b.bus_id: sorted(m.device_id for m in b.members) for b in dtm.buses}
+    assert actual == {
+        "ac_main_1": ["poi_meter_1", "protective_relay_1", "switchgear_1"],
+        "ac_main_2": ["protective_relay_2", "switchgear_2"],
+    }

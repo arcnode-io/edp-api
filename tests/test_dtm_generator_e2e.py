@@ -105,7 +105,7 @@ def _resolution() -> ModuleResolution:
         deployment_id=UUID("12345678-1234-1234-1234-123456789abc"),
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=1,
-        grid_container_present=True,
+        grid_container_count=1,
         bess_coupling=BessCoupling.AC_COUPLED,
         bess_capacity_mwh=5.0,
         sourcing_tier=SourcingTier.COMMERCIAL,
@@ -152,9 +152,8 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
     assert "gpu_node" in dtm.templates_used
     assert "compute_module" in dtm.templates_used
     assert "grid_module" in dtm.templates_used
-    # Buses: 1 ac_main from grid topology
-    assert any(b.bus_id == "ac_main" for b in dtm.buses)
-    bus = next(b for b in dtm.buses if b.bus_id == "ac_main")
+    # Buses: the grid container's ac_main, numbered like device slugs
+    bus = next(b for b in dtm.buses if b.bus_id == "ac_main_1")
     member_ids = {m.device_id for m in bus.members}
     assert "switchgear_1" in member_ids
     assert "poi_meter_1" in member_ids

@@ -164,18 +164,26 @@ class BomGeneratorService:
     def _grid_lines(
         self, manifest: Manifest, prof: ProfileAssemblies, container_qty: int
     ) -> list[BomLineItem]:
+        """One primary grid container (carries the POI meter) + feeders for the rest."""
         if prof.grid_container is None:
             return []
-        gc_variant = manifest.assemblies.get("grid_container", {}).get(
-            prof.grid_container
-        )
-        if gc_variant is None:
-            logger.warning(
-                f"grid_container variant {prof.grid_container} missing — skipping (step 6.1)"
-            )
-            return []
-        bom_yaml = self._client.fetch_bom_yaml(gc_variant.bom)
-        return self._parts_to_lines(manifest, bom_yaml.get("parts", []), container_qty)
+        qty_by_variant = {prof.grid_container: 1}
+        if container_qty > 1:
+            if prof.grid_feeder_container is None:
+                raise ValueError(
+                    f"{container_qty} grid containers but no feeder variant"
+                )
+            qty_by_variant[prof.grid_feeder_container] = container_qty - 1
+        variants = manifest.assemblies.get("grid_container", {})
+        # Reason: primary and feeders share most parts; sum them so each part is one line.
+        parts: dict[str, int] = {}
+        for name, qty in qty_by_variant.items():
+            bom_yaml = self._client.fetch_bom_yaml(variants[name].bom)
+            for part in bom_yaml.get("parts", []):
+                eid = part["equipment_id"]
+                parts[eid] = parts.get(eid, 0) + part["qty"] * qty
+        merged = [{"equipment_id": eid, "qty": qty} for eid, qty in parts.items()]
+        return self._parts_to_lines(manifest, merged, 1)
 
     def _parts_to_lines(
         self, manifest: Manifest, parts: list[dict], container_qty: int

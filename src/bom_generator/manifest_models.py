@@ -40,6 +40,7 @@ class ProfileAssemblies(BaseModel):
 
     compute_container: str
     grid_container: str | None
+    grid_feeder_container: str | None = None  # primary minus the POI meter
     interface_plates: list[str] = Field(default_factory=list)
 
 

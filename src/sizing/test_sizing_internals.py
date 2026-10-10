@@ -13,6 +13,7 @@ from src.sizing.sizing_internals import (
     firm_onsite_mw,
     flex_energy_mwh,
     flex_preview,
+    grid_container_count,
     grid_peak_mw,
     recharge_mw,
     reserve_mwh,
@@ -132,6 +133,12 @@ def test_site_peak_mw_b200_one_container() -> None:
 def test_site_peak_mw_rounds_up_to_full_container() -> None:
     # 57 GPUs -> 2 containers
     assert site_peak_mw(GpuVariant.B200, 57) == pytest.approx(0.160)
+
+
+def test_grid_container_count_adds_one_per_transformer_of_load() -> None:
+    # 14 B200 containers = 1.12 MW, past one 1000 kVA Trihal
+    assert grid_container_count(1.12) == 2
+    assert grid_container_count(1.0) == 1
 
 
 def test_firm_onsite_mw_nuclear_counts() -> None:

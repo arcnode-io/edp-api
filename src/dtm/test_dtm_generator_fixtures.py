@@ -79,6 +79,22 @@ GRID_TOPOLOGY: dict = {
 }
 
 
+# Feeder grid container: primary minus the POI meter
+FEEDER_TOPOLOGY: dict = {
+    "devices": [d for d in GRID_TOPOLOGY["devices"] if d["template"] != "poi_meter"],
+    "buses": [
+        {
+            "bus_id": "ac_main",
+            "type": "ac",
+            "members": [
+                {"device_template": "switchgear", "port": "line_out"},
+                {"device_template": "protective_relay", "port": "line_in"},
+            ],
+        }
+    ],
+}
+
+
 def _real_catalog() -> dict:
     """Use the real device_templates/ catalog from PR 1."""
     repo_root = Path(__file__).resolve().parents[2]
@@ -103,7 +119,8 @@ def _manifest() -> Manifest:
                 "commercial-ac": _av(type_="compute_container", variant="commercial-ac")
             },
             "grid_container": {
-                "commercial-ac": _av(type_="grid_container", variant="commercial-ac")
+                "commercial-ac": _av(type_="grid_container", variant="commercial-ac"),
+                "feeder": _av(type_="grid_container", variant="feeder"),
             },
         },
         plates={"CG": PlateUrls(spec="s3://test/CG.yaml", step="s3://test/CG.step")},
@@ -111,6 +128,7 @@ def _manifest() -> Manifest:
             "commercial_ac": ProfileAssemblies(
                 compute_container="commercial-ac",
                 grid_container="commercial-ac",
+                grid_feeder_container="feeder",
                 interface_plates=["CG"],
             )
         },
@@ -123,6 +141,7 @@ _OFF_GRID: Final[Grid] = Grid(path=GridPath.OFF_GRID)
 def _resolution(
     *,
     container_count: int = 1,
+    grid_container_count: int = 1,
     ride_through_hours: float = 0.0,
     grid: Grid = _OFF_GRID,
 ) -> ModuleResolution:
@@ -130,7 +149,7 @@ def _resolution(
         deployment_id=DEPLOYMENT_ID,
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=container_count,
-        grid_container_present=True,
+        grid_container_count=grid_container_count,
         bess_coupling=BessCoupling.AC_COUPLED,
         bess_capacity_mwh=5.0,
         sourcing_tier=SourcingTier.COMMERCIAL,
@@ -152,6 +171,8 @@ def _make_client() -> MagicMock:
     def fetch(url: str) -> dict:
         if "compute-container" in url:
             return COMPUTE_TOPOLOGY
+        if "grid-container/feeder" in url:
+            return FEEDER_TOPOLOGY
         if "grid-container" in url:
             return GRID_TOPOLOGY
         raise ValueError(f"unmocked: {url}")

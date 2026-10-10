@@ -72,12 +72,22 @@ class DtmGeneratorService:
                 by_template=by_template,
             )
 
+        # One primary grid container (carries the POI meter), then a feeder
+        # per extra transformer of load.
+        grid_variants: list[str] = []
         if prof.grid_container is not None:
+            grid_variants.append(prof.grid_container)
+        if resolution.grid_container_count > 1:
+            if prof.grid_feeder_container is None:
+                raise ValueError(f"profile {profile!r} has no feeder grid variant")
+            feeders = resolution.grid_container_count - 1
+            grid_variants.extend([prof.grid_feeder_container] * feeders)
+        for variant in grid_variants:
             emit_container(
                 client=self._client,
                 manifest=manifest,
                 asm_type="grid_container",
-                variant=prof.grid_container,
+                variant=variant,
                 devices=devices,
                 buses=buses,
                 slug_counter=slug_counter,

@@ -121,7 +121,7 @@ class PipelineService:
             deployment_id=payload.deployment_id,
             profile=profile,
             compute_container_qty=resolution.compute_container_count,
-            grid_container_qty=1 if resolution.grid_container_present else 0,
+            grid_container_qty=resolution.grid_container_count,
             deployment_context=_context_string(payload.deployment_context),
         )
         # Track-B enrichment: per-distributor offers merged into each line

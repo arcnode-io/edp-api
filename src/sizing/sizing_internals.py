@@ -49,6 +49,16 @@ def site_peak_mw(gpu_variant: GpuVariant, target_gpu_count: int) -> float:
     return containers * CONTAINER_KW[gpu_variant] / 1000
 
 
+# GRD-XFM-001 Trihal rating. Each grid container carries one transformer.
+# Reason: kW ~ kVA here; the HGX PSUs run near unity power factor.
+GRID_CONTAINER_KVA: Final[float] = 1000.0
+
+
+def grid_container_count(site_peak: float) -> int:
+    """One grid container per transformer's worth of compute load (MW in)."""
+    return ceil(site_peak * 1000 / GRID_CONTAINER_KVA)
+
+
 def firm_onsite_mw(onsite_generation: OnsiteGeneration) -> float:
     """Nuclear capacity counts as firm; solar counts 0; none -> 0."""
     if onsite_generation.type == OnsiteGenerationType.NUCLEAR:

@@ -248,7 +248,7 @@ def test_dtm_generator_against_localstack(
         deployment_id=uuid4(),
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=2,
-        grid_container_present=False,  # fixture has no grid
+        grid_container_count=0,  # fixture has no grid
         bess_coupling=BessCoupling.NONE,
         bess_capacity_mwh=0.0,
         sourcing_tier=SourcingTier.COMMERCIAL,

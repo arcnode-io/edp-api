@@ -182,7 +182,7 @@ def test_rounds_up_to_full_compute_container() -> None:
 
 
 def test_grid_container_absent_when_no_bess() -> None:
-    """bess_coupling=NONE -> grid_container_present=False."""
+    """bess_coupling=NONE -> no grid containers."""
     # Arrange
     service = ModuleResolverService()
     payload = _payload(coupling=BessCoupling.NONE, capacity_mwh=0.0)
@@ -191,7 +191,20 @@ def test_grid_container_absent_when_no_bess() -> None:
     actual = service.resolve(payload)
 
     # Assert
-    assert actual.grid_container_present is False
+    assert actual.grid_container_count == 0
+
+
+def test_grid_container_count_follows_compute_load() -> None:
+    """17 H100 containers x 62.6 kW = 1.06 MW -> 2 grid containers."""
+    # Arrange
+    service = ModuleResolverService()
+    payload = _payload(gpu_count=17 * 56)
+
+    # Act
+    actual = service.resolve(payload)
+
+    # Assert
+    assert actual.grid_container_count == 2
 
 
 def test_derives_sourcing_tier_and_ems_target() -> None:
