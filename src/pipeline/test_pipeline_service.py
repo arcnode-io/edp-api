@@ -1,6 +1,7 @@
 """PipelineService unit tests — captures S3 puts via a stub ManifestClient."""
 
 import json
+from datetime import UTC, datetime
 from typing import cast
 from uuid import UUID
 
@@ -13,6 +14,10 @@ from src.bom_generator.manifest_models import (
     ProfileAssemblies,
 )
 from src.bom_generator.manifest_service import ManifestService
+from src.cable_hose_schedule.cable_hose_schedule_models import (
+    CableEntry,
+    CableHoseSchedule,
+)
 from src.cable_hose_schedule.cable_hose_schedule_service import CableHoseScheduleService
 from src.drawing.comms_diagram_service import CommsDiagramService
 from src.drawing.install_sequence_service import InstallSequenceService
@@ -35,6 +40,7 @@ from src.shared.enums import (
     PrimaryWorkload,
 )
 from src.shared.schemas.artifact import ArtifactKind
+from src.shared.schemas.dtm import Dtm
 from src.shared.schemas.configurator_grid import (
     Grid,
     OnsiteGeneration,
@@ -134,7 +140,10 @@ def _payload() -> ConfiguratorPayload:
     )
 
 
-def _build_pipeline(client: _RecordingClient) -> PipelineService:
+def _build_pipeline(
+    client: _RecordingClient,
+    cable_hose: CableHoseScheduleService | None = None,
+) -> PipelineService:
     real_client = cast(ManifestClient, client)
     catalog = TemplateLoader(
         root=__import__("pathlib").Path(__file__).resolve().parents[2]
@@ -148,7 +157,7 @@ def _build_pipeline(client: _RecordingClient) -> PipelineService:
         sld_engineering_service=SldEngineeringService(),
         pid_cooling_service=PidCoolingService(),
         comms_diagram_service=CommsDiagramService(),
-        cable_hose_schedule_service=CableHoseScheduleService(),
+        cable_hose_schedule_service=cable_hose or CableHoseScheduleService(),
         install_sequence_service=InstallSequenceService(),
     )
 
@@ -208,11 +217,32 @@ def test_run_skips_selected_urls_from_catalog() -> None:
     assert catalog_urls.isdisjoint(client.uploads.keys())
 
 
+class _OneCableSchedule(CableHoseScheduleService):
+    """Schedule with one known cable, so the BOM roll-up is observable."""
+
+    def generate(self, dtm: Dtm) -> CableHoseSchedule:
+        cable = CableEntry(
+            tag="CBL-0001",
+            service="Comms - Modbus TCP",
+            from_device="pdu_1",
+            from_port="TCP/502",
+            to_device="network_switch_1",
+            to_port="eth1",
+            cable_type="Cat6 STP",
+        )
+        return CableHoseSchedule(
+            deployment_uuid=dtm.deployment_uuid,
+            generated_at=datetime.now(UTC),
+            cables=[cable],
+        )
+
+
 def test_bom_upload_is_real_bom_json() -> None:
     """The BOM upload deserializes to a Bom shape (not a stub)."""
     # Arrange
     client = _RecordingClient(_commercial_ac_manifest())
-    pipeline = _build_pipeline(client)
+    cable_hose = _OneCableSchedule()
+    pipeline = _build_pipeline(client, cable_hose=cable_hose)
     payload = _payload()
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
@@ -235,7 +265,9 @@ def test_bom_upload_is_real_bom_json() -> None:
     body = json.loads(client.uploads[bom_url])
     assert body["deployment_id"] == str(DEPLOYMENT_ID)
     assert body["profile"] == "commercial_ac"
-    assert "line_items" in body
+    # The cable + hose schedule rides along as BOM lines
+    lines = {li["part_number"]: li["qty"] for li in body["line_items"]}
+    assert lines["Cat6 STP"] == 1
 
 
 def test_sld_engineering_uploads_real_dxf_and_pdf() -> None:

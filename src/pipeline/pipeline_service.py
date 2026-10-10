@@ -28,6 +28,7 @@ from src.bom_generator.bom_generator_service import (
 )
 from src.bom_enrichment.enrichment_models import DistributorOffer
 from src.bom_enrichment.enrichment_service import EnrichmentService
+from src.bom_generator.cable_hose_lines import cable_hose_lines
 from src.bom_generator.bom_models import Bom
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
@@ -124,6 +125,8 @@ class PipelineService:
             grid_container_qty=resolution.grid_container_count,
             deployment_context=_context_string(payload.deployment_context),
         )
+        cable_hose = self._cable_hose.generate(dtm)
+        bom.line_items.extend(cable_hose_lines(cable_hose))
         # Track-B enrichment: per-distributor offers merged into each line
         # item. No-op when no enrichment service is configured (e.g. when
         # distributor creds aren't set in env).
@@ -132,7 +135,6 @@ class PipelineService:
         sld_eng = self._sld_eng.generate(dtm, profile=profile)
         pid_cooling = self._pid_cooling.generate(dtm, profile=profile)
         comms_diagram = self._comms_diagram.generate(dtm, profile=profile)
-        cable_hose = self._cable_hose.generate(dtm)
         install_sequence = self._install_sequence.generate(dtm, profile=profile)
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):
