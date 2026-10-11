@@ -88,11 +88,11 @@ def _kwargs(
 
 def test_rejects_bess_none() -> None:
     # Arrange — every site has a BESS
-    kw = {**_kwargs(), "bess_coupling": "none"}
+    raw = {**_kwargs(), "bess_coupling": "none"}
 
     # Act / Assert
     with pytest.raises(ValidationError, match="bess_coupling"):
-        ConfiguratorPayload(**kw)
+        ConfiguratorPayload.model_validate(raw)
 
 
 def test_rejects_zero_bess_capacity() -> None:

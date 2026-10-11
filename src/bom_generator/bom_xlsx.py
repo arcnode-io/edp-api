@@ -7,7 +7,6 @@ from openpyxl.styles import Font
 
 from src.bom_generator.bom_models import Bom
 
-
 # Column order matches BomLineItem field order; metadata cols last so a
 # consumer eyeballing the sheet sees procurement essentials first.
 _XLSX_COLUMNS: tuple[tuple[str, str], ...] = (
