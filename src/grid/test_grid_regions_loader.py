@@ -10,14 +10,16 @@ from src.grid.grid_regions_loader import GridRegionsLoader, GridRegionsLoadError
 def test_loads_valid_yaml(tmp_path: Path) -> None:
     # Arrange
     path = tmp_path / "grid_regions.yaml"
-    path.write_text("""
+    path.write_text(
+        """
 defaults: { distribution_limit_mw: 20, distribution_near_mw: 15 }
 regions:
   ercot: { large_load_mw: 75, dg_export_max_mw: 10, dg_registration_mw: 1,
            market_programs: [ercot_ader], settlement_points: [HB_NORTH] }
 flex_levels:
   standard: { depth_pct: 50, max_duration_h: 4, max_events_yr: 40, min_interval_h: 20, notice_s: 600 }
-""".lstrip())
+""".lstrip()
+    )
     loader = GridRegionsLoader(path)
 
     # Act

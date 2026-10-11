@@ -5,10 +5,10 @@ from uuid import uuid4
 
 import pytest
 
+from src.bom_generator.bom_xlsx import serialize_bom_xlsx
 from src.bom_generator.bom_generator_service import (
     BomGeneratorService,
     serialize_bom,
-    serialize_bom_xlsx,
 )
 from src.bom_generator.bom_models import ProcurementPath
 from src.bom_generator.manifest_models import (
@@ -60,6 +60,7 @@ def _make_mock_client(manifest: Manifest) -> MagicMock:
             {"equipment_id": "CMP-NODE-001", "qty": 7},
             {"equipment_id": "CMP-RACK-001", "qty": 1},
         ],
+        "plates": [{"id": "CG", "version": "v1", "qty": 1}],
     }
 
     def fake_fetch_spec(url: str) -> dict:

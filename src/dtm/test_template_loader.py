@@ -28,7 +28,8 @@ def test_load_catalog_empty_dir(tmp_path: Path) -> None:
 
 
 def _write_poi_meter(dir_: Path) -> None:
-    (dir_ / "poi_meter.yaml").write_text("""
+    (dir_ / "poi_meter.yaml").write_text(
+        """
 template: poi_meter
 kind: leaf
 equipment_id: GRD-MTR-001
@@ -44,7 +45,8 @@ measurements:
       function_code: 4
       address: 100
       data_type: int16
-""".lstrip())
+""".lstrip()
+    )
 
 
 def test_load_catalog_loads_one_leaf(tmp_path: Path) -> None:
@@ -75,13 +77,15 @@ def test_load_catalog_raises_on_validation_failure(tmp_path: Path) -> None:
     # Arrange — leaf missing its required vendor
     (tmp_path / "leaf").mkdir()
     (tmp_path / "module").mkdir()
-    (tmp_path / "leaf" / "bad.yaml").write_text("""
+    (tmp_path / "leaf" / "bad.yaml").write_text(
+        """
 template: no_vendor
 kind: leaf
 equipment_id: GRD-MTR-001
 model: T-1
 description: missing vendor
-""".lstrip())
+""".lstrip()
+    )
     loader = TemplateLoader(root=tmp_path)
     # Act / Assert
     with pytest.raises(TemplateLoadError, match="schema validation failed"):
@@ -645,7 +649,8 @@ def test_load_catalog_rejects_duplicate_slug(tmp_path: Path) -> None:
     (tmp_path / "leaf").mkdir()
     (tmp_path / "module").mkdir()
     _write_poi_meter(tmp_path / "leaf")
-    (tmp_path / "leaf" / "poi_meter_dup.yaml").write_text("""
+    (tmp_path / "leaf" / "poi_meter_dup.yaml").write_text(
+        """
 template: poi_meter
 kind: leaf
 equipment_id: GRD-MTR-001
@@ -657,7 +662,8 @@ measurements:
     unit: volts
     type: float
     binding: { protocol: modbus_tcp, function_code: 4, address: 100, data_type: int16 }
-""".lstrip())
+""".lstrip()
+    )
     loader = TemplateLoader(root=tmp_path)
     # Act / Assert
     with pytest.raises(TemplateLoadError, match="duplicate template slug"):
@@ -669,7 +675,8 @@ def test_load_catalog_rejects_unresolved_contains(tmp_path: Path) -> None:
     (tmp_path / "leaf").mkdir()
     (tmp_path / "module").mkdir()
     _write_poi_meter(tmp_path / "leaf")
-    (tmp_path / "module" / "broken_module.yaml").write_text("""
+    (tmp_path / "module" / "broken_module.yaml").write_text(
+        """
 template: broken_module
 kind: module
 description: refs a leaf that doesn't exist
@@ -681,7 +688,8 @@ measurements:
     unit: watts
     type: float
     publisher: local_process
-""".lstrip())
+""".lstrip()
+    )
     loader = TemplateLoader(root=tmp_path)
     # Act / Assert
     with pytest.raises(TemplateLoadError, match="not in catalog"):

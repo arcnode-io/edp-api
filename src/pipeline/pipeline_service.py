@@ -22,9 +22,9 @@ import logging
 from collections.abc import Callable
 from typing import Final
 
+from src.bom_generator.bom_xlsx import serialize_bom_xlsx
 from src.bom_generator.bom_generator_service import (
     BomGeneratorService,
-    serialize_bom_xlsx,
 )
 from src.bom_enrichment.enrichment_models import DistributorOffer
 from src.bom_enrichment.enrichment_service import EnrichmentService
@@ -210,7 +210,7 @@ def _attach_offers(bom: Bom, enrichment: EnrichmentService) -> None:
     """Fetch per-MPN offers across all configured distributors, merge into BOM.
 
     Looks up by `BomLineItem.part_number` (which IS the MPN for catalog
-    items per `BomGeneratorService._spec_to_catalog_line`). Custom-fab
+    items per `spec_lines.spec_to_catalog_line`). Custom-fab
     lines (ARCNODE plates) are skipped — no external distributor offer
     exists. Each line's `offers` field gets the full list of returned
     offers (including error-offers, so a reviewer sees which distributors

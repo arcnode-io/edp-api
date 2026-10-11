@@ -125,9 +125,7 @@ def service() -> JobsService:
     """Real resolver + in-memory manifest client + null pipeline + fresh store."""
     return JobsService(
         resolver=ModuleResolverService(),
-        client=_StaticClient(
-            _commercial_ac_manifest()
-        ),  # ty: ignore[invalid-argument-type]
+        client=_StaticClient(_commercial_ac_manifest()),  # ty: ignore[invalid-argument-type]
         pipeline=_NullPipeline(),  # ty: ignore[invalid-argument-type]
         store=JobStore(),
         regions=_regions(),
