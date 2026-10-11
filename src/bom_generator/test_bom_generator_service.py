@@ -56,6 +56,7 @@ def _make_mock_client(manifest: Manifest) -> MagicMock:
     client = MagicMock()
     client.fetch_manifest.return_value = manifest
     client.fetch_bom_yaml.return_value = {
+        "shell": {"part_number": "ARC-CNT-CMP-001", "description": "Compute shell"},
         "parts": [
             {"equipment_id": "CMP-NODE-001", "qty": 7},
             {"equipment_id": "CMP-RACK-001", "qty": 1},

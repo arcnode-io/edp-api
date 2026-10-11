@@ -71,3 +71,14 @@ def plate_spec_to_custom_line(
         drawing_ref=f"{pn}.dxf",
         drawing_url=plate_step_url.replace(".step", ".dxf"),
     )
+
+
+def shell_to_custom_line(shell: dict, qty: int) -> BomLineItem:
+    """Container shell (bom.yaml `shell:` block) → custom_fabrication line."""
+    return BomLineItem(
+        part_number=shell["part_number"],
+        vendor="ARCNODE (custom fab)",
+        description=shell["description"],
+        qty=qty,
+        procurement_path=ProcurementPath.CUSTOM_FABRICATION,
+    )

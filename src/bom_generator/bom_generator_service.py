@@ -17,7 +17,11 @@ from src.bom_generator.bom_models import (
     BomLineItem,
 )
 from src.bom_generator.manifest_client import ManifestClient
-from src.bom_generator.spec_lines import plate_spec_to_custom_line, spec_to_catalog_line
+from src.bom_generator.spec_lines import (
+    plate_spec_to_custom_line,
+    shell_to_custom_line,
+    spec_to_catalog_line,
+)
 from src.bom_generator.manifest_models import Manifest, ProfileAssemblies
 
 logger = logging.getLogger(__name__)
@@ -61,7 +65,8 @@ class BomGeneratorService:
             manifest, prof, compute_container_qty, grid_container_qty
         )
         parts = _sum_by(boms, "parts", "equipment_id")
-        line_items = self._parts_to_lines(
+        line_items = _shell_lines(boms)
+        line_items += self._parts_to_lines(
             manifest, [{"equipment_id": eid, "qty": q} for eid, q in parts.items()], 1
         )
         line_items.extend(
@@ -159,6 +164,18 @@ def _sum_by(boms: list[tuple[dict, int]], section: str, key: str) -> dict[str, i
         for item in bom_yaml.get(section, []):
             totals[item[key]] = totals.get(item[key], 0) + item["qty"] * container_qty
     return totals
+
+
+def _shell_lines(boms: list[tuple[dict, int]]) -> list[BomLineItem]:
+    """One shell per container. Reason: primary + feeder grid containers share
+    a shell part, so it sums to one line."""
+    shells = {
+        bom_yaml["shell"]["part_number"]: bom_yaml["shell"] for bom_yaml, _ in boms
+    }
+    qty = {pn: 0 for pn in shells}
+    for bom_yaml, container_qty in boms:
+        qty[bom_yaml["shell"]["part_number"]] += container_qty
+    return [shell_to_custom_line(shells[pn], q) for pn, q in qty.items()]
 
 
 def serialize_bom(bom: Bom) -> bytes:

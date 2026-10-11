@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from uuid import uuid4
 
 from src.bom_generator.bom_generator_service import BomGeneratorService
+from src.bom_generator.bom_models import ProcurementPath
 from src.bom_generator.manifest_models import (
     AssemblyVariant,
     Manifest,
@@ -56,15 +57,25 @@ def _plates(*ids: str) -> list[dict]:
     return [{"id": pid, "version": "v1", "qty": 1} for pid in ids]
 
 
+def _shell(part_number: str) -> dict:
+    return {"part_number": part_number, "description": f"{part_number} shell"}
+
+
 def _client(manifest: Manifest) -> MagicMock:
     boms = {
-        "s3://test/compute/bom.yaml": {"parts": [], "plates": _plates("CG", "CD")},
+        "s3://test/compute/bom.yaml": {
+            "shell": _shell("ARC-CNT-CMP-001"),
+            "parts": [],
+            "plates": _plates("CG", "CD"),
+        },
         "s3://test/grid/bom.yaml": {
+            "shell": _shell("ARC-CNT-GRD-001"),
             "parts": [{"equipment_id": eid, "qty": 1} for eid in _GRID_PARTS],
             "plates": _plates("CG", "BG-AC"),
         },
         # Feeder = primary minus the POI meter, and no BESS plate
         "s3://test/feeder/bom.yaml": {
+            "shell": _shell("ARC-CNT-GRD-001"),
             "parts": [{"equipment_id": eid, "qty": 1} for eid in _GRID_PARTS[:3]],
             "plates": _plates("CG"),
         },
@@ -120,4 +131,26 @@ def test_every_container_brings_its_own_interface_plates() -> None:
         if li.part_number.startswith("ARC-PLT")
     }
     expected = {"ARC-PLT-CG-001": 5, "ARC-PLT-CD-001": 2, "ARC-PLT-BG-AC-001": 1}
+    assert actual == expected
+
+
+def test_every_container_ships_in_its_own_shell() -> None:
+    # Arrange
+    service = BomGeneratorService(_client(_manifest()))
+
+    # Act
+    bom = service.generate(
+        deployment_id=uuid4(),
+        profile="commercial_ac",
+        compute_container_qty=2,
+        grid_container_qty=3,
+    )
+
+    # Assert — built to order, one per container
+    shells = [li for li in bom.line_items if li.part_number.startswith("ARC-CNT")]
+    actual = {li.part_number: (li.qty, li.procurement_path) for li in shells}
+    expected = {
+        "ARC-CNT-CMP-001": (2, ProcurementPath.CUSTOM_FABRICATION),
+        "ARC-CNT-GRD-001": (3, ProcurementPath.CUSTOM_FABRICATION),
+    }
     assert actual == expected

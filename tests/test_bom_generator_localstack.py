@@ -117,6 +117,7 @@ def seeded_bucket(s3_client) -> str:
         Key="assemblies/compute-container/commercial-ac/bom.yaml",
         Body=yaml.safe_dump(
             {
+                "shell": {"part_number": "ARC-CNT-CMP-001", "description": "shell"},
                 "parts": [
                     {"equipment_id": "CMP-NODE-001", "qty": 7},
                     {"equipment_id": "CMP-RACK-001", "qty": 1},

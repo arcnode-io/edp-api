@@ -63,9 +63,12 @@ class _RecordingClient:
         return self._manifest
 
     def fetch_bom_yaml(self, _url: str) -> dict:
-        # Minimum viable bom.yaml shape — empty parts so BomGenerator emits
-        # zero line items (we're testing dispatch, not BOM content).
-        return {"parts": []}
+        # Minimum viable bom.yaml shape — a shell and no parts (we're testing
+        # dispatch, not BOM content).
+        return {
+            "shell": {"part_number": "ARC-CNT-CMP-001", "description": "shell"},
+            "parts": [],
+        }
 
     def fetch_topology_yaml(self, _url: str) -> dict:
         # Real topology yaml is consumed by emit_container; covered by
