@@ -6,7 +6,7 @@ test_template.py / test_template_protocols.py for template.py)."""
 
 import pytest
 
-from src.shared.enums import FlexLevel, GpuVariant, OnsiteGenerationType
+from src.shared.enums import BessCoupling, FlexLevel, GpuVariant, OnsiteGenerationType
 from src.shared.schemas.configurator_grid import FlexObligation, OnsiteGeneration
 from src.sizing.sizing_internals import (
     ETA_D,
@@ -137,8 +137,13 @@ def test_site_peak_mw_rounds_up_to_full_container() -> None:
 
 def test_grid_container_count_adds_one_per_transformer_of_load() -> None:
     # 14 B200 containers = 1.12 MW, past one 1000 kVA Trihal
-    assert grid_container_count(1.12) == 2
-    assert grid_container_count(1.0) == 1
+    assert grid_container_count(1.12, BessCoupling.AC_COUPLED) == 2
+    assert grid_container_count(1.0, BessCoupling.AC_COUPLED) == 1
+
+
+def test_dc_ext_grid_container_count_is_capped_by_its_pcs_pair() -> None:
+    # 11 B200 containers = 0.88 MW: fits one Trihal, but past 2x PD500 (834 kW)
+    assert grid_container_count(0.88, BessCoupling.DC_EXTERNAL_PCS) == 2
 
 
 def test_firm_onsite_mw_nuclear_counts() -> None:

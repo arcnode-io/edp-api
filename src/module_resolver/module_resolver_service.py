@@ -55,7 +55,7 @@ class ModuleResolverService:
         if payload.bess_coupling == BessCoupling.NONE:
             return 0
         peak = site_peak_mw(payload.gpu_variant, payload.target_gpu_count)
-        return grid_container_count(peak)
+        return grid_container_count(peak, payload.bess_coupling)
 
     def _sourcing_tier(self, payload: ConfiguratorPayload) -> SourcingTier:
         return TIER_FROM_CONTEXT[payload.deployment_context]

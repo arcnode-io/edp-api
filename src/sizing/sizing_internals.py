@@ -52,11 +52,22 @@ def site_peak_mw(gpu_variant: GpuVariant, target_gpu_count: int) -> float:
 # GRD-XFM-001 Trihal rating. Each grid container carries one transformer.
 # Reason: kW ~ kVA here; the HGX PSUs run near unity power factor.
 GRID_CONTAINER_KVA: Final[float] = 1000.0
+# A dc-ext grid container converts BESS DC through its own 2x PD500 (GRD-PCS-001),
+# 417 kW each on our 415 V bus, so it carries less than its transformer could.
+DC_EXT_GRID_CONTAINER_KW: Final[float] = 2 * 417.0
 
 
-def grid_container_count(site_peak: float) -> int:
-    """One grid container per transformer's worth of compute load (MW in)."""
-    return ceil(site_peak * 1000 / GRID_CONTAINER_KVA)
+def grid_container_count(site_peak: float, bess_coupling: BessCoupling) -> int:
+    """One grid container per container's worth of compute load (MW in).
+
+    That's the Trihal's 1000 kVA, or the PCS pair's 834 kW for dc_external_pcs.
+    """
+    rating = (
+        DC_EXT_GRID_CONTAINER_KW
+        if bess_coupling == BessCoupling.DC_EXTERNAL_PCS
+        else GRID_CONTAINER_KVA
+    )
+    return ceil(site_peak * 1000 / rating)
 
 
 def firm_onsite_mw(onsite_generation: OnsiteGeneration) -> float:
