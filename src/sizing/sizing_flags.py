@@ -21,7 +21,6 @@ def compute_flags(
     grid: SizingGridInput,
     limit_state: LimitState,
     effective_service_type: ServiceType | None,
-    bess_coupling_is_none: bool,
     usable_mwh: float,
     e_reserve_mwh: float,
     e_min_usable_mwh: float | None,
@@ -32,10 +31,7 @@ def compute_flags(
     is_flexible = effective_service_type == ServiceType.FLEXIBLE
     known_non_off_grid = grid.path is not None and grid.path != GridPath.OFF_GRID
     flex_bess_shortfall = (
-        is_flexible
-        and not bess_coupling_is_none
-        and e_min_usable_mwh is not None
-        and usable_mwh < e_min_usable_mwh
+        is_flexible and e_min_usable_mwh is not None and usable_mwh < e_min_usable_mwh
     )
     warn, info = SizingFlagLevel.WARN, SizingFlagLevel.INFO
     rows: list[tuple[bool, SizingFlagCode, SizingFlagLevel, str]] = [
@@ -56,12 +52,6 @@ def compute_flags(
             SizingFlagCode.FLEX_BESS_SHORTFALL,
             warn,
             "BESS capacity is below what flexible service requires.",
-        ),
-        (
-            is_flexible and bess_coupling_is_none,
-            SizingFlagCode.FLEX_NO_BESS,
-            warn,
-            "Flexible service needs a battery to protect your GPUs.",
         ),
         (
             is_flexible,

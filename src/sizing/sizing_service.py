@@ -1,7 +1,7 @@
 """SizingService — composes the pure sizing math into a SizingPreview."""
 
 from src.grid.region_validation import check_flex_preset
-from src.shared.enums import BessCoupling, FlexLevel, ServiceType
+from src.shared.enums import FlexLevel, ServiceType
 from src.shared.schemas.configurator_grid import FlexObligation
 from src.shared.schemas.grid_regions import GridRegionsConfig
 from src.shared.schemas.sizing import SizingLimits, SizingPreview, SizingPreviewRequest
@@ -45,7 +45,6 @@ class SizingService:
             deployment_context=request.deployment_context,
             market_region=grid.market_region,
             limit_state=state,
-            bess_coupling=request.bess_coupling,
             grid_peak_mw=g_peak,
         )
         e_reserve = reserve_mwh(
@@ -66,7 +65,6 @@ class SizingService:
             grid=grid,
             limit_state=state,
             effective_service_type=effective_service_type(grid),
-            bess_coupling_is_none=request.bess_coupling == BessCoupling.NONE,
             usable_mwh=request.bess_capacity_mwh,
             e_reserve_mwh=e_reserve,
             e_min_usable_mwh=flex.e_min_usable_mwh if flex else None,

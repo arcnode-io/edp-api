@@ -57,11 +57,6 @@ def _manifest_fixture() -> Manifest:
                 grid_container="commercial-ac",
                 interface_plates=["CG", "BG-AC", "CD"],
             ),
-            "commercial_no_bess": ProfileAssemblies(
-                compute_container="commercial-ac",
-                grid_container="no-bess",
-                interface_plates=["CG", "CD"],
-            ),
             "defense_ac": ProfileAssemblies(
                 compute_container="defense-ac",
                 grid_container="commercial-ac",

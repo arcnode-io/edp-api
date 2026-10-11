@@ -48,7 +48,7 @@ class BomGeneratorService:
             deployment_id: UUID of the deployment job.
             profile: Profile name (e.g. "commercial_ac"). Must exist in manifest.
             compute_container_qty: Number of compute containers.
-            grid_container_qty: Number of grid containers (0 if no_bess).
+            grid_container_qty: Number of grid containers (primary + feeders).
             deployment_context: Drives plate variant material/finish.
 
         Returns:

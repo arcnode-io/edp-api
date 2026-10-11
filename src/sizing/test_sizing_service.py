@@ -110,16 +110,6 @@ def test_transmission_flag_absent_when_path_unknown() -> None:
     assert SizingFlagCode.TRANSMISSION_MANUAL_ENGAGEMENT not in _codes(preview)
 
 
-def test_flex_no_bess_flag() -> None:
-    service = SizingService(regions=_REGIONS)
-    grid = SizingGridInput(path=GridPath.FLEXIBLE, market_region=MarketRegion.ERCOT)
-    preview = service.preview(
-        _request(grid=grid, bess_coupling=BessCoupling.NONE, bess_capacity_mwh=0)
-    )
-    assert SizingFlagCode.FLEX_NO_BESS in _codes(preview)
-    assert SizingFlagCode.RECHARGE_HEADROOM in _codes(preview)
-
-
 def test_flex_bess_shortfall_flag() -> None:
     service = SizingService(regions=_REGIONS)
     grid = SizingGridInput(path=GridPath.FLEXIBLE, market_region=MarketRegion.ERCOT)

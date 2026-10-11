@@ -24,7 +24,6 @@ class BessCoupling(StrEnum):
     AC_COUPLED = "ac_coupled"
     DC_INTEGRATED_PCS = "dc_integrated_pcs"
     DC_EXTERNAL_PCS = "dc_external_pcs"
-    NONE = "none"
 
 
 class ClimateZone(StrEnum):
@@ -162,10 +161,10 @@ class EmsTarget(StrEnum):
 
 
 class DeploymentProfile(StrEnum):
-    """7 profiles — mirrors edp-module-assemblies/manifest_profiles.yaml exactly.
+    """4 profiles — mirrors edp-module-assemblies/manifest_profiles.yaml exactly.
 
-    `defense_dc_int` excluded: CATL-integrated PCS isn't procurable for any
-    federal/defense customer. Hardware build variants are commercial vs
+    Every site has a BESS. Defense is AC only: our DC batteries are CATL,
+    which no federal/defense customer can procure (DOD 1260H). Hardware build variants are commercial vs
     defense only — sourcing tier (procurement path) is tracked separately
     by SourcingTier.
 
@@ -174,10 +173,7 @@ class DeploymentProfile(StrEnum):
     KeyError at JobsService.create — fail-fast at intake.
     """
 
-    COMMERCIAL_NO_BESS = "commercial_no_bess"
     COMMERCIAL_AC = "commercial_ac"
     COMMERCIAL_DC_EXT = "commercial_dc_ext"
     COMMERCIAL_DC_INT = "commercial_dc_int"
-    DEFENSE_NO_BESS = "defense_no_bess"
     DEFENSE_AC = "defense_ac"
-    DEFENSE_DC_EXT = "defense_dc_ext"

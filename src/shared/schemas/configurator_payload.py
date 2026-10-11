@@ -31,7 +31,7 @@ class ConfiguratorPayload(BaseModel):
     target_gpu_count: int = Field(ge=1)
 
     bess_coupling: BessCoupling
-    bess_capacity_mwh: float = Field(ge=0)
+    bess_capacity_mwh: float = Field(gt=0)  # every site has a BESS
     ride_through_hours: float = Field(ge=0, default=0)
     # May the EMS cap GPU power on its own to hold the operating envelope?
     compute_shed_enabled: bool = False
@@ -43,14 +43,6 @@ class ConfiguratorPayload(BaseModel):
     site: Site
     onsite_generation: OnsiteGeneration
     grid: Grid
-
-    @model_validator(mode="after")
-    def bess_consistency(self) -> "ConfiguratorPayload":
-        """Reject NONE-coupling-with-capacity and coupled-with-zero-capacity."""
-        # Reason: NONE coupling iff zero capacity. Catch contradictions at ingress.
-        if (self.bess_coupling == BessCoupling.NONE) != (self.bess_capacity_mwh == 0):
-            raise ValueError("bess_coupling=NONE iff bess_capacity_mwh=0")
-        return self
 
     @model_validator(mode="after")
     def standard_partition_commercial_only(self) -> "ConfiguratorPayload":
@@ -66,33 +58,24 @@ class ConfiguratorPayload(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def federal_excludes_dc_integrated_pcs(self) -> "ConfiguratorPayload":
-        """Reject sovereign_government / defense_forward + dc_integrated_pcs.
+    def federal_excludes_dc_coupling(self) -> "ConfiguratorPayload":
+        """Reject sovereign_government / defense_forward + either DC coupling.
 
-        Reason: integrated DC PCS is CATL-only; CATL excluded from federal-
-        civilian + DoD procurement. Both deployment contexts resolve to the
-        same hardware variants (DEFENSE_*) so the constraint applies uniformly.
+        Reason: the only DC battery we spec is CATL EnerOne+ (with or without
+        CATL's PCS), and CATL is on DOD 1260H. Federal sites go AC (Megapack).
         """
         federal_contexts = {
             DeploymentContext.SOVEREIGN_GOVERNMENT,
             DeploymentContext.DEFENSE_FORWARD,
         }
+        dc_couplings = {BessCoupling.DC_INTEGRATED_PCS, BessCoupling.DC_EXTERNAL_PCS}
         if (
             self.deployment_context in federal_contexts
-            and self.bess_coupling == BessCoupling.DC_INTEGRATED_PCS
+            and self.bess_coupling in dc_couplings
         ):
             raise ValueError(
-                f"{self.deployment_context.value} + dc_integrated_pcs "
+                f"{self.deployment_context.value} + {self.bess_coupling.value} "
                 "is not procurable (CATL exclusion)"
-            )
-        return self
-
-    @model_validator(mode="after")
-    def islanding_requires_bess(self) -> "ConfiguratorPayload":
-        """V9: intentional islanding requires a BESS to ride through the transfer."""
-        if self.grid.intentional_islanding and self.bess_coupling == BessCoupling.NONE:
-            raise ValueError(
-                "grid.intentional_islanding=true requires bess_coupling != none"
             )
         return self
 

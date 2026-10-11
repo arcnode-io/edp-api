@@ -86,25 +86,21 @@ def _kwargs(
     )
 
 
-def test_rejects_bess_none_with_nonzero_capacity() -> None:
-    # Arrange
-    kw = _kwargs(coupling=BessCoupling.NONE, capacity_mwh=5.0)
+def test_rejects_bess_none() -> None:
+    # Arrange — every site has a BESS
+    kw = {**_kwargs(), "bess_coupling": "none"}
 
     # Act / Assert
-    with pytest.raises(
-        ValidationError, match="bess_coupling=NONE iff bess_capacity_mwh=0"
-    ):
+    with pytest.raises(ValidationError, match="bess_coupling"):
         ConfiguratorPayload(**kw)
 
 
-def test_rejects_bess_coupled_with_zero_capacity() -> None:
+def test_rejects_zero_bess_capacity() -> None:
     # Arrange
     kw = _kwargs(coupling=BessCoupling.AC_COUPLED, capacity_mwh=0.0)
 
     # Act / Assert
-    with pytest.raises(
-        ValidationError, match="bess_coupling=NONE iff bess_capacity_mwh=0"
-    ):
+    with pytest.raises(ValidationError, match="bess_capacity_mwh"):
         ConfiguratorPayload(**kw)
 
 
@@ -137,6 +133,25 @@ def test_rejects_defense_forward_dc_integrated_pcs() -> None:
         ConfiguratorPayload(**kw)
 
 
+@pytest.mark.parametrize(
+    "context",
+    [DeploymentContext.SOVEREIGN_GOVERNMENT, DeploymentContext.DEFENSE_FORWARD],
+)
+def test_rejects_federal_dc_external_pcs(context: DeploymentContext) -> None:
+    """The only DC battery we spec is CATL EnerOne+, on DOD 1260H."""
+    # Arrange
+    kw = _kwargs(
+        context=context,
+        coupling=BessCoupling.DC_EXTERNAL_PCS,
+        capacity_mwh=5.0,
+        partition=AwsPartition.GOVCLOUD,
+    )
+
+    # Act / Assert
+    with pytest.raises(ValidationError, match="CATL exclusion"):
+        ConfiguratorPayload(**kw)
+
+
 def test_rejects_sovereign_government_dc_integrated_pcs() -> None:
     """Both federal contexts resolve to the same DEFENSE_* hardware variants."""
     # Arrange
@@ -149,36 +164,6 @@ def test_rejects_sovereign_government_dc_integrated_pcs() -> None:
 
     # Act / Assert
     with pytest.raises(ValidationError, match="CATL exclusion"):
-        ConfiguratorPayload(**kw)
-
-
-def test_accepts_no_bess_with_zero_capacity() -> None:
-    """Happy path for the no-BESS, off-grid branch."""
-    # Arrange
-    kw = _kwargs(coupling=BessCoupling.NONE, capacity_mwh=0.0)
-
-    # Act
-    payload = ConfiguratorPayload(**kw)
-
-    # Assert
-    assert payload.bess_coupling == BessCoupling.NONE
-    assert payload.grid.path == GridPath.OFF_GRID
-
-
-def test_islanding_requires_bess() -> None:
-    """V9: intentional_islanding=true + bess_coupling=none -> ValidationError."""
-    # Arrange — firm path (off_grid forces islanding false, so this needs grid-tied)
-    grid = Grid(
-        path=GridPath.FIRM,
-        service_type=ServiceType.FIRM,
-        wires_owner=WiresOwner(id="oncor", name="Oncor", type=WiresOwnerType.TDSP),
-        market_region=MarketRegion.ERCOT,
-        intentional_islanding=True,
-    )
-    kw = _kwargs(coupling=BessCoupling.NONE, capacity_mwh=0.0, grid=grid)
-
-    # Act / Assert
-    with pytest.raises(ValidationError, match="intentional_islanding=true requires"):
         ConfiguratorPayload(**kw)
 
 

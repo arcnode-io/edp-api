@@ -229,7 +229,6 @@ class BessCoupling(StrEnum):
     AC_COUPLED = "ac_coupled"
     DC_INTEGRATED_PCS = "dc_integrated_pcs"
     DC_EXTERNAL_PCS = "dc_external_pcs"
-    NONE = "none"
 
 
 class GridConnection(StrEnum):
@@ -270,19 +269,15 @@ class EmsTarget(StrEnum):
 
 
 class DeploymentProfile(StrEnum):
-    # 7 profiles — mirrors edp-module-assemblies/manifest_profiles.yaml.
-    # defense_dc_int excluded: CATL-integrated PCS not procurable for any
-    # federal/defense customer (sovereign_government + defense_forward
-    # both rejected at validator). Hardware variants are commercial vs
-    # defense only; SourcingTier tracks the federal_civilian vs
-    # dod_eligible procurement-path distinction separately.
-    COMMERCIAL_NO_BESS = "commercial_no_bess"
+    # 4 profiles — mirrors edp-module-assemblies/manifest_profiles.yaml.
+    # Every site has a BESS. Defense is AC only: our DC batteries are CATL,
+    # not procurable for any federal/defense customer (DOD 1260H; both DC
+    # couplings rejected at validator). SourcingTier tracks the
+    # federal_civilian vs dod_eligible procurement-path distinction separately.
     COMMERCIAL_AC      = "commercial_ac"
     COMMERCIAL_DC_EXT  = "commercial_dc_ext"
     COMMERCIAL_DC_INT  = "commercial_dc_int"   # CATL — commercial only
-    DEFENSE_NO_BESS    = "defense_no_bess"
     DEFENSE_AC         = "defense_ac"
-    DEFENSE_DC_EXT     = "defense_dc_ext"
 
 
 # === Schemas ===
@@ -302,19 +297,12 @@ class ConfiguratorPayload(BaseModel):
     target_gpu_count: int = Field(ge=1)   # round-up to full container handles small values
 
     bess_coupling: BessCoupling
-    bess_capacity_mwh: float = Field(ge=0)
+    bess_capacity_mwh: float = Field(gt=0)   # every site has a BESS
 
     grid_connection: GridConnection
     climate_zone: ClimateZone
     deployment_context: DeploymentContext
     aws_partition: AwsPartition
-
-    @model_validator(mode="after")
-    def bess_consistency(self) -> "ConfiguratorPayload":
-        # Reason: NONE coupling ⇔ zero capacity. Catch contradictions at ingress.
-        if (self.bess_coupling == BessCoupling.NONE) != (self.bess_capacity_mwh == 0):
-            raise ValueError("bess_coupling=NONE iff bess_capacity_mwh=0")
-        return self
 
     @model_validator(mode="after")
     def standard_partition_commercial_only(self) -> "ConfiguratorPayload":
@@ -324,10 +312,10 @@ class ConfiguratorPayload(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def dod_excludes_dc_integrated_pcs(self) -> "ConfiguratorPayload":
-        # Reason: integrated DC PCS is CATL-only; CATL excluded from DoD procurement.
-        if self.deployment_context == DeploymentContext.DEFENSE_FORWARD and self.bess_coupling == BessCoupling.DC_INTEGRATED_PCS:
-            raise ValueError("defense_forward + dc_integrated_pcs is not procurable (CATL exclusion)")
+    def federal_excludes_dc_coupling(self) -> "ConfiguratorPayload":
+        # Reason: our DC batteries are CATL; CATL excluded from federal/DoD procurement.
+        if self.deployment_context != DeploymentContext.COMMERCIAL and self.bess_coupling != BessCoupling.AC_COUPLED:
+            raise ValueError(f"{self.deployment_context} + {self.bess_coupling} is not procurable (CATL exclusion)")
         return self
 
 
@@ -337,7 +325,7 @@ class ModuleResolution(BaseModel):
     deployment_profile: DeploymentProfile
 
     compute_container_count: int = Field(ge=1)
-    grid_container_count: int  # primary + feeders, 0 without BESS
+    grid_container_count: int = Field(ge=1)  # primary + feeders
 
     bess_coupling: BessCoupling
     bess_capacity_mwh: float
@@ -356,17 +344,14 @@ class ModuleResolution(BaseModel):
 #
 # | deployment_context   | bess_coupling      | -> deployment_profile |
 # |----------------------|--------------------|-----------------------|
-# | commercial           | none               | commercial_no_bess    |
 # | commercial           | ac_coupled         | commercial_ac         |
 # | commercial           | dc_external_pcs    | commercial_dc_ext     |
 # | commercial           | dc_integrated_pcs  | commercial_dc_int     |
-# | sovereign_government | none               | defense_no_bess       |
 # | sovereign_government | ac_coupled         | defense_ac            |
-# | sovereign_government | dc_external_pcs    | defense_dc_ext        |
+# | sovereign_government | dc_external_pcs    | INVALID — reject 422  |
 # | sovereign_government | dc_integrated_pcs  | INVALID — reject 422  |
-# | defense_forward      | none               | defense_no_bess       |
 # | defense_forward      | ac_coupled         | defense_ac            |
-# | defense_forward      | dc_external_pcs    | defense_dc_ext        |
+# | defense_forward      | dc_external_pcs    | INVALID — reject 422  |
 # | defense_forward      | dc_integrated_pcs  | INVALID — reject 422  |
 #
 # (deployment_context) -> SourcingTier   1:1

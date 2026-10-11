@@ -72,16 +72,10 @@ def test_resolves_commercial_ac_profile() -> None:
     assert actual.deployment_profile == DeploymentProfile.COMMERCIAL_AC
 
 
-# 11 valid combos -> 11 profiles. Drives the matrix exhaustively.
+# 6 valid combos -> 4 profiles. Drives the matrix exhaustively.
 _PROFILE_CASES: list[
     tuple[DeploymentContext, BessCoupling, AwsPartition, DeploymentProfile]
 ] = [
-    (
-        DeploymentContext.COMMERCIAL,
-        BessCoupling.NONE,
-        AwsPartition.STANDARD,
-        DeploymentProfile.COMMERCIAL_NO_BESS,
-    ),
     (
         DeploymentContext.COMMERCIAL,
         BessCoupling.AC_COUPLED,
@@ -104,41 +98,17 @@ _PROFILE_CASES: list[
     # distinguishes procurement path (federal_civilian vs dod_eligible).
     (
         DeploymentContext.SOVEREIGN_GOVERNMENT,
-        BessCoupling.NONE,
-        AwsPartition.GOVCLOUD,
-        DeploymentProfile.DEFENSE_NO_BESS,
-    ),
-    (
-        DeploymentContext.SOVEREIGN_GOVERNMENT,
         BessCoupling.AC_COUPLED,
         AwsPartition.GOVCLOUD,
         DeploymentProfile.DEFENSE_AC,
     ),
-    (
-        DeploymentContext.SOVEREIGN_GOVERNMENT,
-        BessCoupling.DC_EXTERNAL_PCS,
-        AwsPartition.GOVCLOUD,
-        DeploymentProfile.DEFENSE_DC_EXT,
-    ),
-    # (SOVEREIGN_GOVERNMENT, DC_INTEGRATED_PCS) intentionally absent —
-    # rejected at ConfiguratorPayload validator (CATL exclusion).
-    (
-        DeploymentContext.DEFENSE_FORWARD,
-        BessCoupling.NONE,
-        AwsPartition.NONE,
-        DeploymentProfile.DEFENSE_NO_BESS,
-    ),
+    # Federal + either DC coupling intentionally absent — rejected at the
+    # ConfiguratorPayload validator (CATL exclusion).
     (
         DeploymentContext.DEFENSE_FORWARD,
         BessCoupling.AC_COUPLED,
         AwsPartition.NONE,
         DeploymentProfile.DEFENSE_AC,
-    ),
-    (
-        DeploymentContext.DEFENSE_FORWARD,
-        BessCoupling.DC_EXTERNAL_PCS,
-        AwsPartition.NONE,
-        DeploymentProfile.DEFENSE_DC_EXT,
     ),
 ]
 
@@ -152,13 +122,10 @@ def test_resolves_full_profile_matrix(
     partition: AwsPartition,
     expected: DeploymentProfile,
 ) -> None:
-    """All 11 (context, coupling) combos resolve to the expected profile."""
+    """Every valid (context, coupling) combo resolves to the expected profile."""
     # Arrange
     service = ModuleResolverService()
-    capacity = 0.0 if coupling == BessCoupling.NONE else 5.0
-    payload = _payload(
-        context=context, coupling=coupling, capacity_mwh=capacity, partition=partition
-    )
+    payload = _payload(context=context, coupling=coupling, partition=partition)
 
     # Act
     actual = service.resolve(payload)
@@ -179,19 +146,6 @@ def test_rounds_up_to_full_compute_container() -> None:
     # Assert
     assert actual.compute_container_count == 2
     assert actual.gpu_count == 112
-
-
-def test_grid_container_absent_when_no_bess() -> None:
-    """bess_coupling=NONE -> no grid containers."""
-    # Arrange
-    service = ModuleResolverService()
-    payload = _payload(coupling=BessCoupling.NONE, capacity_mwh=0.0)
-
-    # Act
-    actual = service.resolve(payload)
-
-    # Assert
-    assert actual.grid_container_count == 0
 
 
 def test_grid_container_count_follows_compute_load() -> None:

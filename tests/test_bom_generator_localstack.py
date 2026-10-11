@@ -249,9 +249,9 @@ def test_dtm_generator_against_localstack(
         deployment_id=uuid4(),
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=2,
-        grid_container_count=0,  # fixture has no grid
-        bess_coupling=BessCoupling.NONE,
-        bess_capacity_mwh=0.0,
+        grid_container_count=1,
+        bess_coupling=BessCoupling.AC_COUPLED,
+        bess_capacity_mwh=5.0,
         sourcing_tier=SourcingTier.COMMERCIAL,
         ems_target=EmsTarget.AWS_STANDARD,
         gpu_variant=GpuVariant.B200,

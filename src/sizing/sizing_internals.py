@@ -105,7 +105,6 @@ def recommend(
     deployment_context: DeploymentContext,
     market_region: MarketRegion | None,
     limit_state: LimitState,
-    bess_coupling: BessCoupling,
     grid_peak_mw: float,
 ) -> tuple[GridPath | None, str]:
     """5.3: first match wins."""
@@ -116,14 +115,12 @@ def recommend(
             GridPath.OFF_GRID,
             "We can't identify a utility here yet — off-grid is available.",
         )
-    if limit_state != LimitState.OVER and bess_coupling != BessCoupling.NONE:
+    if limit_state != LimitState.OVER:
         return (
             GridPath.FLEXIBLE,
             f"{grid_peak_mw:.1f} MW fits distribution service; "
             "flexible service is the fastest path.",
         )
-    if limit_state != LimitState.OVER and bess_coupling == BessCoupling.NONE:
-        return GridPath.FIRM, "Flexible service needs a battery to protect your GPUs."
     return (
         None,
         "Sites this size need transmission-level service. "

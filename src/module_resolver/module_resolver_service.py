@@ -9,7 +9,6 @@ from src.module_resolver.deployment_profile import (
     TIER_FROM_CONTEXT,
 )
 from src.shared.enums import (
-    BessCoupling,
     DeploymentProfile,
     EmsTarget,
     SourcingTier,
@@ -52,8 +51,6 @@ class ModuleResolverService:
         return ceil(payload.target_gpu_count / GPUS_PER_COMPUTE_CONTAINER)
 
     def _grid_container_count(self, payload: ConfiguratorPayload) -> int:
-        if payload.bess_coupling == BessCoupling.NONE:
-            return 0
         peak = site_peak_mw(payload.gpu_variant, payload.target_gpu_count)
         return grid_container_count(peak, payload.bess_coupling)
 

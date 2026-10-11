@@ -5,7 +5,6 @@ same pattern as test_template.py / test_template_protocols.py for template.py.
 """
 
 from src.shared.enums import (
-    BessCoupling,
     DeploymentContext,
     GridPath,
     MarketRegion,
@@ -55,7 +54,6 @@ def test_recommend_defense_forward_always_off_grid() -> None:
         deployment_context=DeploymentContext.DEFENSE_FORWARD,
         market_region=MarketRegion.ERCOT,
         limit_state=LimitState.WITHIN,
-        bess_coupling=BessCoupling.AC_COUPLED,
         grid_peak_mw=5,
     )
     assert path == GridPath.OFF_GRID
@@ -67,33 +65,20 @@ def test_recommend_unresolved_region_is_off_grid() -> None:
         deployment_context=DeploymentContext.COMMERCIAL,
         market_region=None,
         limit_state=LimitState.WITHIN,
-        bess_coupling=BessCoupling.AC_COUPLED,
         grid_peak_mw=5,
     )
     assert path == GridPath.OFF_GRID
 
 
-def test_recommend_flexible_when_bess_present_and_not_over() -> None:
+def test_recommend_flexible_when_not_over() -> None:
     path, reason = recommend(
         deployment_context=DeploymentContext.COMMERCIAL,
         market_region=MarketRegion.ERCOT,
         limit_state=LimitState.NEAR,
-        bess_coupling=BessCoupling.AC_COUPLED,
         grid_peak_mw=5,
     )
     assert path == GridPath.FLEXIBLE
     assert "5.0 MW" in reason
-
-
-def test_recommend_firm_when_no_bess_and_not_over() -> None:
-    path, _ = recommend(
-        deployment_context=DeploymentContext.COMMERCIAL,
-        market_region=MarketRegion.ERCOT,
-        limit_state=LimitState.WITHIN,
-        bess_coupling=BessCoupling.NONE,
-        grid_peak_mw=5,
-    )
-    assert path == GridPath.FIRM
 
 
 def test_recommend_none_when_over_limit() -> None:
@@ -101,7 +86,6 @@ def test_recommend_none_when_over_limit() -> None:
         deployment_context=DeploymentContext.COMMERCIAL,
         market_region=MarketRegion.ERCOT,
         limit_state=LimitState.OVER,
-        bess_coupling=BessCoupling.AC_COUPLED,
         grid_peak_mw=50,
     )
     assert path is None

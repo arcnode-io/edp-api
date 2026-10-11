@@ -56,17 +56,6 @@ def _commercial_ac_manifest() -> Manifest:
     )
 
 
-def _commercial_no_bess_manifest() -> Manifest:
-    """Profile with no grid_container; one plate."""
-    m = _commercial_ac_manifest()
-    m.profiles["commercial_no_bess"] = ProfileAssemblies(
-        compute_container="commercial-ac",
-        grid_container=None,
-        interface_plates=["CG"],
-    )
-    return m
-
-
 def test_commercial_ac_produces_expected_ref_count() -> None:
     """commercial_ac: 2 compute + 2 grid + 3 plates x 2 fmts (step+dxf) + 14 generated = 24."""
     # Arrange
@@ -78,20 +67,6 @@ def test_commercial_ac_produces_expected_ref_count() -> None:
 
     # Assert
     assert len(refs) == 2 + 2 + 3 * 2 + 14
-
-
-def test_commercial_no_bess_omits_grid_container() -> None:
-    """commercial_no_bess profile: zero GRID_CONTAINER_3D refs in the output."""
-    # Arrange
-    svc = ManifestService(manifest=_commercial_no_bess_manifest())
-    resolved = svc.resolve("commercial_no_bess")
-
-    # Act
-    refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
-
-    # Assert
-    grid_refs = [r for r in refs if r.kind == ArtifactKind.GRID_CONTAINER_3D]
-    assert grid_refs == []
 
 
 def test_generated_urls_use_deterministic_key_scheme() -> None:
@@ -176,52 +151,31 @@ def _all_seven_profiles_manifest() -> Manifest:
                 grid_container="commercial-dc-ext",
                 interface_plates=["CG", "BG-DC", "CD"],
             ),
-            "commercial_no_bess": ProfileAssemblies(
-                compute_container="commercial-ac",
-                grid_container="no-bess",
-                interface_plates=["CG", "CD"],
-            ),
             "defense_ac": ProfileAssemblies(
                 compute_container="defense-ac",
                 grid_container="defense-ac",
                 interface_plates=["CG", "BG-AC", "CD"],
-            ),
-            "defense_dc_ext": ProfileAssemblies(
-                compute_container="defense-ac",
-                grid_container="defense-dc-ext",
-                interface_plates=["CG", "BG-DC", "CD"],
-            ),
-            "defense_no_bess": ProfileAssemblies(
-                compute_container="defense-ac",
-                grid_container="defense-no-bess",
-                interface_plates=["CG", "CD"],
             ),
         },
     )
 
 
 # Expected URL counts per profile, derived from manifest shape:
-# 2 compute_container (step + glb), 2 grid_container (step + glb) if present,
+# 2 compute_container (step + glb), 2 grid_container (step + glb),
 # n plates x 2 formats (step + dxf), 14 deterministic generated artifacts
 # (install_sequence ships pdf + xlsx).
-# `no_bess` profiles have 0 grid + 2 plates; ac/dc profiles have 2 grid + 3 plates.
+# Every profile has 2 grid + 3 plates.
 _PROFILE_EXPECTED_URL_COUNT: dict[str, int] = {
     "commercial_ac": 2 + 2 + 3 * 2 + 14,  # 24
     "commercial_dc_int": 2 + 2 + 3 * 2 + 14,
     "commercial_dc_ext": 2 + 2 + 3 * 2 + 14,
-    "commercial_no_bess": 2
-    + 2
-    + 2 * 2
-    + 14,  # 22 — no-bess GRID variant present, no BG-* plate
     "defense_ac": 2 + 2 + 3 * 2 + 14,
-    "defense_dc_ext": 2 + 2 + 3 * 2 + 14,
-    "defense_no_bess": 2 + 2 + 2 * 2 + 14,
 }
 
 
 @pytest.mark.parametrize("profile", sorted(_PROFILE_EXPECTED_URL_COUNT))
 def test_every_v1_profile_resolves_to_expected_url_count(profile: str) -> None:
-    """All 7 v1 profiles round-trip through resolve + URL build.
+    """All 4 profiles round-trip through resolve + URL build.
 
     Closes the "snapshot coverage thin" gap: catches manifest drift across
     every profile, not just commercial_ac.
