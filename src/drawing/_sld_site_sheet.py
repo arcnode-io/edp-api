@@ -1,7 +1,7 @@
 """SLD sheet 1 — site one-line: utility → 13.8 kV site bus → BESS + grid containers.
 
-Fixed size whatever the order: G1 (primary, POI meter) is drawn, and
-G2-GM once as typical. Each grid container's compute feeders are drawn
+Fixed size whatever the order: G1 (primary) is drawn, and G2-GM once as
+typical. The POI meter sits on the utility service (ADR-020). Each grid container's compute feeders are drawn
 as one feeder marked with the containers it stands for (ADR-018).
 """
 
@@ -24,6 +24,9 @@ def draw_site_sheet(msp: Modelspace, bom: Bom) -> None:
     k.source(msp, 40, 272)
     k.text(msp, 48, 272, "UTILITY SERVICE 13.8 kV 3PH 60 Hz", h=2.5)
     k.wire(msp, (40, 267), (40, _MV_BUS_Y))
+    k.meter(msp, 40, 261)
+    k.text(msp, 56, 262.5, "POI METER GRD-MTR-001 AT UTILITY SERVICE (ADR-020)", h=2.0)
+    k.text(msp, 56, 259, "CTs/PTs + INSTALL BY OTHERS", h=2.0)
     k.bus(msp, 30, 390, _MV_BUS_Y, "13.8 kV SITE BUS — BY OTHERS (ADR-018)", 46)
 
     g1_x, typ_x = (110.0, 270.0) if dc_ext else (175.0, 300.0)
@@ -34,8 +37,8 @@ def draw_site_sheet(msp: Modelspace, bom: Bom) -> None:
     if bom.grid_container_qty > 1:
         m = bom.grid_container_qty
         title = f"GRID CONTAINERS G2-G{m} (TYPICAL OF {m - 1})"
-        _grid_column(msp, typ_x, title, rest, dc_ext, poi_meter=False)
-    _notes(msp, bom.grid_container_qty)
+        _grid_column(msp, typ_x, title, rest, dc_ext)
+    _notes(msp)
     k.equipment_list(msp, bom, _equipment(dc_ext), 15, 120)
 
 
@@ -63,19 +66,14 @@ def _grid_column(
     title: str,
     computes: list[int],
     dc_ext: bool,
-    *,
-    poi_meter: bool = True,
 ) -> None:
-    """One grid container: MV breaker → (meter) → Trihal → LV main → LV bus."""
+    """One grid container: MV breaker → Trihal → LV main → LV bus."""
     lx = x + 7  # label column
     k.wire(msp, (x, _MV_BUS_Y), (x, 240.5))
     k.breaker(msp, x, 238)
     k.text(msp, lx, 239.5, "52 MV BREAKER GRD-SWG-001", h=2.0)
     k.text(msp, lx, 236, "50/51 RELAY GRD-RLY-001", h=2.0)
     k.wire(msp, (x, 235.5), (x, 217))
-    if poi_meter:
-        k.meter(msp, x, 227)
-        k.text(msp, x + 16, 227, "POI METER GRD-MTR-001", h=2.0)
     k.transformer(msp, x, 212)
     k.text(msp, lx, 214, "GRD-XFM-001", h=2.0)
     k.text(msp, lx, 210.5, f"{GRID_CONTAINER_KVA:.0f} kVA 13.8 kV - 415Y/240 V", h=2.0)
@@ -113,14 +111,13 @@ def _pcs_branch(msp: Modelspace, x: float) -> None:
     k.box(msp, x, 134, 36, 11, ["CATL ENERONE+ (DC)", "CUSTOMER-SUPPLIED · BG-DC"])
 
 
-def _notes(msp: Modelspace, grid_qty: int) -> None:
+def _notes(msp: Modelspace) -> None:
     notes = [
         "NOTES",
         "1. Compute containers split evenly over grid containers (ADR-018).",
         "2. AC-output BESS ties in at 13.8 kV through customer gear (ADR-016).",
-        "3. PART TBD: selection + fit pending (ADR-017, ADR-019).",
+        "3. POI meter ships loose with G1, installed at the service (ADR-020).",
+        "4. PART TBD: selection + fit pending (ADR-017, ADR-019).",
     ]
-    if grid_qty > 1:
-        notes.append("4. POI meter in G1 meters G1's feed only (ADR-018).")
     for i, note in enumerate(notes):
         k.text(msp, 15, 52 - i * 5, note, h=2.5 if i == 0 else 2.2)

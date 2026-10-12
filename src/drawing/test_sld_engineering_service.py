@@ -102,3 +102,12 @@ def test_compute_sheet_is_typical_of_every_compute_container() -> None:
 
     # Assert
     assert "COMPUTE CONTAINER C1-C10 (TYPICAL OF 10)" in texts
+
+
+def test_poi_meter_sits_at_the_utility_service() -> None:
+    # Act
+    texts = _texts(_sld("commercial_ac", compute_qty=10, grid_qty=3))
+
+    # Assert — ADR-020: one meter at the POI, none inside the grid containers
+    assert texts.count("POI METER") == 1
+    assert "POI METER GRD-MTR-001 AT UTILITY SERVICE (ADR-020)" in texts
