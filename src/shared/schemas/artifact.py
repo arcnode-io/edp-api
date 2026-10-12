@@ -30,6 +30,23 @@ class ArtifactKind(StrEnum):
     DTM = "dtm"
 
 
+class ArtifactSummary(BaseModel):
+    """Real counts for one artifact, shown next to its download.
+
+    Only the fields for the ref's kind are set: bom → line_items + vendors,
+    cable_hose_schedule → runs + media_kinds, dtm → devices + buses,
+    interface_plate → plates (qty of that plate_id; kinds = distinct plate_ids).
+    """
+
+    line_items: int | None = None
+    vendors: int | None = None
+    runs: int | None = None
+    media_kinds: int | None = None
+    devices: int | None = None
+    buses: int | None = None
+    plates: int | None = None
+
+
 class ArtifactRef(BaseModel):
     """One artifact entry — flat shape, one per (kind, format[, plate_id])."""
 
@@ -37,6 +54,9 @@ class ArtifactRef(BaseModel):
     format: str  # json | xlsx | dxf | pdf | step | glb
     url: str
     plate_id: str | None = None  # only when kind=INTERFACE_PLATE
+    # None until the job is COMPLETE (counts only exist after generation), and
+    # always None for kinds without counts.
+    summary: ArtifactSummary | None = None
 
 
 class JobCreated(BaseModel):

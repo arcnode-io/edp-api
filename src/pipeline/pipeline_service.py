@@ -54,6 +54,7 @@ from src.drawing.sld_engineering_service import (
 from src.drawing.sld_hmi_svg_service import SldHmiSvgService
 from src.dtm.dtm_generator_service import DtmGeneratorService
 from src.shared.enums import DeploymentContext
+from src.pipeline.artifact_summary import with_summaries
 from src.shared.schemas.artifact import ArtifactKind, ArtifactRef
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 from src.shared.schemas.dtm import Dtm
@@ -104,8 +105,10 @@ class PipelineService:
         resolution: ModuleResolution,
         urls: list[ArtifactRef],
         manifest: Manifest,
-    ) -> None:
+    ) -> list[ArtifactRef]:
         """Run the full generation pipeline. Raises on any per-artifact failure.
+
+        Returns `urls` with each ref's real counts attached (`summary`).
 
         `manifest` is the snapshot pinned by JobsService at create() — same
         object used to resolve profile→URLs. Passed through to the DTM
@@ -149,6 +152,13 @@ class PipelineService:
                 cable_hose=cable_hose,
                 install_sequence=install_sequence,
             )
+        return with_summaries(
+            urls,
+            bom=bom,
+            dtm=dtm,
+            cable_hose=cable_hose,
+            deployment_context=_context_string(payload.deployment_context),
+        )
 
     def _run_one(
         self,

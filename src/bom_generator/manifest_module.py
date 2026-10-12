@@ -20,8 +20,8 @@ class _StubManifestClient:
     """Test double for ManifestClient — serves an in-memory Manifest, no S3.
 
     fetch_manifest returns the seeded manifest. The other fetch_* methods
-    return minimal shapes: a bom.yaml is just a shell (every container has
-    one) with no parts, a topology has no devices. uploads
+    return minimal shapes: a bom.yaml is a shell (every container has one),
+    one of each manifest plate and no parts; a topology has no devices. uploads
     are captured in `uploads: dict[url, bytes]` for test assertions.
     """
 
@@ -36,6 +36,7 @@ class _StubManifestClient:
         return {
             "shell": {"part_number": "ARC-CNT-STUB", "description": "stub shell"},
             "parts": [],
+            "plates": [{"id": pid, "qty": 1} for pid in self._manifest.plates],
         }
 
     def fetch_topology_yaml(self, _url: str) -> dict:

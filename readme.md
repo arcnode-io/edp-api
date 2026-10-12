@@ -172,6 +172,7 @@ src/
 │   └── assets/arcnode_logo_source.svg
 ├── pipeline/
 │   ├── artifact_urls.py             # ResolvedProfile → list[ArtifactRef] (deterministic URLs)
+│   ├── artifact_summary.py          # real per-artifact counts once the pipeline ran
 │   └── pipeline_service.py          # BackgroundTask: generate + upload per ArtifactRef
 ├── jobs/
 │   ├── jobs_controller.py
@@ -184,7 +185,7 @@ src/
 │   └── schemas/
 │       ├── configurator_payload.py
 │       ├── module_resolution.py
-│       ├── artifact.py              # ArtifactKind, ArtifactRef, JobCreated, JobResult, JobStatus
+│       ├── artifact.py              # ArtifactKind, ArtifactRef, ArtifactSummary, JobCreated, JobResult, JobStatus
 │       ├── dtm.py                   # Dtm + Device (parent-chain, computed mode)
 │       ├── dtm_primitives.py        # SizingParams, Bus, Connection, PROVISIONED_AT_COMMISSIONING
 │       ├── template.py              # DeviceTemplate + Command + Fanout + ContainsEntry
@@ -385,11 +386,23 @@ class ArtifactKind(StrEnum):
     DTM                  = "dtm"
 
 
+class ArtifactSummary(BaseModel):
+    # Real counts, set only for the ref's kind. Plate `kinds` = distinct plate_ids.
+    line_items:  int | None = None   # bom
+    vendors:     int | None = None   # bom
+    runs:        int | None = None   # cable_hose_schedule (cables + hoses)
+    media_kinds: int | None = None   # cable_hose_schedule
+    devices:     int | None = None   # dtm
+    buses:       int | None = None   # dtm
+    plates:      int | None = None   # interface_plate (qty of this plate_id)
+
+
 class ArtifactRef(BaseModel):
     kind:     ArtifactKind
     format:   str                 # json | xlsx | dxf | pdf | step | glb
     url:      str
     plate_id: str | None = None   # only when kind=INTERFACE_PLATE
+    summary:  ArtifactSummary | None = None   # None until COMPLETE; None for uncounted kinds
 
 
 class JobCreated(BaseModel):

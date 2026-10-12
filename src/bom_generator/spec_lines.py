@@ -46,6 +46,15 @@ def _derive_taa(spec: dict) -> bool:
     return spec.get("fab_tier") in {"federal_civilian", "dod_eligible"}
 
 
+def plate_part_number(plate_id: str, deployment_context: str) -> str:
+    """ARCNODE PN for a plate; defense builds get the -D suffix."""
+    revision = "001"  # v1 — pull from plate_spec when versioning lands
+    pn = f"ARC-PLT-{plate_id}-{revision}"
+    if deployment_context != "commercial":
+        pn += "-D"
+    return pn
+
+
 def plate_spec_to_custom_line(
     plate_id: str,
     plate_spec: dict,
@@ -54,11 +63,7 @@ def plate_spec_to_custom_line(
     deployment_context: str = "commercial",
 ) -> BomLineItem:
     """Map plate spec.yaml + URL → custom_fabrication BOM line item."""
-    revision = "001"  # v1 — pull from plate_spec when versioning lands
-    pn = f"ARC-PLT-{plate_id}-{revision}"
-    if deployment_context != "commercial":
-        pn += "-D"
-
+    pn = plate_part_number(plate_id, deployment_context)
     ctx = plate_spec.get("deployment_contexts", {}).get(deployment_context, {})
     return BomLineItem(
         part_number=pn,

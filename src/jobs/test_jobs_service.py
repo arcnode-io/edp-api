@@ -23,7 +23,7 @@ from src.shared.enums import (
     OnsiteGenerationType,
     PrimaryWorkload,
 )
-from src.shared.schemas.artifact import JobStatus
+from src.shared.schemas.artifact import ArtifactRef, ArtifactSummary, JobStatus
 from src.shared.schemas.configurator_grid import (
     Grid,
     OnsiteGeneration,
@@ -210,8 +210,9 @@ class _CapturingPipeline:
     def __init__(self) -> None:
         self.last_call: dict[str, object] | None = None
 
-    def run(self, **kwargs: object) -> None:
+    def run(self, **kwargs: object) -> object:
         self.last_call = kwargs
+        return kwargs["urls"]
 
 
 class _MutatingClient:
@@ -266,3 +267,43 @@ def test_execute_uses_manifest_pinned_at_create_not_re_fetched(
     # Assert — pipeline saw the original (pinned at create), not the mutation
     assert capturing.last_call is not None
     assert capturing.last_call["manifest"] is original_manifest
+
+
+class _CountingPipeline:
+    """Returns the refs with a DTM count attached, like the real pipeline."""
+
+    def run(self, *, urls: list[ArtifactRef], **_: object) -> list[ArtifactRef]:
+        return [
+            r.model_copy(update={"summary": ArtifactSummary(devices=36, buses=1)})
+            for r in urls
+        ]
+
+
+def test_completed_job_serves_the_pipelines_counts(
+    payload: ConfiguratorPayload,
+) -> None:
+    """GET after execute shows the counts the pipeline produced."""
+    # Arrange
+    service = JobsService(
+        resolver=ModuleResolverService(),
+        client=_StaticClient(
+            _commercial_ac_manifest()
+        ),  # ty: ignore[invalid-argument-type]
+        pipeline=_CountingPipeline(),  # ty: ignore[invalid-argument-type]
+        store=JobStore(),
+        regions=_regions(),
+        sizing=SizingService(regions=_regions()),
+    )
+    created = service.create(payload)
+
+    # Act
+    service.execute(created.job_id)
+    actual = service.get(created.job_id)
+
+    # Assert
+    assert actual is not None
+    assert actual.status == JobStatus.COMPLETE
+    assert all(
+        r.summary == ArtifactSummary(devices=36, buses=1)
+        for r in actual.edp_artifact_urls
+    )

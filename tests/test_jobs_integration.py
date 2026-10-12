@@ -69,13 +69,18 @@ def test_post_then_get_roundtrip() -> None:
     # Act — GET
     got = client.get(created["status_url"])
 
-    # Assert — 200 + same urls. Status is "complete" because FastAPI's
-    # BackgroundTask runs after the POST response ships and before the next
-    # request; with the stub manifest the pipeline finishes synchronously.
+    # Assert — 200 + same urls, now with counts. Status is "complete" because
+    # FastAPI's BackgroundTask runs after the POST response ships and before
+    # the next request; with the stub manifest the pipeline finishes
+    # synchronously.
     assert got.status_code == 200, got.text
     body = got.json()
     assert body["status"] == "complete", body
-    assert body["edp_artifact_urls"] == created["edp_artifact_urls"]
+    assert [u["url"] for u in body["edp_artifact_urls"]] == [
+        u["url"] for u in created["edp_artifact_urls"]
+    ]
+    bom = next(u for u in body["edp_artifact_urls"] if u["kind"] == "bom")
+    assert bom["summary"]["line_items"] > 0
 
 
 def test_get_unknown_job_returns_404() -> None:

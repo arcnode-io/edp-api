@@ -127,7 +127,7 @@ class JobsService:
             logger.error("execute called for unknown job %s", job_id)
             return
         try:
-            self._pipeline.run(
+            urls = self._pipeline.run(
                 payload=record.payload,
                 resolution=record.resolution,
                 urls=record.edp_artifact_urls,
@@ -139,7 +139,11 @@ class JobsService:
                 record.model_copy(update={"status": JobStatus.FAILED, "error": str(e)})
             )
             return
-        self._store.put(record.model_copy(update={"status": JobStatus.COMPLETE}))
+        self._store.put(
+            record.model_copy(
+                update={"status": JobStatus.COMPLETE, "edp_artifact_urls": urls}
+            )
+        )
         logger.info("job %s complete", job_id)
 
     def get(self, job_id: UUID) -> JobResult | None:
