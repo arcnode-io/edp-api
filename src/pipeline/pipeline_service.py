@@ -135,9 +135,9 @@ class PipelineService:
         # distributor creds aren't set in env).
         if self._enrichment is not None:
             _attach_offers(bom, self._enrichment)
-        sld_eng = self._sld_eng.generate(dtm, profile=profile)
+        sld_eng = self._sld_eng.generate(dtm, bom=bom, profile=profile)
         pid_cooling = self._pid_cooling.generate(dtm, profile=profile)
-        comms_diagram = self._comms_diagram.generate(dtm, profile=profile)
+        comms_diagram = self._comms_diagram.generate(dtm, bom=bom, profile=profile)
         install_sequence = self._install_sequence.generate(dtm, profile=profile)
         for ref in urls:
             if not ref.url.startswith(_GENERATED_PREFIX):

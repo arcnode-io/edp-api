@@ -75,7 +75,7 @@ class PidCoolingService:
         sheet1 = self._build_sheet1(dtm, profile)
         sheet2 = self._build_sheet2(dtm, profile)
         return PidCoolingOutputs(
-            dxf=serialize_dxf(sheet1),
+            dxf=serialize_dxf([sheet1, sheet2]),
             pdf=serialize_pdf([sheet1, sheet2], title="ARCNODE P&ID — COOLANT SYSTEM"),
         )
 

@@ -30,6 +30,7 @@ class BomLineItem(BaseModel):
     procurement_path: ProcurementPath
 
     # Catalog-only fields
+    equipment_id: str | None = None  # edp-module-assemblies equipment/<id>
     datasheet_url: str | None = None
     lead_time_weeks: int | None = None
     unit_cost_usd: float | None = None

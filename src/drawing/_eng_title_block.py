@@ -17,6 +17,8 @@ Title block layout (left-to-right):
 
 from datetime import UTC, datetime
 
+import ezdxf
+from ezdxf.document import Drawing
 from ezdxf.layouts import Modelspace
 
 from src.drawing._arcnode_logo import arcnode_logo_polylines
@@ -29,6 +31,20 @@ _FRAME_INSET: float = 5.0
 _TITLE_BLOCK_WIDTH: float = 200.0
 _TITLE_BLOCK_HEIGHT: float = 50.0
 _LOGO_STRIP_WIDTH: float = 30.0
+
+
+def new_sheet(
+    dtm: Dtm, *, title: str, profile: str, layers: tuple[str, ...], n: int, m: int
+) -> Drawing:
+    """Empty A3 sheet n of m: layers, frame and title block."""
+    doc = ezdxf.new(dxfversion="R2018", setup=True)
+    for name in layers:
+        if name not in doc.layers:
+            doc.layers.add(name)
+    msp = doc.modelspace()
+    draw_sheet_frame(msp)
+    draw_title_block(msp, dtm, title=title, profile=profile, sheet_n=n, sheet_m=m)
+    return doc
 
 
 def draw_sheet_frame(msp: Modelspace) -> None:

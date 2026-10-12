@@ -154,3 +154,24 @@ def test_every_container_ships_in_its_own_shell() -> None:
         "ARC-CNT-GRD-001": (3, ProcurementPath.CUSTOM_FABRICATION),
     }
     assert actual == expected
+
+
+def test_catalog_lines_name_their_equipment() -> None:
+    # Arrange — drawings find parts by equipment_id, not by MPN
+    service = BomGeneratorService(_client(_manifest()))
+
+    # Act
+    bom = service.generate(
+        deployment_id=uuid4(),
+        profile="commercial_ac",
+        compute_container_qty=1,
+        grid_container_qty=1,
+    )
+
+    # Assert
+    actual = {
+        li.equipment_id
+        for li in bom.line_items
+        if li.procurement_path == ProcurementPath.CATALOG
+    }
+    assert actual == set(_GRID_PARTS)

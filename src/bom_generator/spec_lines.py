@@ -11,6 +11,7 @@ def spec_to_catalog_line(spec: dict, qty: int) -> BomLineItem:
         description=spec.get("description", ""),
         qty=qty,
         procurement_path=ProcurementPath.CATALOG,
+        equipment_id=spec["equipment_id"],
         datasheet_url=spec.get("datasheet_url"),
         lead_time_weeks=spec.get("lead_time_weeks"),
         unit_cost_usd=spec.get("unit_cost_usd"),
