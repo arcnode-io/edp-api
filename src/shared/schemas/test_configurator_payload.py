@@ -65,6 +65,7 @@ def _kwargs(
     partition: AwsPartition = AwsPartition.STANDARD,
     grid: Grid = _OFF_GRID,
     ride_through_hours: float = 0.0,
+    site: Site = _SITE,
 ) -> _PayloadKwargs:
     return _PayloadKwargs(
         deployment_id=DEPLOYMENT_ID,
@@ -80,7 +81,7 @@ def _kwargs(
         climate_zone=ClimateZone.TEMPERATE,
         deployment_context=context,
         aws_partition=partition,
-        site=_SITE,
+        site=site,
         onsite_generation=_NO_GEN,
         grid=grid,
     )
@@ -220,4 +221,33 @@ def test_islanding_requires_ride_through_hours() -> None:
     with pytest.raises(
         ValidationError, match="intentional_islanding=true requires ride_through_hours"
     ):
+        ConfiguratorPayload(**kw)
+
+
+_NO_COORDS = Site(location=SiteLocation(lat=None, lon=None), country="US")
+_FIRM = Grid(
+    path=GridPath.FIRM,
+    service_type=ServiceType.FIRM,
+    wires_owner=WiresOwner(id="oncor", name="Oncor", type=WiresOwnerType.TDSP),
+    market_region=MarketRegion.ERCOT,
+)
+
+
+def test_off_grid_site_needs_no_coordinates() -> None:
+    # Arrange — no utility lookup off grid, so lat/lon can be unknown
+    kw = _kwargs(site=_NO_COORDS)
+
+    # Act
+    payload = ConfiguratorPayload(**kw)
+
+    # Assert
+    assert payload.site.location.lat is None
+
+
+def test_grid_connected_site_requires_coordinates() -> None:
+    # Arrange
+    kw = _kwargs(site=_NO_COORDS, grid=_FIRM)
+
+    # Act / Assert
+    with pytest.raises(ValidationError, match=r"requires site\.location lat and lon"):
         ConfiguratorPayload(**kw)

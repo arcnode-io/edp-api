@@ -21,12 +21,15 @@ from src.shared.enums import (
 
 
 class SiteLocation(BaseModel):
-    """Site coordinates — input to platform-api's /grid/resolve."""
+    """Site coordinates — input to platform-api's /grid/resolve.
+
+    Null only off grid (no utility to resolve); ConfiguratorPayload enforces it.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    lat: float = Field(ge=-90, le=90)
-    lon: float = Field(ge=-180, le=180)
+    lat: float | None = Field(ge=-90, le=90)
+    lon: float | None = Field(ge=-180, le=180)
     address: str | None = None
 
 

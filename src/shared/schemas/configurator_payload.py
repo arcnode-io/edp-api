@@ -10,6 +10,7 @@ from src.shared.enums import (
     ClimateZone,
     DeploymentContext,
     GpuVariant,
+    GridPath,
     PrimaryWorkload,
 )
 from src.shared.schemas.configurator_grid import Grid, OnsiteGeneration, Site
@@ -85,5 +86,15 @@ class ConfiguratorPayload(BaseModel):
         if self.grid.intentional_islanding and self.ride_through_hours <= 0:
             raise ValueError(
                 "grid.intentional_islanding=true requires ride_through_hours > 0"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def grid_connected_requires_coordinates(self) -> "ConfiguratorPayload":
+        """Grid-connected paths need lat/lon to resolve the wires owner."""
+        loc = self.site.location
+        if self.grid.path != GridPath.OFF_GRID and (loc.lat is None or loc.lon is None):
+            raise ValueError(
+                f"grid.path={self.grid.path.value} requires site.location lat and lon"
             )
         return self
