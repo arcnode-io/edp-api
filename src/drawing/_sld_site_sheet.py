@@ -38,8 +38,8 @@ def draw_site_sheet(msp: Modelspace, bom: Bom) -> None:
         m = bom.grid_container_qty
         title = f"GRID CONTAINERS G2-G{m} (TYPICAL OF {m - 1})"
         _grid_column(msp, typ_x, title, rest, dc_ext)
-    _notes(msp)
-    k.equipment_list(msp, bom, _equipment(dc_ext), 15, 120)
+    _notes(msp, dc_ext)
+    k.equipment_list(msp, bom, _equipment(dc_ext), 15, 95)
 
 
 def _equipment(dc_ext: bool) -> list[str]:
@@ -102,20 +102,33 @@ def _compute_label(computes: list[int]) -> str:
 
 
 def _pcs_branch(msp: Modelspace, x: float) -> None:
-    """dc_ext: PCS pair on the LV bus, CATL DC through BG-DC."""
+    """dc_ext: PCS pair on the battery pad, AC in through BG-AC (ADR-022)."""
     k.wire(msp, (x, _LV_BUS_Y), (x, 180.5))
     k.breaker(msp, x, 178)
-    k.wire(msp, (x, 175.5), (x, 170))
-    k.box(msp, x, 164, 30, 11, ["GRD-PCS-001 x2", "PD500 417 kW EA"])
-    k.wire(msp, (x, 158.5), (x, 140))
-    k.box(msp, x, 134, 36, 11, ["CATL ENERONE+ (DC)", "CUSTOMER-SUPPLIED · BG-DC"])
+    k.text(msp, x + 4, 172, "VIA BG-AC", h=2.0)
+    k.wire(msp, (x, 175.5), (x, 141))
+    k.box(
+        msp,
+        x,
+        135,
+        30,
+        11,
+        ["GRD-PCS-001 x2 ON BATTERY PAD (ADR-022)", "PD500 417 kW EA"],
+    )
+    k.wire(msp, (x, 129.5), (x, 121))
+    k.box(msp, x, 115, 36, 11, ["CATL ENERONE+ (DC)", "CUSTOMER-SUPPLIED"])
 
 
-def _notes(msp: Modelspace) -> None:
+def _notes(msp: Modelspace, dc_ext: bool) -> None:
+    battery = (
+        "2. PCS pair on the battery pad feeds the LV bus through BG-AC (ADR-022)."
+        if dc_ext
+        else "2. AC-output BESS ties in at 13.8 kV through customer gear (ADR-016)."
+    )
     notes = [
         "NOTES",
         "1. Compute containers split evenly over grid containers (ADR-018).",
-        "2. AC-output BESS ties in at 13.8 kV through customer gear (ADR-016).",
+        battery,
         "3. POI meter ships loose with G1, installed at the service (ADR-020).",
         "4. PART TBD: selection + fit pending (ADR-017, ADR-019).",
     ]

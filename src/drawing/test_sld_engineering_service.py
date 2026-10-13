@@ -82,8 +82,8 @@ def test_dc_ext_battery_lands_on_the_pcs_pair() -> None:
     # Act
     texts = _texts(_sld("commercial_dc_ext", compute_qty=2, grid_qty=1))
 
-    # Assert
-    assert "GRD-PCS-001 x2" in texts
+    # Assert — PCS pair on the battery pad, AC in through BG-AC (ADR-022)
+    assert "GRD-PCS-001 x2 ON BATTERY PAD (ADR-022)" in texts
     assert "STEP-UP" not in texts
 
 
