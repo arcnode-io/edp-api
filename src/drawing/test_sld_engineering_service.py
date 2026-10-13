@@ -74,7 +74,7 @@ def test_ac_battery_ties_in_at_mv_through_customer_gear() -> None:
     texts = _texts(_sld("commercial_ac", compute_qty=2, grid_qty=1))
 
     # Assert — ADR-016
-    assert "STEP-UP 13.8 kV / 480 V — BY OTHERS" in texts
+    assert "T-BESS STEP-UP, BESS AC TO 13.8 kV — BY OTHERS" in texts
     assert "GRD-PCS-001" not in texts
 
 

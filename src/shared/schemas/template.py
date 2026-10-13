@@ -111,7 +111,7 @@ class ContainsEntry(BaseModel):
 
     `power_from` names sibling `contains[].template` slugs that supply
     AC power to this entry. Empty list = doesn't draw power (e.g. PDUs
-    themselves, sensors). Multi-entry list = 2N or N+1 redundant feeds;
+    themselves, sensors). Multi-entry list = redundant feeds (A/B dual-path);
     v1 cable schedule emits one row (primary feed) and parks the
     redundant-feed row for v2 when feed-side designators (A/B) live on
     PDU instances.

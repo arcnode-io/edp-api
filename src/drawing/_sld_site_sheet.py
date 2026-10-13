@@ -55,7 +55,7 @@ def _mv_battery(msp: Modelspace, x: float, profile: str) -> None:
     k.text(msp, x + 6, 238, "MV DISCONNECT — BY OTHERS", h=2.0)
     k.wire(msp, (x, 235), (x, 225))
     k.transformer(msp, x, 220)
-    k.text(msp, x + 6, 220, "STEP-UP 13.8 kV / 480 V — BY OTHERS", h=2.0)
+    k.text(msp, x + 6, 220, "T-BESS STEP-UP, BESS AC TO 13.8 kV — BY OTHERS", h=2.0)
     k.wire(msp, (x, 213), (x, 203))
     k.box(msp, x, 196, 44, 13, [battery, "CUSTOMER-SUPPLIED (ADR-016)"])
 

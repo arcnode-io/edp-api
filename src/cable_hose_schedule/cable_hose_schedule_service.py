@@ -12,7 +12,7 @@ Three derivations:
 
 2. **Power cables** — driven by `ContainsEntry.power_from` on the module
    template. For every powered child, emits one row from a PDU sibling
-   (primary feed) to the consumer device. Redundant 2N feeds are
+   (primary feed) to the consumer device. Redundant B-path feeds are
    reserved for v2 when PDU instances carry A/B-side designators.
 
 3. **Hoses** — every CDU device in a parent module emits a primary

@@ -2,7 +2,7 @@
 
 Feeder in through CG → panelboard → one branch per PDU, CDU and dry
 cooler. PDUs 1-3 form feed A, 4-6 feed B; every node PSU pair splits
-across A and B (ADR-005: 2N distribution, single source).
+across A and B (ADR-005: A/B dual-path from one source, not 2N).
 """
 
 from ezdxf.layouts import Modelspace
@@ -70,7 +70,7 @@ def draw_compute_sheet(msp: Modelspace, bom: Bom) -> None:
     for i, note in enumerate(
         [
             "NOTES",
-            "1. 2N distribution, single source: A and B share one feeder (ADR-005).",
+            "1. A/B dual-path from one source, not 2N: both paths share one feeder (ADR-005).",
             "2. PART TBD: selection + fit pending (ADR-017, ADR-019).",
         ]
     ):

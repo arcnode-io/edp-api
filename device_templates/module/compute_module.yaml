@@ -4,8 +4,8 @@ description: Compute container aggregation — utilization rollups
 
 contains:
   # PDUs are the power source for everything else in the module — feed from
-  # the grid container's LV bus per ADR-005 (415Y/240V). 4× per compute
-  # container in 2N redundancy. PDU itself draws no `power_from` — its
+  # the grid container's LV bus per ADR-005 (415Y/240V). 6× per compute
+  # container, A/B dual-path (3 per path). PDU itself draws no `power_from` — its
   # upstream feed comes from the grid container, modeled at v2.
   - template: pdu
     qty: scalable
