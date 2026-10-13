@@ -138,16 +138,14 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
     # Module Devices exist
     assert "compute_module_1" in dtm.devices
     assert "grid_module_1" in dtm.devices
-    # Compute leaves: 7 gpu_nodes + 1 cdu + 1 network_switch + 6 pdus = 15
-    compute_descendants = [
-        s for s, d in dtm.devices.items() if d.parent == "compute_module_1"
-    ]
-    assert len(compute_descendants) == 15
-    # Grid leaves: 3 (switchgear, poi_meter, protective_relay)
-    grid_descendants = [
-        s for s, d in dtm.devices.items() if d.parent == "grid_module_1"
-    ]
-    assert len(grid_descendants) == 3
+    # Every device in each container's topology becomes one DTM leaf
+    for module, path in (
+        ("compute_module_1", "compute-container/commercial-ac/topology.yaml"),
+        ("grid_module_1", "grid-container/commercial-ac/topology.yaml"),
+    ):
+        listed = yaml.safe_load((_ASSEMBLIES_DIR / path).read_text())["devices"]
+        leaves = [s for s, d in dtm.devices.items() if d.parent == module]
+        assert len(leaves) == len(listed), module
     # Templates used
     assert "gpu_node" in dtm.templates_used
     assert "compute_module" in dtm.templates_used
