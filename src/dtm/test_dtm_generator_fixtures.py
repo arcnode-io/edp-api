@@ -32,6 +32,7 @@ COMPUTE_TOPOLOGY: dict = {
     "devices": [
         {
             "template": "gpu_node",
+            "tag": f"NODE-{i}",
             "description": f"node {i}",
             "connection": {"host": "mock-redfish-server", "port": 8443},
         }
@@ -40,6 +41,7 @@ COMPUTE_TOPOLOGY: dict = {
     + [
         {
             "template": "cdu",
+            "tag": "CDU-1",
             "description": "cdu",
             "connection": {"host": "mock-redfish-server", "port": 8443},
         }
@@ -51,16 +53,19 @@ GRID_TOPOLOGY: dict = {
     "devices": [
         {
             "template": "switchgear",
+            "tag": "SWG-1",
             "description": "swg",
             "connection": {"host": "mock-modbus-server", "port": 502, "unit_id": "1"},
         },
         {
             "template": "poi_meter",
+            "tag": "MTR-POI",
             "description": "meter",
             "connection": {"host": "mock-modbus-server", "port": 502, "unit_id": "2"},
         },
         {
             "template": "protective_relay",
+            "tag": "RLY-1",
             "description": "relay",
             "connection": {"host": "mock-dnp3-server", "port": 20000},
         },

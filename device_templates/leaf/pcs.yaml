@@ -1,0 +1,24 @@
+template: pcs
+kind: leaf
+equipment_id: GRD-PCS-001
+vendor: EPC Power
+model: PD500/AC-480 (50-100195)
+description: EPC Power PD500 bidirectional PCS, 417 kW at 415 V, on the battery pad (ADR-022)
+
+# Passive until EPC's Modbus map is in hand (EPC docs are sales-gated).
+
+install_tasks:
+  - name: set_in_outdoor_enclosure
+    est_minutes: 120
+    crew_role: electrician
+    cx_level: L1
+  - name: terminate_dc_and_ac
+    depends_on: [set_in_outdoor_enclosure]
+    est_minutes: 180
+    crew_role: electrician
+    cx_level: L2
+  - name: connect_coolant_loop
+    depends_on: [set_in_outdoor_enclosure]
+    est_minutes: 90
+    crew_role: plumber
+    cx_level: L2

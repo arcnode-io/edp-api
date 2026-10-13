@@ -28,6 +28,8 @@ class TopologyDeviceSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     template: str  # references a slug in edp-api/device_templates/
+    # Container-local tag (e.g. PDU-A1); the DTM prefixes the container (C1-PDU-A1)
+    tag: str | None = None
     description: str
     connection: TopologyConnectionSpec | None = None  # None = passive, never polled
 

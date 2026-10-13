@@ -1,0 +1,25 @@
+template: transformer
+kind: leaf
+equipment_id: GRD-XFM-001
+vendor: Schneider Electric
+model: Trihal TRI100013684152509
+description: Schneider Trihal 1000 kVA cast-resin dry-type step-down transformer, 13.8 kV to 415Y/240 V
+
+# Passive: drawn on the SLD, never polled. Its integrated thermometer is
+# Modbus RTU, not on the network yet.
+
+install_tasks:
+  - name: set_and_anchor
+    est_minutes: 180
+    crew_role: electrician
+    cx_level: L1
+  - name: terminate_hv_and_lv
+    depends_on: [set_and_anchor]
+    est_minutes: 240
+    crew_role: electrician
+    cx_level: L2
+  - name: insulation_resistance_and_ratio_test
+    depends_on: [terminate_hv_and_lv]
+    est_minutes: 120
+    crew_role: electrician
+    cx_level: L3

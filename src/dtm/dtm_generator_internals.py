@@ -48,13 +48,19 @@ def emit_container(
     buses: list[Bus],
     slug_counter: dict[str, int],
     by_template: dict[str, list[str]],
+    container_tag: str,
 ) -> None:
-    """Emit a module Device + its leaf children into devices/buses/counters."""
+    """Emit a module Device + its leaf children into devices/buses/counters.
+
+    container_tag (C1, G2, ...) is the module's display name and prefixes
+    each child's topology tag, so every device has one site-unique tag.
+    """
     module_template = _MODULE_TEMPLATE_BY_ASSEMBLY_TYPE[asm_type]
     module_slug = assign_slug(module_template, slug_counter)
     devices[module_slug] = Device(
         device_id=module_slug,
         template=module_template,
+        display_name=container_tag,
         parent=None,
         connection=None,
     )
@@ -73,6 +79,7 @@ def emit_container(
         devices[slug] = Device(
             device_id=slug,
             template=spec.template,
+            display_name=f"{container_tag}-{spec.tag}" if spec.tag else None,
             parent=module_slug,
             connection=(
                 Connection(host=conn.host, port=conn.port, unit_id=conn.unit_id)

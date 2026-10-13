@@ -1,0 +1,19 @@
+template: panelboard
+kind: leaf
+equipment_id: CMP-PNL-001
+vendor: TBD
+model: TBD (UL 67 panelboard)
+description: Compute container 415Y/240 V panelboard, main breaker plus branches for 6 PDUs, CDU and dry cooler (ADR-017)
+
+# Passive: part selection pending (ADR-017).
+
+install_tasks:
+  - name: mount_and_ground
+    est_minutes: 90
+    crew_role: electrician
+    cx_level: L1
+  - name: terminate_feeder_and_branches
+    depends_on: [mount_and_ground]
+    est_minutes: 180
+    crew_role: electrician
+    cx_level: L2

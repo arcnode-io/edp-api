@@ -60,8 +60,9 @@ class DtmGeneratorService:
         slug_counter: dict[str, int] = {}
         by_template: dict[str, list[str]] = {}
 
-        for _ in range(resolution.compute_container_count):
+        for n in range(1, resolution.compute_container_count + 1):
             emit_container(
+                container_tag=f"C{n}",
                 client=self._client,
                 manifest=manifest,
                 asm_type="compute_container",
@@ -82,8 +83,9 @@ class DtmGeneratorService:
                 raise ValueError(f"profile {profile!r} has no feeder grid variant")
             feeders = resolution.grid_container_count - 1
             grid_variants.extend([prof.grid_feeder_container] * feeders)
-        for variant in grid_variants:
+        for k, variant in enumerate(grid_variants, start=1):
             emit_container(
+                container_tag=f"G{k}",
                 client=self._client,
                 manifest=manifest,
                 asm_type="grid_container",

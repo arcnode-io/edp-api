@@ -199,3 +199,24 @@ def test_each_grid_container_gets_its_own_bus() -> None:
         "ac_main_1": ["poi_meter_1", "protective_relay_1", "switchgear_1"],
         "ac_main_2": ["protective_relay_2", "switchgear_2"],
     }
+
+
+def test_every_device_carries_its_site_unique_tag() -> None:
+    # Arrange — tags are per container in topology; the DTM prefixes the
+    # container (C1, C2, G1) so every device has one site-unique tag
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+
+    # Act
+    actual = service.generate(
+        profile="commercial_ac",
+        resolution=_resolution(container_count=2),
+        manifest=_manifest(),
+    )
+
+    # Assert
+    names = {d: dev.display_name for d, dev in actual.devices.items()}
+    assert (names["compute_module_2"], names["gpu_node_4"], names["poi_meter_1"]) == (
+        "C2",
+        "C2-NODE-1",
+        "G1-MTR-POI",
+    )

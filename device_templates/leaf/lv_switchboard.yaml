@@ -1,0 +1,25 @@
+template: lv_switchboard
+kind: leaf
+equipment_id: GRD-LVS-001
+vendor: TBD
+model: TBD (UL 891 switchboard, engineered to order)
+description: 415Y/240 V LV switchboard, 1600 A 100%-rated main, one feeder per compute container (ADR-017)
+
+# Passive: part selection pending (ADR-017). Breaker trip units are a
+# candidate for Modbus later.
+
+install_tasks:
+  - name: set_and_anchor
+    est_minutes: 180
+    crew_role: electrician
+    cx_level: L1
+  - name: terminate_main_and_feeders
+    depends_on: [set_and_anchor]
+    est_minutes: 300
+    crew_role: electrician
+    cx_level: L2
+  - name: set_trip_units_and_test
+    depends_on: [terminate_main_and_feeders]
+    est_minutes: 120
+    crew_role: electrician
+    cx_level: L3

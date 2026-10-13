@@ -1,0 +1,24 @@
+template: grid_mgmt_switch
+kind: leaf
+equipment_id: GRD-SWITCH-001
+vendor: TBD
+model: TBD (IEC 61850-3 managed switch, fiber uplinks)
+description: Grid container 1 GbE management switch; compute uplinks and the EMS gateway land here (ADR-019)
+
+# Passive in the EMS; part selection pending (ADR-019).
+
+install_tasks:
+  - name: mount
+    est_minutes: 30
+    crew_role: it
+    cx_level: L1
+  - name: terminate_fiber_and_copper
+    depends_on: [mount]
+    est_minutes: 120
+    crew_role: it
+    cx_level: L2
+  - name: configure_vlans_and_uplink
+    depends_on: [terminate_fiber_and_copper]
+    est_minutes: 60
+    crew_role: it
+    cx_level: L3

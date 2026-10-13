@@ -1,0 +1,17 @@
+template: rack
+kind: leaf
+equipment_id: CMP-RACK-001
+vendor: Schneider Electric (APC brand)
+model: NetShelter SX Advanced AR9658
+description: APC NetShelter SX Advanced 52U rack holding the nodes, CDU, switches and PDUs
+
+install_tasks:
+  - name: set_level_and_anchor
+    est_minutes: 60
+    crew_role: general
+    cx_level: L1
+  - name: bond_to_ground
+    depends_on: [set_level_and_anchor]
+    est_minutes: 30
+    crew_role: electrician
+    cx_level: L1

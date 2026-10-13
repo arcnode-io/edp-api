@@ -1,0 +1,24 @@
+template: dc_external_dod
+kind: leaf
+equipment_id: EXT-DC-002
+vendor: EVAPCO Inc.
+model: eco-Air EAW-DD (Double Stack V-Series)
+description: EVAPCO eco-Air outdoor dry cooler for defense compute containers (DoD-eligible)
+
+# Passive: no verified register map for the EVAPCO controller yet.
+
+install_tasks:
+  - name: set_on_pad
+    est_minutes: 120
+    crew_role: general
+    cx_level: L1
+  - name: connect_coolant_lines
+    depends_on: [set_on_pad]
+    est_minutes: 180
+    crew_role: plumber
+    cx_level: L2
+  - name: wire_power
+    depends_on: [set_on_pad]
+    est_minutes: 60
+    crew_role: electrician
+    cx_level: L2

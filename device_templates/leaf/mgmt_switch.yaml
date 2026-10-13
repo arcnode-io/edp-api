@@ -1,0 +1,25 @@
+template: mgmt_switch
+kind: leaf
+equipment_id: CMP-SWITCH-003
+vendor: NVIDIA (Mellanox)
+model: SN2201 (920-9N110-00F1-0C0)
+description: NVIDIA SN2201 1 GbE management switch for the compute container (ADR-019)
+
+# Passive in the EMS: it carries the management network; its own SNMP
+# telemetry isn't bound yet.
+
+install_tasks:
+  - name: rack_install
+    est_minutes: 20
+    crew_role: it
+    cx_level: L1
+  - name: patch_management_ports
+    depends_on: [rack_install]
+    est_minutes: 60
+    crew_role: it
+    cx_level: L2
+  - name: configure_vlans_and_uplink
+    depends_on: [patch_management_ports]
+    est_minutes: 60
+    crew_role: it
+    cx_level: L3

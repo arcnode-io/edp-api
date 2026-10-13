@@ -5,6 +5,14 @@ description: Grid container aggregation — interconnect rollups
 contains:
   - template: switchgear
     qty: 1
+  - template: transformer
+    qty: 1
+  - template: lv_switchboard
+    qty: 1
+  - template: grid_mgmt_switch
+    qty: 1
+  - template: pcs
+    qty: scalable
   - template: poi_meter
     qty: 1
   - template: protective_relay
