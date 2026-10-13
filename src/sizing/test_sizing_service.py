@@ -1,5 +1,7 @@
 """SizingService.preview() unit tests — flags + full composition."""
 
+import pytest
+
 from src.shared.enums import (
     BessCoupling,
     DeploymentContext,
@@ -63,8 +65,9 @@ def test_preview_returns_site_peak_and_recommendation() -> None:
     service = SizingService(regions=_REGIONS)
     # Act
     preview = service.preview(_request())
-    # Assert — 1 container of B200 = 80 kW = 0.08 MW; off_grid since market_region unresolved
-    assert preview.site_peak_mw == 0.08
+    # Assert — 1 container of B200 = 80 kW + 6 kW fans = 0.086 MW; off_grid since
+    # market_region unresolved
+    assert preview.site_peak_mw == pytest.approx(0.086)
     assert preview.recommended_path == GridPath.OFF_GRID
 
 

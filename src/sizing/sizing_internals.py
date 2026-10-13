@@ -8,7 +8,6 @@ from typing import Final
 
 from src.module_resolver.deployment_profile import GPUS_PER_COMPUTE_CONTAINER
 from src.shared.enums import (
-    BessCoupling,
     DeploymentContext,
     GpuVariant,
     GridPath,
@@ -39,35 +38,34 @@ CONTAINER_KW: Final[dict[GpuVariant, float]] = {
     GpuVariant.H100_SXM: 62.6,
 }
 
+# EXT-DC-001/-002 dry cooler fans, one cooler per compute container, fed from
+# its panelboard. Allowance (2 EC fans, conservative) until a Güntner GPC
+# selection gives the real input power — flagged in the equipment spec.
+DRY_COOLER_FAN_KW: Final[float] = 6.0
+
 ETA_D: Final[float] = 0.95  # [OPEN] per BESS OEM
 ETA_C: Final[float] = 0.95  # [OPEN] per BESS OEM
 
 
 def site_peak_mw(gpu_variant: GpuVariant, target_gpu_count: int) -> float:
-    """5.1: compute_containers * container_kw / 1000."""
+    """5.1: compute_containers * (container_kw + dry cooler fans) / 1000."""
     containers = ceil(target_gpu_count / GPUS_PER_COMPUTE_CONTAINER)
-    return containers * CONTAINER_KW[gpu_variant] / 1000
+    return containers * (CONTAINER_KW[gpu_variant] + DRY_COOLER_FAN_KW) / 1000
 
 
 # GRD-XFM-001 Trihal rating. Each grid container carries one transformer.
 # Reason: kW ~ kVA here; the HGX PSUs run near unity power factor.
 GRID_CONTAINER_KVA: Final[float] = 1000.0
-# A dc-ext grid container converts BESS DC through its own 2x PD500 (GRD-PCS-001),
-# 417 kW each on our 415 V bus, so it carries less than its transformer could.
-DC_EXT_GRID_CONTAINER_KW: Final[float] = 2 * 417.0
+# ADR-021: continuous design load is 80% of nameplate. The Trihal sits in a
+# closed container on natural convection with no overhead margin (ADR-013).
+# The dc-ext PCS pair (2x 417 kW) is above this limit, so the transformer
+# governs for every coupling.
+TRANSFORMER_DESIGN_LOADING: Final[float] = 0.8
 
 
-def grid_container_count(site_peak: float, bess_coupling: BessCoupling) -> int:
-    """One grid container per container's worth of compute load (MW in).
-
-    That's the Trihal's 1000 kVA, or the PCS pair's 834 kW for dc_external_pcs.
-    """
-    rating = (
-        DC_EXT_GRID_CONTAINER_KW
-        if bess_coupling == BessCoupling.DC_EXTERNAL_PCS
-        else GRID_CONTAINER_KVA
-    )
-    return ceil(site_peak * 1000 / rating)
+def grid_container_count(site_peak: float) -> int:
+    """One grid container per 800 kVA of site load (ADR-021)."""
+    return ceil(site_peak * 1000 / (GRID_CONTAINER_KVA * TRANSFORMER_DESIGN_LOADING))
 
 
 def firm_onsite_mw(onsite_generation: OnsiteGeneration) -> float:

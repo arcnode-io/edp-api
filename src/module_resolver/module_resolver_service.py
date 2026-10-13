@@ -52,7 +52,7 @@ class ModuleResolverService:
 
     def _grid_container_count(self, payload: ConfiguratorPayload) -> int:
         peak = site_peak_mw(payload.gpu_variant, payload.target_gpu_count)
-        return grid_container_count(peak, payload.bess_coupling)
+        return grid_container_count(peak)
 
     def _sourcing_tier(self, payload: ConfiguratorPayload) -> SourcingTier:
         return TIER_FROM_CONTEXT[payload.deployment_context]

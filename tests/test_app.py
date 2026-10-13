@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from src.app_module import AppModule
 
@@ -83,7 +84,7 @@ def test_sizing_preview_endpoint_returns_200_shape() -> None:
     # Assert
     assert response.status_code == 200, response.text
     preview = response.json()
-    assert preview["site_peak_mw"] == 0.08
+    assert preview["site_peak_mw"] == pytest.approx(0.086)  # 80 kW + 6 kW fans
     assert preview["recommended_path"] == "off_grid"
     assert preview["flex"] is None
     assert isinstance(preview["flags"], list)

@@ -6,7 +6,7 @@ test_template.py / test_template_protocols.py for template.py)."""
 
 import pytest
 
-from src.shared.enums import BessCoupling, FlexLevel, GpuVariant, OnsiteGenerationType
+from src.shared.enums import FlexLevel, GpuVariant, OnsiteGenerationType
 from src.shared.schemas.configurator_grid import FlexObligation, OnsiteGeneration
 from src.sizing.sizing_internals import (
     ETA_D,
@@ -127,23 +127,20 @@ def test_gpu_cap_none_when_bess_covers_full_duration() -> None:
 
 
 def test_site_peak_mw_b200_one_container() -> None:
-    assert site_peak_mw(GpuVariant.B200, 56) == pytest.approx(0.080)
+    # 80 kW IT + 6 kW dry cooler fans
+    assert site_peak_mw(GpuVariant.B200, 56) == pytest.approx(0.086)
 
 
 def test_site_peak_mw_rounds_up_to_full_container() -> None:
     # 57 GPUs -> 2 containers
-    assert site_peak_mw(GpuVariant.B200, 57) == pytest.approx(0.160)
+    assert site_peak_mw(GpuVariant.B200, 57) == pytest.approx(0.172)
 
 
-def test_grid_container_count_adds_one_per_transformer_of_load() -> None:
-    # 14 B200 containers = 1.12 MW, past one 1000 kVA Trihal
-    assert grid_container_count(1.12, BessCoupling.AC_COUPLED) == 2
-    assert grid_container_count(1.0, BessCoupling.AC_COUPLED) == 1
-
-
-def test_dc_ext_grid_container_count_is_capped_by_its_pcs_pair() -> None:
-    # 11 B200 containers = 0.88 MW: fits one Trihal, but past 2x PD500 (834 kW)
-    assert grid_container_count(0.88, BessCoupling.DC_EXTERNAL_PCS) == 2
+def test_grid_container_count_loads_each_trihal_to_80_pct() -> None:
+    # ADR-021: 800 kVA design limit. 9 B200 containers = 0.774 MW fit one;
+    # 10 = 0.86 MW need two.
+    assert grid_container_count(0.774) == 1
+    assert grid_container_count(0.86) == 2
 
 
 def test_firm_onsite_mw_nuclear_counts() -> None:
