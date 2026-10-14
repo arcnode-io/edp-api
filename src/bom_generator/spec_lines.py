@@ -9,20 +9,26 @@ def spec_to_catalog_line(
     """Map spec.yaml fields → BOM line item.
 
     A spec whose vendor is still TBD is a requirement spec: the part is
-    bought engineered to order, by RFQ against that spec.
+    bought engineered to order, by RFQ against that spec. A spec can also
+    name a reference design (vendor + model) and still declare
+    `procurement_path: engineered_to_order`; the line then carries that
+    reference design.
     """
-    eto = spec.get("vendor") == "TBD"
+    open_vendor = spec.get("vendor") == "TBD"
+    eto = open_vendor or spec.get("procurement_path") == "engineered_to_order"
     return BomLineItem(
         section=section,
         ref_des=ref_des,
-        part_number=f"To spec {spec['equipment_id']}" if eto else spec["model_number"],
-        vendor="RFQ" if eto else spec["vendor"],
+        part_number=(
+            f"To spec {spec['equipment_id']}" if open_vendor else spec["model_number"]
+        ),
+        vendor="RFQ" if open_vendor else spec["vendor"],
         description=spec.get("description", ""),
         qty=qty,
         procurement_path=(
             ProcurementPath.ENGINEERED_TO_ORDER if eto else ProcurementPath.CATALOG
         ),
-        notes=notes or ("Requirement spec; vendor by RFQ." if eto else ""),
+        notes=notes or _eto_note(spec, open_vendor, eto),
         equipment_id=spec["equipment_id"],
         datasheet_url=spec.get("datasheet_url"),
         lead_time_weeks=spec.get("lead_time_weeks"),
@@ -108,3 +114,11 @@ def shell_to_custom_line(
         qty=qty,
         procurement_path=ProcurementPath.CUSTOM_FABRICATION,
     )
+
+
+def _eto_note(spec: dict, open_vendor: bool, eto: bool) -> str:
+    if open_vendor:
+        return "Requirement spec; vendor by RFQ."
+    if eto:
+        return f"Reference design; bought by RFQ against spec {spec['equipment_id']}."
+    return ""
