@@ -5,13 +5,12 @@ description: BESS module aggregation — published rollups + setpoint fanout
 contains:
   - template: bess_rack
     qty: scalable
-  - template: bess_catl
-    qty: scalable
 
 measurements:
   # Rollups project a bess_rack measurement across however many racks this
   # module's contains[] actually resolves to at deployment time — gateway
-  # resolves the child list, edp-api just declares the aggregation.
+  # resolves the child list, edp-api just declares the aggregation. Scoped to
+  # bess_rack: only polled racks carry these measurements.
   state_of_charge:
     unit: percent
     type: float
@@ -22,6 +21,7 @@ measurements:
       protocol: synthetic
       operation: weighted_mean
       source_measurement: state_of_charge
+      child_template: bess_rack
 
   active_power:
     unit: watts
@@ -33,6 +33,7 @@ measurements:
       protocol: synthetic
       operation: sum
       source_measurement: active_power
+      child_template: bess_rack
 
   reactive_power:
     unit: vars
@@ -44,6 +45,7 @@ measurements:
       protocol: synthetic
       operation: sum
       source_measurement: reactive_power
+      child_template: bess_rack
 
   # Synthetic headroom measurements — gateway computes from cached MQTT inputs.
   # Envelope limits apply at the connection point, so headroom is referenced to
@@ -107,13 +109,5 @@ commands:
     payload: float
     fanout: local_process
 
-install_tasks:
-  - name: container_set_and_anchor
-    est_minutes: 360
-    crew_role: general
-    cx_level: L1
-  - name: container_grounding
-    depends_on: [container_set_and_anchor]
-    est_minutes: 60
-    crew_role: electrician
-    cx_level: L2
+# No install tasks: the customer sets and ties in the battery (ADR-001);
+# ARCNODE's interface steps are on the bess_rack leaf.

@@ -1,0 +1,51 @@
+template: bess_module_dc
+kind: module
+description: DC battery (CATL) module — POI headroom only; the battery itself is passive
+
+# A DC battery's BMS map isn't verified, so its CATL leaf is passive: no
+# state-of-charge or power to roll up, no racks to dispatch to. The POI
+# headroom measurements don't depend on the battery and stay available for
+# envelope compliance.
+
+contains:
+  - template: bess_catl
+    qty: scalable
+
+measurements:
+  # Synthetic headroom measurements — gateway computes from cached MQTT inputs.
+  # Envelope limits apply at the connection point, so headroom is referenced to
+  # POI net power P_poi (poi_meter.active_power, + = import from grid), not to
+  # this module's own power. Placeholders: {site_id} (gateway runtime) and
+  # {poi_meter_device_id} (ems-device-api substitutes the single poi_meter-
+  # templated device; generation fails if there isn't exactly one).
+  # `operating_envelope` is literal — singleton DOE device per site.
+  # Import headroom = import_limit − P_poi. Export is −P_poi, so export
+  # headroom = export_limit − (−P_poi) = export_limit + P_poi.
+  import_headroom:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "POI Import Headroom"
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      operation: subtract
+      inputs:
+        - sites/{site_id}/devices/operating_envelope/measurements/import_limit/watts
+        - sites/{site_id}/devices/{poi_meter_device_id}/measurements/active_power/watts
+
+  export_headroom:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "POI Export Headroom"
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      operation: sum
+      inputs:
+        - sites/{site_id}/devices/operating_envelope/measurements/export_limit/watts
+        - sites/{site_id}/devices/{poi_meter_device_id}/measurements/active_power/watts
+
+# No install tasks: the customer sets and ties in the battery (ADR-001);
+# ARCNODE's interface steps are on the bess_catl leaf.

@@ -50,7 +50,7 @@ class MopRow(BaseModel):
     """One step in the MOP — flat row for the per-phase table."""
 
     phase: CxLevel
-    device_id: str
+    device: str  # site tag (C1-NODE-1), the same one the drawings use
     task_name: str
     est_minutes: int
     crew_role: str
@@ -65,14 +65,14 @@ def build_mop_rows(dtm: Dtm) -> list[MopRow]:
         rows.extend(
             MopRow(
                 phase=task.cx_level,
-                device_id=device_id,
+                device=device.display_name or device_id,
                 task_name=task.name,
                 est_minutes=task.est_minutes,
                 crew_role=task.crew_role,
             )
             for task in template.install_tasks
         )
-    rows.sort(key=lambda r: (r.phase.value, r.device_id, r.task_name))
+    rows.sort(key=lambda r: (r.phase.value, r.device, r.task_name))
     return rows
 
 
@@ -129,7 +129,7 @@ def _render_mop_pdf(rows: list[MopRow], *, deployment_uuid: str, profile: str) -
 
 _XLSX_COLUMNS: tuple[tuple[str, str], ...] = (
     ("phase", "Phase"),
-    ("device_id", "Device"),
+    ("device", "Device"),
     ("task_name", "Task"),
     ("est_minutes", "Est (min)"),
     ("crew_role", "Crew"),
@@ -166,7 +166,7 @@ def _phase_table(phase: CxLevel, all_rows: list[MopRow]) -> list:
     data: list[list[str]] = [header]
     for i, r in enumerate(phase_rows, start=1):
         data.append(
-            [str(i), r.device_id, r.task_name, str(r.est_minutes), r.crew_role, "☐"]
+            [str(i), r.device, r.task_name, str(r.est_minutes), r.crew_role, "☐"]
         )
     total = sum(r.est_minutes for r in phase_rows)
     data.append(["", "", "Phase total", str(total), "", ""])

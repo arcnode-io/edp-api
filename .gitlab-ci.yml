@@ -12,7 +12,9 @@ checks:
     # topology files) instead of trusting a shared runner's stale sibling dir.
     - export EDP_MODULE_ASSEMBLIES_DIR="$(mktemp -d)/edp-module-assemblies"
     - git clone --quiet --depth 1 --filter=blob:none --sparse https://gitlab.com/arcnode-io/edp-module-assemblies.git "$EDP_MODULE_ASSEMBLIES_DIR"
-    - git -C "$EDP_MODULE_ASSEMBLIES_DIR" sparse-checkout set --no-cone '/assemblies/*/*/topology.yaml'
+    # Topologies for the DTM e2e; manifest, bom.yaml and specs for the order
+    # coherence test (tests/test_order_coherence.py).
+    - git -C "$EDP_MODULE_ASSEMBLIES_DIR" sparse-checkout set --no-cone '/assemblies/*/*/topology.yaml' '/assemblies/*/*/bom.yaml' '/equipment/*/spec.yaml' '/manifest.yaml'
     - uv run pytest --junitxml=junit.xml
     - uv run poe cover
     - uv run coverage xml

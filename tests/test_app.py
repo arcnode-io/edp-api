@@ -39,7 +39,7 @@ def test_app_startup_loads_template_catalog() -> None:
     # Assert
     assert hasattr(app.state, "template_catalog")
     catalog = app.state.template_catalog
-    assert len(catalog) == 26  # 22 leaves + 4 modules
+    assert len(catalog) == 27  # 22 leaves + 5 modules
     assert "poi_meter" in catalog
     assert "bess_module" in catalog
 
@@ -140,5 +140,5 @@ def test_healthz_returns_deep_status_with_catalog_and_manifest_info() -> None:
     body = response.json()
     assert body["status"] == "ok"
     assert body["version"]  # surfaces the pyproject project.version
-    assert body["template_catalog"]["size"] == 26
+    assert body["template_catalog"]["size"] == 27
     assert body["manifest_url"].startswith("s3://")
