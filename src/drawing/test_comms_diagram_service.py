@@ -8,6 +8,7 @@ from uuid import UUID
 import ezdxf
 from ezdxf.entities import Text
 
+from src.bom_generator.bom_test_support import ORDER
 from src.bom_generator.bom_models import Bom
 from src.drawing.comms_diagram_service import (
     CommsDiagramOutputs,
@@ -50,6 +51,7 @@ def _comms() -> CommsDiagramOutputs:
         generated_at=datetime.now(UTC),
         compute_container_qty=2,
         grid_container_qty=1,
+        order=ORDER,
     )
     return CommsDiagramService().generate(dtm, bom=bom, profile="commercial_ac")
 

@@ -8,26 +8,64 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 from src.bom_enrichment.enrichment_models import DistributorOffer
 
 
 class ProcurementPath(StrEnum):
-    """Where each line item is sourced."""
+    """How each line item is sourced."""
 
-    CATALOG = "catalog"
-    CUSTOM_FABRICATION = "custom_fabrication"
+    CATALOG = "catalog"  # bought by manufacturer part number
+    ENGINEERED_TO_ORDER = "engineered_to_order"  # built to our spec, by RFQ
+    CUSTOM_FABRICATION = "custom_fabrication"  # ARCNODE design, shop-fabricated
+    CUSTOMER_SUPPLIED = "customer_supplied"  # the customer's own equipment
+    BY_OTHERS = "by_others"  # site work by the customer's contractors
+    FIELD_SUPPLIED = "field_supplied"  # bulk material the installer provides
+
+
+class BomSection(StrEnum):
+    """Where in the deployment a line sits; the BOM is grouped in this order."""
+
+    COMPUTE = "compute_container"
+    GRID = "grid_container"
+    SITE = "site_and_interfaces"
+    FIELD = "field_install"
+
+
+_SUPPLIER: dict[ProcurementPath, str] = {
+    ProcurementPath.CUSTOMER_SUPPLIED: "Customer",
+    ProcurementPath.BY_OTHERS: "By others",
+    ProcurementPath.FIELD_SUPPLIED: "Installer",
+}
+
+
+class BomOrder(BaseModel):
+    """The order as placed and as delivered — the BOM header."""
+
+    customer: str
+    site: str
+    deployment_context: str
+    gpu_variant: str
+    gpus_requested: int
+    gpus_delivered: int  # whole compute containers of 56 GPUs
+    bess_capacity_mwh: float
+    bess_coupling: str
 
 
 class BomLineItem(BaseModel):
     """One BOM row. Fields beyond core are optional/path-specific."""
 
+    item: int = 0  # 1-based, assigned when the BOM is finalized
+    section: BomSection
+    ref_des: str  # device tags this line covers, e.g. "C1-C2: NODE-1…7"
     part_number: str
     vendor: str
     description: str
     qty: int
+    uom: str = "ea"
     procurement_path: ProcurementPath
+    notes: str = ""
 
     # Catalog-only fields
     equipment_id: str | None = None  # edp-module-assemblies equipment/<id>
@@ -57,6 +95,12 @@ class BomLineItem(BaseModel):
     drawing_ref: str | None = None
     drawing_url: str | None = None
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def supplied_by(self) -> str:
+        """ARCNODE, Customer, By others or Installer — from the procurement path."""
+        return _SUPPLIER.get(self.procurement_path, "ARCNODE")
+
 
 class Bom(BaseModel):
     """Top-level bom.json output."""
@@ -67,4 +111,5 @@ class Bom(BaseModel):
     generated_at: datetime
     compute_container_qty: int
     grid_container_qty: int
+    order: BomOrder
     line_items: list[BomLineItem] = Field(default_factory=list)

@@ -15,6 +15,7 @@ import pytest
 from ezdxf import bbox
 from ezdxf.entities import DXFGraphic
 
+from src.bom_generator.bom_test_support import ORDER
 from src.bom_generator.bom_models import Bom
 from src.drawing._drawing_area import violations
 from src.drawing._eng_render import SHEET_PITCH_MM
@@ -57,6 +58,7 @@ def _bom(compute_qty: int, grid_qty: int) -> Bom:
         generated_at=datetime.now(UTC),
         compute_container_qty=compute_qty,
         grid_container_qty=grid_qty,
+        order=ORDER,
     )
 
 

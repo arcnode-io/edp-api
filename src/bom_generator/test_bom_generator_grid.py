@@ -3,9 +3,10 @@
 from unittest.mock import MagicMock
 from uuid import uuid4
 
+from src.bom_generator.bom_test_support import ORDER
 from src.shared.enums import GpuVariant
 from src.bom_generator.bom_generator_service import BomGeneratorService
-from src.bom_generator.bom_models import ProcurementPath
+from src.bom_generator.bom_models import BomSection, ProcurementPath
 from src.bom_generator.manifest_models import (
     AssemblyVariant,
     Manifest,
@@ -86,6 +87,7 @@ def _client(manifest: Manifest) -> MagicMock:
     client.fetch_bom_yaml.side_effect = boms.__getitem__
     client.fetch_spec.side_effect = lambda url: {
         "equipment_id": url.split("/")[-2],
+        "vendor": "Acme",
         "model_number": url.split("/")[-2],
     }
     return client
@@ -100,6 +102,7 @@ def test_three_grid_containers_are_one_primary_and_two_feeders() -> None:
         deployment_id=uuid4(),
         profile="commercial_ac",
         gpu_variant=GpuVariant.B200,
+        order=ORDER,
         compute_container_qty=1,
         grid_container_qty=3,
     )
@@ -123,17 +126,25 @@ def test_every_container_brings_its_own_interface_plates() -> None:
         deployment_id=uuid4(),
         profile="commercial_ac",
         gpu_variant=GpuVariant.B200,
+        order=ORDER,
         compute_container_qty=2,
         grid_container_qty=3,
     )
 
-    # Assert — CG on all 5 containers, CD per compute, BG-AC on the primary only
+    # Assert — each section carries its own containers' plates: CG on both
+    # compute containers and all 3 grid containers, CD per compute, BG-AC on
+    # the primary only
     actual = {
-        li.part_number: li.qty
+        (li.section, li.part_number): (li.qty, li.ref_des)
         for li in bom.line_items
         if li.part_number.startswith("ARC-PLT")
     }
-    expected = {"ARC-PLT-CG-001": 5, "ARC-PLT-CD-001": 2, "ARC-PLT-BG-AC-001": 1}
+    expected = {
+        (BomSection.COMPUTE, "ARC-PLT-CG-001"): (2, "C1-C2"),
+        (BomSection.COMPUTE, "ARC-PLT-CD-001"): (2, "C1-C2"),
+        (BomSection.GRID, "ARC-PLT-CG-001"): (3, "G1-G3"),
+        (BomSection.GRID, "ARC-PLT-BG-AC-001"): (1, "G1"),
+    }
     assert actual == expected
 
 
@@ -146,6 +157,7 @@ def test_every_container_ships_in_its_own_shell() -> None:
         deployment_id=uuid4(),
         profile="commercial_ac",
         gpu_variant=GpuVariant.B200,
+        order=ORDER,
         compute_container_qty=2,
         grid_container_qty=3,
     )
@@ -169,6 +181,7 @@ def test_catalog_lines_name_their_equipment() -> None:
         deployment_id=uuid4(),
         profile="commercial_ac",
         gpu_variant=GpuVariant.B200,
+        order=ORDER,
         compute_container_qty=1,
         grid_container_qty=1,
     )

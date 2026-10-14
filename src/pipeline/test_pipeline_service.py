@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from typing import cast
 from uuid import UUID
 
+from src.bom_generator.bom_test_support import ORDER
+from src.bom_generator.bom_models import BomSection
 from src.bom_generator.bom_generator_service import BomGeneratorService
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import (
@@ -619,8 +621,11 @@ def test_attach_offers_merges_distributor_offers_onto_catalog_lines() -> None:
         generated_at=_dt.now(UTC),
         compute_container_qty=1,
         grid_container_qty=0,
+        order=ORDER,
         line_items=[
             BomLineItem(
+                section=BomSection.COMPUTE,
+                ref_des="C1",
                 part_number="MPN-CATALOG-1",
                 vendor="Acme",
                 description="x",
@@ -628,6 +633,8 @@ def test_attach_offers_merges_distributor_offers_onto_catalog_lines() -> None:
                 procurement_path=ProcurementPath.CATALOG,
             ),
             BomLineItem(
+                section=BomSection.COMPUTE,
+                ref_des="C1",
                 part_number="ARC-PLT-CG-001",
                 vendor="ARCNODE (custom fab)",
                 description="plate",

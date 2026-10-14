@@ -1,6 +1,6 @@
 """Real per-artifact counts, attached to ArtifactRefs once the pipeline ran."""
 
-from src.bom_generator.bom_models import Bom
+from src.bom_generator.bom_models import Bom, ProcurementPath
 from src.bom_generator.spec_lines import plate_part_number
 from src.cable_hose_schedule.cable_hose_schedule_models import CableHoseSchedule
 from src.shared.schemas.artifact import ArtifactKind, ArtifactRef, ArtifactSummary
@@ -16,14 +16,24 @@ def with_summaries(
     deployment_context: str,
 ) -> list[ArtifactRef]:
     """Copy of `urls` with `summary` set on every kind that has counts."""
-    plate_qty = {li.part_number: li.qty for li in bom.line_items}
+    # Reason: a plate appears once per container section (CG on compute and grid)
+    plate_qty: dict[str, int] = {}
+    for li in bom.line_items:
+        plate_qty[li.part_number] = plate_qty.get(li.part_number, 0) + li.qty
+    # Manufacturers ARCNODE buys from — not "Customer", "By others", "RFQ"
+    vendors = {
+        li.vendor
+        for li in bom.line_items
+        if li.procurement_path
+        in (ProcurementPath.CATALOG, ProcurementPath.CUSTOM_FABRICATION)
+    }
 
     def summary(ref: ArtifactRef) -> ArtifactSummary | None:
         match ref.kind:
             case ArtifactKind.BOM:
                 return ArtifactSummary(
                     line_items=len(bom.line_items),
-                    vendors=len({li.vendor for li in bom.line_items}),
+                    vendors=len(vendors),
                 )
             case ArtifactKind.CABLE_HOSE_SCHEDULE:
                 media = {c.cable_type for c in cable_hose.cables} | {

@@ -13,6 +13,7 @@ import pytest
 import yaml
 from testcontainers.localstack import LocalStackContainer
 
+from src.bom_generator.bom_test_support import ORDER
 from src.shared.enums import GpuVariant
 from src.bom_generator.bom_generator_service import (
     BomGeneratorService,
@@ -178,7 +179,10 @@ def test_bom_generator_against_localstack(
 
     # act
     bom = service.generate(
-        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+        deployment_id=uuid4(),
+        profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
+        order=ORDER,
     )
 
     # assert — Q9-C success criterion
@@ -201,7 +205,10 @@ def test_upload_bom_json_to_localstack(
     client = ManifestClient(manifest_url=f"s3://{seeded_bucket}/manifest.yaml")
     service = BomGeneratorService(client)
     bom = service.generate(
-        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+        deployment_id=uuid4(),
+        profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
+        order=ORDER,
     )
     target_url = f"s3://{seeded_bucket}/edp/{bom.deployment_id}/bom.json"
 

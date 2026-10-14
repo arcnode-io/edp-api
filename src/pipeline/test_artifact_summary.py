@@ -3,6 +3,8 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
+from src.bom_generator.bom_test_support import ORDER
+from src.bom_generator.bom_models import BomSection
 from src.bom_generator.bom_models import Bom, BomLineItem, ProcurementPath
 from src.cable_hose_schedule.cable_hose_schedule_models import (
     CableEntry,
@@ -18,6 +20,8 @@ DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000123")
 
 def _line(part_number: str, vendor: str, qty: int) -> BomLineItem:
     return BomLineItem(
+        section=BomSection.COMPUTE,
+        ref_des="C1",
         part_number=part_number,
         vendor=vendor,
         description=part_number,
@@ -65,6 +69,7 @@ def test_every_counted_artifact_carries_its_real_counts() -> None:
         generated_at=datetime.now(UTC),
         compute_container_qty=2,
         grid_container_qty=1,
+        order=ORDER,
         line_items=[
             _line("SYS-421GE", "Supermicro", 8),
             _line("AP8886", "APC", 6),

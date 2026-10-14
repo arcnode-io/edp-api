@@ -8,6 +8,8 @@ from uuid import UUID
 import ezdxf
 from ezdxf.entities import Text
 
+from src.bom_generator.bom_test_support import ORDER
+from src.bom_generator.bom_models import BomSection
 from src.bom_generator.bom_models import Bom, BomLineItem, ProcurementPath
 from src.drawing.conftest import make_device, make_dtm
 from src.drawing.sld_engineering_service import (
@@ -20,6 +22,8 @@ DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000042")
 
 def _bom(profile: str, compute_qty: int, grid_qty: int) -> Bom:
     xfm = BomLineItem(
+        section=BomSection.COMPUTE,
+        ref_des="C1",
         part_number="Trihal TRI100013684152509 (1000 kVA, 13.8 kV / 415V)",
         vendor="Schneider Electric",
         description="transformer",
@@ -34,6 +38,7 @@ def _bom(profile: str, compute_qty: int, grid_qty: int) -> Bom:
         generated_at=datetime.now(UTC),
         compute_container_qty=compute_qty,
         grid_container_qty=grid_qty,
+        order=ORDER,
         line_items=[xfm],
     )
 

@@ -1,16 +1,28 @@
 """Spec / plate spec yaml → BOM line items."""
 
-from src.bom_generator.bom_models import BomLineItem, ProcurementPath
+from src.bom_generator.bom_models import BomLineItem, BomSection, ProcurementPath
 
 
-def spec_to_catalog_line(spec: dict, qty: int) -> BomLineItem:
-    """Map spec.yaml fields → catalog BOM line item."""
+def spec_to_catalog_line(
+    spec: dict, qty: int, section: BomSection, ref_des: str, notes: str = ""
+) -> BomLineItem:
+    """Map spec.yaml fields → BOM line item.
+
+    A spec whose vendor is still TBD is a requirement spec: the part is
+    bought engineered to order, by RFQ against that spec.
+    """
+    eto = spec.get("vendor") == "TBD"
     return BomLineItem(
-        part_number=spec.get("model_number", spec["equipment_id"]),
-        vendor=spec.get("vendor", "TBD"),
+        section=section,
+        ref_des=ref_des,
+        part_number=f"To spec {spec['equipment_id']}" if eto else spec["model_number"],
+        vendor="RFQ" if eto else spec["vendor"],
         description=spec.get("description", ""),
         qty=qty,
-        procurement_path=ProcurementPath.CATALOG,
+        procurement_path=(
+            ProcurementPath.ENGINEERED_TO_ORDER if eto else ProcurementPath.CATALOG
+        ),
+        notes=notes or ("Requirement spec; vendor by RFQ." if eto else ""),
         equipment_id=spec["equipment_id"],
         datasheet_url=spec.get("datasheet_url"),
         lead_time_weeks=spec.get("lead_time_weeks"),
@@ -61,12 +73,16 @@ def plate_spec_to_custom_line(
     plate_spec: dict,
     plate_step_url: str,
     qty: int,
+    section: BomSection,
+    ref_des: str,
     deployment_context: str = "commercial",
 ) -> BomLineItem:
     """Map plate spec.yaml + URL → custom_fabrication BOM line item."""
     pn = plate_part_number(plate_id, deployment_context)
     ctx = plate_spec.get("deployment_contexts", {}).get(deployment_context, {})
     return BomLineItem(
+        section=section,
+        ref_des=ref_des,
         part_number=pn,
         vendor="ARCNODE (custom fab)",
         description=plate_spec.get("description", f"Interface Plate, {plate_id}"),
@@ -79,9 +95,13 @@ def plate_spec_to_custom_line(
     )
 
 
-def shell_to_custom_line(shell: dict, qty: int) -> BomLineItem:
+def shell_to_custom_line(
+    shell: dict, qty: int, section: BomSection, ref_des: str
+) -> BomLineItem:
     """Container shell (bom.yaml `shell:` block) → custom_fabrication line."""
     return BomLineItem(
+        section=section,
+        ref_des=ref_des,
         part_number=shell["part_number"],
         vendor="ARCNODE (custom fab)",
         description=shell["description"],

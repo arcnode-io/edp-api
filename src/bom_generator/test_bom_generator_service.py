@@ -5,8 +5,8 @@ from uuid import uuid4
 
 import pytest
 
+from src.bom_generator.bom_test_support import ORDER
 from src.shared.enums import GpuVariant
-from src.bom_generator.bom_xlsx import serialize_bom_xlsx
 from src.bom_generator.bom_generator_service import (
     BomGeneratorService,
     serialize_bom,
@@ -116,6 +116,7 @@ def test_generate_returns_bom_with_compute_lines() -> None:
         deployment_id=deployment_id,
         profile="commercial_ac",
         gpu_variant=GpuVariant.B200,
+        order=ORDER,
     )
     # assert
     assert actual.profile == "commercial_ac"
@@ -135,6 +136,7 @@ def test_generate_multiplies_qty_by_container_count() -> None:
         deployment_id=uuid4(),
         profile="commercial_ac",
         gpu_variant=GpuVariant.B200,
+        order=ORDER,
         compute_container_qty=3,
     )
     # assert
@@ -148,7 +150,10 @@ def test_generate_includes_cg_plate_as_custom_fabrication() -> None:
     service = BomGeneratorService(client)
     # act
     bom = service.generate(
-        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+        deployment_id=uuid4(),
+        profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
+        order=ORDER,
     )
     # assert
     plate = next(li for li in bom.line_items if li.part_number == "ARC-PLT-CG-001")
@@ -179,6 +184,7 @@ def test_generate_defense_plate_appends_d_suffix() -> None:
         deployment_id=uuid4(),
         profile="commercial_ac",
         gpu_variant=GpuVariant.B200,
+        order=ORDER,
         deployment_context="defense_forward",
     )
     # assert
@@ -194,7 +200,10 @@ def test_generate_raises_for_unknown_profile() -> None:
     # act / assert
     with pytest.raises(ValueError, match="defense_dc_int"):
         service.generate(
-            deployment_id=uuid4(), profile="defense_dc_int", gpu_variant=GpuVariant.B200
+            deployment_id=uuid4(),
+            profile="defense_dc_int",
+            gpu_variant=GpuVariant.B200,
+            order=ORDER,
         )
 
 
@@ -203,7 +212,10 @@ def test_serialize_bom_emits_valid_json() -> None:
     client = _make_mock_client(_make_manifest())
     service = BomGeneratorService(client)
     bom = service.generate(
-        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+        deployment_id=uuid4(),
+        profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
+        order=ORDER,
     )
     # act
     actual = serialize_bom(bom)
@@ -215,32 +227,6 @@ def test_serialize_bom_emits_valid_json() -> None:
     assert isinstance(parsed["line_items"], list)
 
 
-def test_serialize_bom_xlsx_emits_loadable_workbook_with_line_items() -> None:
-    """xlsx output opens back as a workbook with one row per BomLineItem."""
-    # Arrange
-    from io import BytesIO
-
-    from openpyxl import load_workbook
-
-    client = _make_mock_client(_make_manifest())
-    service = BomGeneratorService(client)
-    bom = service.generate(
-        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
-    )
-
-    # Act
-    actual = serialize_bom_xlsx(bom)
-
-    # Assert — round-trip through openpyxl proves real xlsx bytes
-    wb = load_workbook(BytesIO(actual))
-    ws = wb.active
-    assert ws is not None
-    # Header row + one data row per line item.
-    assert ws.max_row == 1 + len(bom.line_items)
-    # First data row's part_number column matches the first line item.
-    assert ws.cell(row=2, column=1).value == bom.line_items[0].part_number
-
-
 def test_catalog_line_surfaces_install_video_url_from_spec() -> None:
     """spec.install_video_url surfaces into the catalog line item."""
     # Arrange
@@ -249,7 +235,10 @@ def test_catalog_line_surfaces_install_video_url_from_spec() -> None:
 
     # Act
     bom = service.generate(
-        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+        deployment_id=uuid4(),
+        profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
+        order=ORDER,
     )
 
     # Assert
@@ -272,7 +261,10 @@ def test_catalog_line_derives_ndaa_from_restricted_entities() -> None:
 
     # Act
     bom = service.generate(
-        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+        deployment_id=uuid4(),
+        profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
+        order=ORDER,
     )
 
     # Assert — both fixtures have restricted_entities=None → NDAA True for both
@@ -297,7 +289,10 @@ def test_catalog_line_derives_taa_from_fab_tier() -> None:
 
     # Act
     bom = service.generate(
-        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+        deployment_id=uuid4(),
+        profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
+        order=ORDER,
     )
 
     # Assert
@@ -327,7 +322,10 @@ def test_ndaa_false_when_restricted_entities_lists_889() -> None:
 
     # Act
     bom = service.generate(
-        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+        deployment_id=uuid4(),
+        profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
+        order=ORDER,
     )
 
     # Assert

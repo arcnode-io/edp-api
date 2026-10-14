@@ -29,7 +29,7 @@ from src.bom_generator.bom_generator_service import (
 from src.bom_enrichment.enrichment_models import DistributorOffer
 from src.bom_enrichment.enrichment_service import EnrichmentService
 from src.bom_generator.cable_hose_lines import cable_hose_lines
-from src.bom_generator.bom_models import Bom
+from src.bom_generator.bom_models import Bom, BomOrder
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
 from src.cable_hose_schedule.cable_hose_schedule_models import CableHoseSchedule
@@ -121,16 +121,17 @@ class PipelineService:
         dtm = self._dtm.generate(
             profile=profile, resolution=resolution, manifest=manifest
         )
+        cable_hose = self._cable_hose.generate(dtm)
         bom = self._bom.generate(
             deployment_id=payload.deployment_id,
             profile=profile,
             gpu_variant=resolution.gpu_variant,
+            order=_bom_order(payload, resolution),
             compute_container_qty=resolution.compute_container_count,
             grid_container_qty=resolution.grid_container_count,
             deployment_context=_context_string(payload.deployment_context),
+            field_lines=cable_hose_lines(cable_hose),
         )
-        cable_hose = self._cable_hose.generate(dtm)
-        bom.line_items.extend(cable_hose_lines(cable_hose))
         # Track-B enrichment: per-distributor offers merged into each line
         # item. No-op when no enrichment service is configured (e.g. when
         # distributor creds aren't set in env).
@@ -253,6 +254,20 @@ def _cheapest_priced_offer(offers: list[DistributorOffer]) -> DistributorOffer |
     if not priced:
         return None
     return min(priced, key=lambda o: o.unit_cost_usd or 0)
+
+
+def _bom_order(payload: ConfiguratorPayload, resolution: ModuleResolution) -> BomOrder:
+    """The order as placed (payload) and as delivered (resolution)."""
+    return BomOrder(
+        customer=payload.operator_org,
+        site=payload.deployment_site_name,
+        deployment_context=payload.deployment_context.value,
+        gpu_variant=payload.gpu_variant.value,
+        gpus_requested=payload.target_gpu_count,
+        gpus_delivered=resolution.gpu_count,
+        bess_capacity_mwh=payload.bess_capacity_mwh,
+        bess_coupling=payload.bess_coupling.value,
+    )
 
 
 def _context_string(ctx: DeploymentContext) -> str:
