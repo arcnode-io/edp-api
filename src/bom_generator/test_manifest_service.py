@@ -2,6 +2,8 @@
 
 import pytest
 
+from src.shared.enums import GpuVariant
+
 from src.bom_generator.manifest_models import (
     AssemblyVariant,
     Manifest,
@@ -40,6 +42,7 @@ def _manifest_fixture() -> Manifest:
             "compute_container": {
                 "commercial-ac": _variant("compute-commercial-ac"),
                 "defense-ac": _variant("compute-defense-ac"),
+                "commercial-ac-h100": _variant("compute-commercial-ac-h100"),
             },
             "grid_container": {
                 "commercial-ac": _variant("grid-commercial-ac"),
@@ -54,6 +57,10 @@ def _manifest_fixture() -> Manifest:
         profiles={
             "commercial_ac": ProfileAssemblies(
                 compute_container="commercial-ac",
+                compute_container_by_gpu={
+                    GpuVariant.B200: "commercial-ac",
+                    GpuVariant.H100_SXM: "commercial-ac-h100",
+                },
                 grid_container="commercial-ac",
                 interface_plates=["CG", "BG-AC", "CD"],
             ),
@@ -77,7 +84,7 @@ def test_resolve_returns_resolved_profile_for_known_profile() -> None:
     svc = ManifestService(manifest=_manifest_fixture())
 
     # Act
-    resolved = svc.resolve("commercial_ac")
+    resolved = svc.resolve("commercial_ac", gpu_variant=GpuVariant.B200)
 
     # Assert — type + content
     assert isinstance(resolved, ResolvedProfile)
@@ -99,7 +106,7 @@ def test_resolve_no_grid_when_profile_grid_container_is_none() -> None:
     svc = ManifestService(manifest=manifest)
 
     # Act
-    resolved = svc.resolve("truly_no_bess")
+    resolved = svc.resolve("truly_no_bess", gpu_variant=GpuVariant.B200)
 
     # Assert
     assert resolved.grid is None
@@ -111,7 +118,7 @@ def test_resolve_plates_keep_plate_id_attached() -> None:
     svc = ManifestService(manifest=_manifest_fixture())
 
     # Act
-    resolved = svc.resolve("commercial_ac")
+    resolved = svc.resolve("commercial_ac", gpu_variant=GpuVariant.B200)
 
     # Assert
     plates_by_id = {p.plate_id: p for p in resolved.plates}
@@ -127,7 +134,7 @@ def test_resolve_unknown_profile_raises_key_error() -> None:
 
     # Act / Assert
     with pytest.raises(KeyError):
-        svc.resolve("not_a_profile")
+        svc.resolve("not_a_profile", gpu_variant=GpuVariant.B200)
 
 
 def test_resolve_dangling_grid_reference_raises_key_error() -> None:
@@ -137,4 +144,15 @@ def test_resolve_dangling_grid_reference_raises_key_error() -> None:
 
     # Act / Assert
     with pytest.raises(KeyError):
-        svc.resolve("bad_grid_ref")
+        svc.resolve("bad_grid_ref", gpu_variant=GpuVariant.B200)
+
+
+def test_the_ordered_gpu_picks_the_compute_container() -> None:
+    # Arrange — an H100 order must get H100 nodes, not the B200 container
+    svc = ManifestService(manifest=_manifest_fixture())
+
+    # Act
+    resolved = svc.resolve("commercial_ac", gpu_variant=GpuVariant.H100_SXM)
+
+    # Assert
+    assert resolved.compute.step.endswith("/compute-commercial-ac-h100/assembly.step")

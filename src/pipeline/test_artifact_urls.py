@@ -4,6 +4,7 @@ from uuid import UUID
 
 import pytest
 
+from src.shared.enums import GpuVariant
 from src.bom_generator.manifest_models import (
     AssemblyVariant,
     Manifest,
@@ -60,7 +61,7 @@ def test_commercial_ac_produces_expected_ref_count() -> None:
     """commercial_ac: 2 compute + 2 grid + 3 plates x 2 fmts (step+dxf) + 14 generated = 24."""
     # Arrange
     svc = ManifestService(manifest=_commercial_ac_manifest())
-    resolved = svc.resolve("commercial_ac")
+    resolved = svc.resolve("commercial_ac", gpu_variant=GpuVariant.B200)
 
     # Act
     refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
@@ -73,7 +74,7 @@ def test_generated_urls_use_deterministic_key_scheme() -> None:
     """All generated artifacts under s3://arcnode-artifacts/edp/{deployment_id}/..."""
     # Arrange
     svc = ManifestService(manifest=_commercial_ac_manifest())
-    resolved = svc.resolve("commercial_ac")
+    resolved = svc.resolve("commercial_ac", gpu_variant=GpuVariant.B200)
     expected_prefix = f"s3://arcnode-artifacts/edp/{DEPLOYMENT_ID}/"
 
     # Act
@@ -92,7 +93,7 @@ def test_plates_carry_plate_id_only() -> None:
     """Only INTERFACE_PLATE refs carry plate_id; others are None."""
     # Arrange
     svc = ManifestService(manifest=_commercial_ac_manifest())
-    resolved = svc.resolve("commercial_ac")
+    resolved = svc.resolve("commercial_ac", gpu_variant=GpuVariant.B200)
 
     # Act
     refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
@@ -182,7 +183,9 @@ def test_every_v1_profile_resolves_to_expected_url_count(profile: str) -> None:
     """
     # Arrange
     manifest = _all_seven_profiles_manifest()
-    resolved = ManifestService(manifest=manifest).resolve(profile)
+    resolved = ManifestService(manifest=manifest).resolve(
+        profile, gpu_variant=GpuVariant.B200
+    )
 
     # Act
     refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)
@@ -201,7 +204,9 @@ def test_plate_without_dxf_emits_only_step() -> None:
         grid_container="commercial-ac",
         interface_plates=["NO-DXF"],
     )
-    resolved = ManifestService(manifest=manifest).resolve("commercial_ac")
+    resolved = ManifestService(manifest=manifest).resolve(
+        "commercial_ac", gpu_variant=GpuVariant.B200
+    )
 
     # Act
     refs = build_artifact_urls_from_resolved(DEPLOYMENT_ID, resolved)

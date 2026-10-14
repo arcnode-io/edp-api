@@ -55,7 +55,12 @@ def emit_container(
     container_tag (C1, G2, ...) is the module's display name and prefixes
     each child's topology tag, so every device has one site-unique tag.
     """
-    module_template = _MODULE_TEMPLATE_BY_ASSEMBLY_TYPE[asm_type]
+    topology = fetch_topology(client, manifest, asm_type, variant)
+    module_template = (
+        topology.module_template
+        if topology is not None and topology.module_template is not None
+        else _MODULE_TEMPLATE_BY_ASSEMBLY_TYPE[asm_type]
+    )
     module_slug = assign_slug(module_template, slug_counter)
     devices[module_slug] = Device(
         device_id=module_slug,
@@ -65,8 +70,6 @@ def emit_container(
         connection=None,
     )
     by_template.setdefault(module_template, []).append(module_slug)
-
-    topology = fetch_topology(client, manifest, asm_type, variant)
     if topology is None:
         return
 

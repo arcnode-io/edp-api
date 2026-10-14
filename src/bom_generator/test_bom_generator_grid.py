@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock
 from uuid import uuid4
 
+from src.shared.enums import GpuVariant
 from src.bom_generator.bom_generator_service import BomGeneratorService
 from src.bom_generator.bom_models import ProcurementPath
 from src.bom_generator.manifest_models import (
@@ -98,6 +99,7 @@ def test_three_grid_containers_are_one_primary_and_two_feeders() -> None:
     bom = service.generate(
         deployment_id=uuid4(),
         profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
         compute_container_qty=1,
         grid_container_qty=3,
     )
@@ -120,6 +122,7 @@ def test_every_container_brings_its_own_interface_plates() -> None:
     bom = service.generate(
         deployment_id=uuid4(),
         profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
         compute_container_qty=2,
         grid_container_qty=3,
     )
@@ -142,6 +145,7 @@ def test_every_container_ships_in_its_own_shell() -> None:
     bom = service.generate(
         deployment_id=uuid4(),
         profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
         compute_container_qty=2,
         grid_container_qty=3,
     )
@@ -164,6 +168,7 @@ def test_catalog_lines_name_their_equipment() -> None:
     bom = service.generate(
         deployment_id=uuid4(),
         profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
         compute_container_qty=1,
         grid_container_qty=1,
     )

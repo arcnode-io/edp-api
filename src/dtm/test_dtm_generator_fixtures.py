@@ -49,6 +49,21 @@ COMPUTE_TOPOLOGY: dict = {
     "buses": [],
 }
 
+# H100 container: its own node + module templates (power cap targets them)
+H100_COMPUTE_TOPOLOGY: dict = {
+    "module_template": "compute_module_h100",
+    "devices": [
+        {
+            "template": "gpu_node_h100",
+            "tag": f"NODE-{i}",
+            "description": f"node {i}",
+            "connection": {"host": "mock-redfish-server", "port": 8443},
+        }
+        for i in range(1, 4)
+    ],
+    "buses": [],
+}
+
 GRID_TOPOLOGY: dict = {
     "devices": [
         {
@@ -121,7 +136,12 @@ def _manifest() -> Manifest:
         version="0.1.0",
         assemblies={
             "compute_container": {
-                "commercial-ac": _av(type_="compute_container", variant="commercial-ac")
+                "commercial-ac": _av(
+                    type_="compute_container", variant="commercial-ac"
+                ),
+                "commercial-ac-h100": _av(
+                    type_="compute_container", variant="commercial-ac-h100"
+                ),
             },
             "grid_container": {
                 "commercial-ac": _av(type_="grid_container", variant="commercial-ac"),
@@ -132,6 +152,10 @@ def _manifest() -> Manifest:
         profiles={
             "commercial_ac": ProfileAssemblies(
                 compute_container="commercial-ac",
+                compute_container_by_gpu={
+                    GpuVariant.B200: "commercial-ac",
+                    GpuVariant.H100_SXM: "commercial-ac-h100",
+                },
                 grid_container="commercial-ac",
                 grid_feeder_container="feeder",
                 interface_plates=["CG"],
@@ -149,6 +173,7 @@ def _resolution(
     grid_container_count: int = 1,
     ride_through_hours: float = 0.0,
     grid: Grid = _OFF_GRID,
+    gpu_variant: GpuVariant = GpuVariant.B200,
 ) -> ModuleResolution:
     return ModuleResolution(
         deployment_id=DEPLOYMENT_ID,
@@ -159,7 +184,7 @@ def _resolution(
         bess_capacity_mwh=5.0,
         sourcing_tier=SourcingTier.COMMERCIAL,
         ems_target=EmsTarget.AWS_STANDARD,
-        gpu_variant=GpuVariant.H100_SXM,
+        gpu_variant=gpu_variant,
         gpu_count=container_count * 56,
         climate_zone=ClimateZone.TEMPERATE,
         onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
@@ -174,6 +199,8 @@ def _make_client() -> MagicMock:
     client.fetch_manifest.return_value = _manifest()
 
     def fetch(url: str) -> dict:
+        if "compute-container/commercial-ac-h100" in url:
+            return H100_COMPUTE_TOPOLOGY
         if "compute-container" in url:
             return COMPUTE_TOPOLOGY
         if "grid-container/feeder" in url:

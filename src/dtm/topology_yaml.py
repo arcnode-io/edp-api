@@ -58,5 +58,8 @@ class TopologyYaml(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    # Module template for this container when it isn't the assembly type's
+    # default (an H100 compute container's power cap targets H100 nodes).
+    module_template: str | None = None
     devices: list[TopologyDeviceSpec]
     buses: list[TopologyBusSpec] = Field(default_factory=list)

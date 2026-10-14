@@ -7,6 +7,7 @@ from ezdxf.document import Drawing
 from ezdxf.enums import TextEntityAlignment
 from ezdxf.layouts import Modelspace
 
+from src.dtm.device_roles import COMPUTE_MODULE_TEMPLATES
 from src.drawing._pid_symbols import ensure_instrument_bubble, ensure_offsheet_block
 from src.shared.schemas.dtm import Device, Dtm
 
@@ -89,7 +90,7 @@ def typical_container(dtm: Dtm) -> tuple[list[Device], int]:
     Every compute container is identical, so the P&ID draws C1 as typical.
     """
     modules = sorted(
-        (d for d in dtm.devices.values() if d.template == "compute_module"),
+        (d for d in dtm.devices.values() if d.template in COMPUTE_MODULE_TEMPLATES),
         key=lambda d: int(d.device_id.rsplit("_", 1)[1]),
     )
     first = modules[0].device_id if modules else None

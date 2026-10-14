@@ -124,6 +124,7 @@ class PipelineService:
         bom = self._bom.generate(
             deployment_id=payload.deployment_id,
             profile=profile,
+            gpu_variant=resolution.gpu_variant,
             compute_container_qty=resolution.compute_container_count,
             grid_container_qty=resolution.grid_container_count,
             deployment_context=_context_string(payload.deployment_context),

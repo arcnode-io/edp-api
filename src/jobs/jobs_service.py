@@ -99,7 +99,7 @@ class JobsService:
         resolution = self._resolver.resolve(payload)
         manifest = self._client.fetch_manifest()
         resolved = ManifestService(manifest=manifest).resolve(
-            resolution.deployment_profile.value
+            resolution.deployment_profile.value, gpu_variant=resolution.gpu_variant
         )
         urls = build_artifact_urls_from_resolved(payload.deployment_id, resolved)
         job_id = uuid4()

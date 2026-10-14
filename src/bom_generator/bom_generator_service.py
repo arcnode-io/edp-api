@@ -12,6 +12,7 @@ import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
+from src.shared.enums import GpuVariant
 from src.bom_generator.bom_models import (
     Bom,
     BomLineItem,
@@ -38,6 +39,7 @@ class BomGeneratorService:
         *,
         deployment_id: UUID,
         profile: str,
+        gpu_variant: GpuVariant,
         compute_container_qty: int = 1,
         grid_container_qty: int = 1,
         deployment_context: str = "commercial",
@@ -62,7 +64,11 @@ class BomGeneratorService:
         prof = manifest.profiles[profile]
 
         boms = self._container_boms(
-            manifest, prof, compute_container_qty, grid_container_qty
+            manifest,
+            prof.compute_variant(gpu_variant),
+            prof,
+            compute_container_qty,
+            grid_container_qty,
         )
         parts = _sum_by(boms, "parts", "equipment_id")
         line_items = _shell_lines(boms)
@@ -88,6 +94,7 @@ class BomGeneratorService:
     def _container_boms(
         self,
         manifest: Manifest,
+        compute_variant: str,
         prof: ProfileAssemblies,
         compute_qty: int,
         grid_qty: int,
@@ -96,7 +103,7 @@ class BomGeneratorService:
 
         Grid = one primary (carries the POI meter) + feeders for the rest.
         """
-        wanted = [("compute_container", prof.compute_container, compute_qty)]
+        wanted = [("compute_container", compute_variant, compute_qty)]
         if prof.grid_container is not None and grid_qty > 0:
             wanted.append(("grid_container", prof.grid_container, 1))
             if grid_qty > 1:

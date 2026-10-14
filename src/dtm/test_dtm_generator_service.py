@@ -2,6 +2,7 @@
 
 import pytest
 
+from src.shared.enums import GpuVariant
 from src.dtm.dtm_generator_service import DtmGeneratorService
 from src.dtm.test_dtm_generator_fixtures import (
     _make_client,
@@ -220,3 +221,20 @@ def test_every_device_carries_its_site_unique_tag() -> None:
         "C2-NODE-1",
         "G1-MTR-POI",
     )
+
+
+def test_an_h100_order_gets_h100_nodes_under_an_h100_module() -> None:
+    # Arrange — the profile maps H100 orders to the H100 compute container
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+
+    # Act
+    actual = service.generate(
+        profile="commercial_ac",
+        resolution=_resolution(gpu_variant=GpuVariant.H100_SXM),
+        manifest=_manifest(),
+    )
+
+    # Assert
+    templates = {d.template for d in actual.devices.values() if d.parent is None}
+    nodes = {d.template for d in actual.devices.values() if "node" in d.template}
+    assert ("compute_module_h100" in templates, nodes) == (True, {"gpu_node_h100"})

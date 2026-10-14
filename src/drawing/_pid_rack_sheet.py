@@ -11,6 +11,7 @@ from typing import Final
 from ezdxf.document import Drawing
 from ezdxf.layouts import Modelspace
 
+from src.dtm.device_roles import GPU_NODE_TEMPLATES
 from src.drawing import _pid_kit as k
 from src.drawing._pid_symbols import ensure_cdu_block, ensure_dlc_plate_block
 from src.shared.schemas.dtm import Dtm
@@ -29,7 +30,7 @@ def draw_rack_sheet(msp: Modelspace, doc: Drawing, dtm: Dtm) -> None:
     devices, n = k.typical_container(dtm)
     cdus = [d for d in devices if d.template == "cdu"]
     nodes = sorted(
-        (d for d in devices if d.template == "gpu_node"),
+        (d for d in devices if d.template in GPU_NODE_TEMPLATES),
         key=lambda d: int(d.device_id.rsplit("_", 1)[1]),
     )
     cx, cy = _CDU

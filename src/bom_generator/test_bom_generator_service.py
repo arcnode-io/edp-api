@@ -5,6 +5,7 @@ from uuid import uuid4
 
 import pytest
 
+from src.shared.enums import GpuVariant
 from src.bom_generator.bom_xlsx import serialize_bom_xlsx
 from src.bom_generator.bom_generator_service import (
     BomGeneratorService,
@@ -114,6 +115,7 @@ def test_generate_returns_bom_with_compute_lines() -> None:
     actual = service.generate(
         deployment_id=deployment_id,
         profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
     )
     # assert
     assert actual.profile == "commercial_ac"
@@ -132,6 +134,7 @@ def test_generate_multiplies_qty_by_container_count() -> None:
     bom = service.generate(
         deployment_id=uuid4(),
         profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
         compute_container_qty=3,
     )
     # assert
@@ -144,7 +147,9 @@ def test_generate_includes_cg_plate_as_custom_fabrication() -> None:
     client = _make_mock_client(_make_manifest())
     service = BomGeneratorService(client)
     # act
-    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+    bom = service.generate(
+        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+    )
     # assert
     plate = next(li for li in bom.line_items if li.part_number == "ARC-PLT-CG-001")
     assert plate.procurement_path == ProcurementPath.CUSTOM_FABRICATION
@@ -173,6 +178,7 @@ def test_generate_defense_plate_appends_d_suffix() -> None:
     bom = service.generate(
         deployment_id=uuid4(),
         profile="commercial_ac",
+        gpu_variant=GpuVariant.B200,
         deployment_context="defense_forward",
     )
     # assert
@@ -187,14 +193,18 @@ def test_generate_raises_for_unknown_profile() -> None:
     service = BomGeneratorService(client)
     # act / assert
     with pytest.raises(ValueError, match="defense_dc_int"):
-        service.generate(deployment_id=uuid4(), profile="defense_dc_int")
+        service.generate(
+            deployment_id=uuid4(), profile="defense_dc_int", gpu_variant=GpuVariant.B200
+        )
 
 
 def test_serialize_bom_emits_valid_json() -> None:
     # arrange
     client = _make_mock_client(_make_manifest())
     service = BomGeneratorService(client)
-    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+    bom = service.generate(
+        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+    )
     # act
     actual = serialize_bom(bom)
     # assert
@@ -214,7 +224,9 @@ def test_serialize_bom_xlsx_emits_loadable_workbook_with_line_items() -> None:
 
     client = _make_mock_client(_make_manifest())
     service = BomGeneratorService(client)
-    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+    bom = service.generate(
+        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+    )
 
     # Act
     actual = serialize_bom_xlsx(bom)
@@ -236,7 +248,9 @@ def test_catalog_line_surfaces_install_video_url_from_spec() -> None:
     service = BomGeneratorService(client)
 
     # Act
-    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+    bom = service.generate(
+        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+    )
 
     # Assert
     node_line = next(
@@ -257,7 +271,9 @@ def test_catalog_line_derives_ndaa_from_restricted_entities() -> None:
     service = BomGeneratorService(client)
 
     # Act
-    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+    bom = service.generate(
+        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+    )
 
     # Assert — both fixtures have restricted_entities=None → NDAA True for both
     node_line = next(
@@ -280,7 +296,9 @@ def test_catalog_line_derives_taa_from_fab_tier() -> None:
     service = BomGeneratorService(client)
 
     # Act
-    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+    bom = service.generate(
+        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+    )
 
     # Assert
     node_line = next(
@@ -308,7 +326,9 @@ def test_ndaa_false_when_restricted_entities_lists_889() -> None:
     service = BomGeneratorService(client)
 
     # Act
-    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+    bom = service.generate(
+        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+    )
 
     # Assert
     node_line = next(

@@ -66,7 +66,7 @@ class DtmGeneratorService:
                 client=self._client,
                 manifest=manifest,
                 asm_type="compute_container",
-                variant=prof.compute_container,
+                variant=prof.compute_variant(resolution.gpu_variant),
                 devices=devices,
                 buses=buses,
                 slug_counter=slug_counter,

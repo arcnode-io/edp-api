@@ -13,6 +13,7 @@ import pytest
 import yaml
 from testcontainers.localstack import LocalStackContainer
 
+from src.shared.enums import GpuVariant
 from src.bom_generator.bom_generator_service import (
     BomGeneratorService,
     serialize_bom,
@@ -176,7 +177,9 @@ def test_bom_generator_against_localstack(
     service = BomGeneratorService(client)
 
     # act
-    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+    bom = service.generate(
+        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+    )
 
     # assert — Q9-C success criterion
     line_pn = {li.part_number: li for li in bom.line_items}
@@ -197,7 +200,9 @@ def test_upload_bom_json_to_localstack(
     monkeypatch.setenv("S3_ENDPOINT_URL", localstack_endpoint)
     client = ManifestClient(manifest_url=f"s3://{seeded_bucket}/manifest.yaml")
     service = BomGeneratorService(client)
-    bom = service.generate(deployment_id=uuid4(), profile="commercial_ac")
+    bom = service.generate(
+        deployment_id=uuid4(), profile="commercial_ac", gpu_variant=GpuVariant.B200
+    )
     target_url = f"s3://{seeded_bucket}/edp/{bom.deployment_id}/bom.json"
 
     # act

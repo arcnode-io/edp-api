@@ -175,7 +175,9 @@ def test_run_uploads_to_every_generated_url() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act
@@ -203,7 +205,9 @@ def test_run_skips_selected_urls_from_catalog() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act
@@ -251,7 +255,9 @@ def test_bom_upload_is_real_bom_json() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act
@@ -287,7 +293,9 @@ def test_sld_engineering_uploads_real_dxf_and_pdf() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act
@@ -324,7 +332,9 @@ def test_cable_hose_schedule_uploads_real_json_and_xlsx() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act
@@ -369,7 +379,9 @@ def test_comms_diagram_uploads_real_dxf_and_pdf() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act
@@ -408,7 +420,9 @@ def test_pid_cooling_uploads_real_dxf_and_pdf() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act
@@ -443,7 +457,9 @@ def test_bom_xlsx_upload_is_real_workbook() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act
@@ -472,7 +488,9 @@ def test_dtm_upload_is_real_dtm_json() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act
@@ -500,7 +518,9 @@ def test_sld_hmi_svg_upload_is_real_svg() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act
@@ -532,7 +552,9 @@ def test_all_reserved_artifact_kinds_now_get_real_bytes() -> None:
     resolution = ModuleResolverService().resolve(payload)
     urls = build_artifact_urls_from_resolved(
         DEPLOYMENT_ID,
-        ManifestService(manifest=_commercial_ac_manifest()).resolve("commercial_ac"),
+        ManifestService(manifest=_commercial_ac_manifest()).resolve(
+            "commercial_ac", gpu_variant=GpuVariant.B200
+        ),
     )
 
     # Act

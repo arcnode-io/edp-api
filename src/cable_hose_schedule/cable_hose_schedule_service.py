@@ -34,6 +34,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.worksheet.worksheet import Worksheet
 
+from src.dtm.device_roles import GPU_NODE_TEMPLATES
 from src.cable_hose_schedule.cable_hose_schedule_models import (
     CableEntry,
     CableHoseSchedule,
@@ -208,7 +209,11 @@ def _hoses(dtm: Dtm) -> list[HoseEntry]:
     for module_id in sorted(dtm.devices):
         children_by_template = _children_by_template(dtm, module_id)
         cdus = children_by_template.get("cdu", [])
-        gpu_nodes = children_by_template.get("gpu_node", [])
+        gpu_nodes = [
+            n
+            for t in sorted(GPU_NODE_TEMPLATES)
+            for n in children_by_template.get(t, [])
+        ]
         for cdu in cdus:
             # Primary supply + return — BY OTHERS (facility loop).
             tag += 1

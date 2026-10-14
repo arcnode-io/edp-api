@@ -13,6 +13,7 @@ no further manifest navigation.
 
 from dataclasses import dataclass
 
+from src.shared.enums import GpuVariant
 from src.bom_generator.manifest_models import (
     AssemblyVariant,
     Manifest,
@@ -47,7 +48,7 @@ class ManifestService:
     def __init__(self, manifest: Manifest) -> None:
         self._manifest = manifest
 
-    def resolve(self, profile: str) -> ResolvedProfile:
+    def resolve(self, profile: str, *, gpu_variant: GpuVariant) -> ResolvedProfile:
         """Look up `profile` and resolve every reference inside.
 
         Raises KeyError if the profile is unknown or any referenced
@@ -56,7 +57,7 @@ class ManifestService:
         """
         prof = self._manifest.profiles[profile]
         compute = self._manifest.assemblies[_COMPUTE_ASSEMBLY_KEY][
-            prof.compute_container
+            prof.compute_variant(gpu_variant)
         ]
         grid = (
             self._manifest.assemblies[_GRID_ASSEMBLY_KEY][prof.grid_container]

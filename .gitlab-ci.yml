@@ -51,6 +51,22 @@ deploy:
   only:
     - main
 
+publish_device_api:
+  # ems-device-api bakes edp-api's device_templates into its image at publish
+  # time; a template it hasn't baked in fails the EMS's catalog check at boot.
+  # Republish it whenever templates change on main. Multi-project trigger runs
+  # under the pushing user's permissions, so no token. `depend` mirrors the
+  # downstream result here, so a failed device-api publish turns this red.
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - device_templates/**/*
+  trigger:
+    project: arcnode-io/ems-device-api
+    branch: main
+    strategy: depend
+
 mirror:
   stage: mirror
   variables:
