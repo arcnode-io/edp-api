@@ -7,6 +7,7 @@ per compute container (detail on sheet 2).
 
 from ezdxf.layouts import Modelspace
 
+from src.dtm.device_roles import BESS_MODULE_TEMPLATES
 from src.bom_generator.bom_models import Bom
 from src.drawing import _draw_kit as k
 from src.drawing._comms_devices import device_lines, networked_children
@@ -27,7 +28,9 @@ def draw_site_sheet(msp: Modelspace, dtm: Dtm, bom: Bom) -> None:
 
     boxes = [device_lines(dtm, d) for d in networked_children(dtm, "grid_module_1")]
     # The customer's battery, from the device data (BESS-1)
-    modules = [d.device_id for d in dtm.devices.values() if d.template == "bess_module"]
+    modules = [
+        d.device_id for d in dtm.devices.values() if d.template in BESS_MODULE_TEMPLATES
+    ]
     boxes += [device_lines(dtm, d) for d in dtm.devices.values() if d.parent in modules]
     if m > 1:
         boxes.append(

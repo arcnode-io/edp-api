@@ -241,14 +241,14 @@ def test_an_h100_order_gets_h100_nodes_under_an_h100_module() -> None:
 
 
 @pytest.mark.parametrize(
-    ("coupling", "template"),
+    ("coupling", "module", "template"),
     [
-        (BessCoupling.AC_COUPLED, "bess_rack"),
-        (BessCoupling.DC_EXTERNAL_PCS, "bess_catl"),
+        (BessCoupling.AC_COUPLED, "bess_module", "bess_rack"),
+        (BessCoupling.DC_EXTERNAL_PCS, "bess_module_dc", "bess_catl"),
     ],
 )
 def test_the_customers_battery_is_in_the_device_data(
-    coupling: BessCoupling, template: str
+    coupling: BessCoupling, module: str, template: str
 ) -> None:
     # Arrange — QA: the battery was in no artifact. The EMS supervises it.
     service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
@@ -261,8 +261,8 @@ def test_the_customers_battery_is_in_the_device_data(
 
     # Assert
     batteries = [
-        (d.template, d.display_name, actual.devices[d.parent].display_name)
+        (actual.devices[d.parent].template, d.template, d.display_name)
         for d in actual.devices.values()
         if d.parent is not None and d.template.startswith("bess")
     ]
-    assert batteries == [(template, "BESS-1", "BESS")]
+    assert batteries == [(module, template, "BESS-1")]

@@ -7,7 +7,7 @@ same tag the drawings and the BOM use.
 import re
 from dataclasses import dataclass
 
-from src.dtm.device_roles import COMPUTE_MODULE_TEMPLATES
+from src.dtm.device_roles import BESS_MODULE_TEMPLATES, COMPUTE_MODULE_TEMPLATES
 from src.shared.schemas.dtm import Device, Dtm
 
 _NUM = re.compile(r"(\d+)$")
@@ -57,7 +57,9 @@ def containers(dtm: Dtm) -> list[Container]:
 def _kind(template: str) -> str | None:
     if template in COMPUTE_MODULE_TEMPLATES:
         return "compute"
-    return {"grid_module": "grid", "bess_module": "bess"}.get(template)
+    if template in BESS_MODULE_TEMPLATES:
+        return "bess"
+    return "grid" if template == "grid_module" else None
 
 
 def _natural(text: str) -> tuple[str, int]:

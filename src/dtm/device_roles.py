@@ -11,3 +11,7 @@ GPU_NODE_TEMPLATES: Final[frozenset[str]] = frozenset({"gpu_node", "gpu_node_h10
 COMPUTE_MODULE_TEMPLATES: Final[frozenset[str]] = frozenset(
     {"compute_module", "compute_module_h100"}
 )
+# AC (polled Megapack, rollups + dispatch) or DC (passive CATL, headroom only)
+BESS_MODULE_TEMPLATES: Final[frozenset[str]] = frozenset(
+    {"bess_module", "bess_module_dc"}
+)

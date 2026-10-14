@@ -106,18 +106,20 @@ def emit_container(
 def emit_battery(
     coupling: BessCoupling, devices: dict[str, Device], slug_counter: dict[str, int]
 ) -> None:
-    """The customer's battery (ADR-001): a bess_module holding BESS-1.
+    """The customer's battery (ADR-001): a battery module holding BESS-1.
 
     The EMS supervises it, so it's in the device data even though ARCNODE
     doesn't supply it. Megapack (AC) is polled over Modbus TCP and waits
     for its commissioning-time address; CATL (DC) is passive until its BMS
     map is verified.
     """
-    module = assign_slug("bess_module", slug_counter)
-    devices[module] = Device(
-        device_id=module, template="bess_module", display_name="BESS"
-    )
     ac = coupling == BessCoupling.AC_COUPLED
+    # Reason: the DC module has no rack rollups — its CATL leaf is passive.
+    module_template = "bess_module" if ac else "bess_module_dc"
+    module = assign_slug(module_template, slug_counter)
+    devices[module] = Device(
+        device_id=module, template=module_template, display_name="BESS"
+    )
     template = "bess_rack" if ac else "bess_catl"
     leaf = assign_slug(template, slug_counter)
     devices[leaf] = Device(
