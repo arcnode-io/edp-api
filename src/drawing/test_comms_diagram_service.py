@@ -28,14 +28,23 @@ _DEVICES: list[tuple[str, str, str | None]] = [
     ("gpu_node_8", "gpu_node", "compute_module_2"),
     ("grid_module_1", "grid_module", None),
     ("protective_relay_1", "protective_relay", "grid_module_1"),
+    ("bess_module_1", "bess_module", None),
+    ("bess_rack_1", "bess_rack", "bess_module_1"),
 ]
 
 
 def _device(device_id: str, template: str, parent: str | None) -> Device:
     tbd = PROVISIONED_AT_COMMISSIONING
     connection = None if parent is None else Connection(host=tbd, port=tbd)
+    # Reason: gpu_node_1 carries a site tag like real DTMs; the rest don't,
+    # to check the drawing falls back to the device id.
+    tag = "C1-NODE-1" if device_id == "gpu_node_1" else None
     return Device(
-        device_id=device_id, template=template, parent=parent, connection=connection
+        device_id=device_id,
+        template=template,
+        parent=parent,
+        connection=connection,
+        display_name=tag,
     )
 
 
@@ -82,6 +91,7 @@ def test_site_sheet_hangs_grid_devices_and_compute_uplinks_off_the_grid_switch()
     # Assert
     assert "EMS GATEWAY" in site
     assert "protective_relay_1" in site
+    assert "bess_rack_1" in site  # the customer's battery, from the device data
     assert "C1-C2 MGMT SWITCH UPLINKS x2" in site
 
 
@@ -90,6 +100,6 @@ def test_compute_sheet_draws_the_first_container_as_typical() -> None:
     _, compute = _sheet_texts(_comms())
 
     # Assert — container 1's devices only, addresses pending commissioning
-    assert "gpu_node_1" in compute
+    assert "C1-NODE-1" in compute
     assert "gpu_node_8" not in compute
     assert "ADDR TBD" in compute

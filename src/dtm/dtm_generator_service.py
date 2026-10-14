@@ -4,6 +4,7 @@ from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
 from src.dtm.dtm_generator_internals import (
     collect_templates_used,
+    emit_battery,
     emit_container,
     sizing,
 )
@@ -95,6 +96,8 @@ class DtmGeneratorService:
                 slug_counter=slug_counter,
                 by_template=by_template,
             )
+
+        emit_battery(resolution.bess_coupling, devices, slug_counter)
 
         return Dtm(
             deployment_uuid=resolution.deployment_id,

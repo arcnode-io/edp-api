@@ -9,8 +9,10 @@ from src.dtm.topology_yaml import (
     TopologyBusSpec,
     TopologyYaml,
 )
+from src.shared.enums import BessCoupling
 from src.shared.schemas.alarm import Alarm, load_alarms_from_spec
 from src.shared.schemas.dtm import (
+    PROVISIONED_AT_COMMISSIONING,
     Bus,
     BusMember,
     Connection,
@@ -99,6 +101,38 @@ def emit_container(
         buses.append(
             bus.model_copy(update={"bus_id": assign_slug(bus.bus_id, slug_counter)})
         )
+
+
+def emit_battery(
+    coupling: BessCoupling, devices: dict[str, Device], slug_counter: dict[str, int]
+) -> None:
+    """The customer's battery (ADR-001): a bess_module holding BESS-1.
+
+    The EMS supervises it, so it's in the device data even though ARCNODE
+    doesn't supply it. Megapack (AC) is polled over Modbus TCP and waits
+    for its commissioning-time address; CATL (DC) is passive until its BMS
+    map is verified.
+    """
+    module = assign_slug("bess_module", slug_counter)
+    devices[module] = Device(
+        device_id=module, template="bess_module", display_name="BESS"
+    )
+    ac = coupling == BessCoupling.AC_COUPLED
+    template = "bess_rack" if ac else "bess_catl"
+    leaf = assign_slug(template, slug_counter)
+    devices[leaf] = Device(
+        device_id=leaf,
+        template=template,
+        display_name="BESS-1",
+        parent=module,
+        connection=(
+            Connection(
+                host=PROVISIONED_AT_COMMISSIONING, port=PROVISIONED_AT_COMMISSIONING
+            )
+            if ac
+            else None
+        ),
+    )
 
 
 def fetch_topology(

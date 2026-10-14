@@ -23,8 +23,9 @@ def networked_children(dtm: Dtm, parent: str) -> list[Device]:
 
 
 def device_lines(dtm: Dtm, device: Device) -> list[str]:
-    """Box text: device id, protocol, address (TBD until commissioning)."""
-    return [device.device_id, _protocol(dtm, device), _address(device)]
+    """Box text: site tag (C1-NODE-1), protocol, address (TBD until commissioning)."""
+    tag = device.display_name or device.device_id
+    return [tag, _protocol(dtm, device), _address(device)]
 
 
 def _protocol(dtm: Dtm, device: Device) -> str:

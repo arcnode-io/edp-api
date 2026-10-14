@@ -9,7 +9,7 @@ from ezdxf.layouts import Modelspace
 
 from src.bom_generator.bom_models import Bom
 from src.drawing import _draw_kit as k
-from src.drawing._one_line import compute_feeds
+from src.sizing.compute_feeds import compute_feeds
 from src.sizing.sizing_internals import GRID_CONTAINER_KVA
 
 _MV_BUS_Y: float = 250.0

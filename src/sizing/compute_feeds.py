@@ -1,4 +1,4 @@
-"""Site electrical structure shared by the SLD and comms drawings."""
+"""ADR-018: which compute containers each grid container feeds."""
 
 from math import ceil
 

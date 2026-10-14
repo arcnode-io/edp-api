@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.shared.enums import GpuVariant
+from src.shared.enums import BessCoupling, GpuVariant
 from src.dtm.dtm_generator_service import DtmGeneratorService
 from src.dtm.test_dtm_generator_fixtures import (
     _make_client,
@@ -20,8 +20,8 @@ def test_generate_emits_sim_mode() -> None:
     actual = service.generate(
         profile="commercial_ac", resolution=_resolution(), manifest=_manifest()
     )
-    # Assert
-    assert actual.mode == EmsMode.LIVE
+    # Assert — the battery's address comes at commissioning, so SIM until then
+    assert actual.mode == EmsMode.SIM
 
 
 def test_generate_dissolves_modules_into_devices() -> None:
@@ -238,3 +238,31 @@ def test_an_h100_order_gets_h100_nodes_under_an_h100_module() -> None:
     templates = {d.template for d in actual.devices.values() if d.parent is None}
     nodes = {d.template for d in actual.devices.values() if "node" in d.template}
     assert ("compute_module_h100" in templates, nodes) == (True, {"gpu_node_h100"})
+
+
+@pytest.mark.parametrize(
+    ("coupling", "template"),
+    [
+        (BessCoupling.AC_COUPLED, "bess_rack"),
+        (BessCoupling.DC_EXTERNAL_PCS, "bess_catl"),
+    ],
+)
+def test_the_customers_battery_is_in_the_device_data(
+    coupling: BessCoupling, template: str
+) -> None:
+    # Arrange — QA: the battery was in no artifact. The EMS supervises it.
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+    resolution = _resolution().model_copy(update={"bess_coupling": coupling})
+
+    # Act
+    actual = service.generate(
+        profile="commercial_ac", resolution=resolution, manifest=_manifest()
+    )
+
+    # Assert
+    batteries = [
+        (d.template, d.display_name, actual.devices[d.parent].display_name)
+        for d in actual.devices.values()
+        if d.parent is not None and d.template.startswith("bess")
+    ]
+    assert batteries == [(template, "BESS-1", "BESS")]

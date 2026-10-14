@@ -73,10 +73,17 @@ class _RecordingClient:
             "plates": [{"id": pid, "qty": 1} for pid in ("CG", "BG-AC", "CD")],
         }
 
-    def fetch_topology_yaml(self, _url: str) -> dict:
-        # Real topology yaml is consumed by emit_container; covered by
-        # dtm_generator's own tests. Here we just need *something* parseable.
-        return {"devices": []}
+    def fetch_topology_yaml(self, url: str) -> dict:
+        # Grid containers carry their management switch, where the battery's
+        # controller patches in (ADR-019); otherwise no devices.
+        if "grid" not in url:
+            return {"devices": []}
+        switch = {
+            "template": "grid_mgmt_switch",
+            "tag": "SW-MGMT-1",
+            "description": "stub",
+        }
+        return {"devices": [switch]}
 
     def fetch_spec(self, _url: str) -> dict:
         return {}

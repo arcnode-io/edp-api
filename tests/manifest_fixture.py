@@ -32,6 +32,7 @@ def _commercial_ac_manifest() -> Manifest:
                     bom="s3://test/compute/commercial-ac/bom.yaml",
                     step="s3://test/compute/commercial-ac/assembly.step",
                     glb="s3://test/compute/commercial-ac/assembly.glb",
+                    topology_yaml="s3://test/compute/commercial-ac/topology.yaml",
                 ),
             },
             "grid_container": {
@@ -39,6 +40,7 @@ def _commercial_ac_manifest() -> Manifest:
                     bom="s3://test/grid/commercial-ac/bom.yaml",
                     step="s3://test/grid/commercial-ac/assembly.step",
                     glb="s3://test/grid/commercial-ac/assembly.glb",
+                    topology_yaml="s3://test/grid/commercial-ac/topology.yaml",
                 ),
             },
         },

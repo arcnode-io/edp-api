@@ -39,8 +39,17 @@ class _StubManifestClient:
             "plates": [{"id": pid, "qty": 1} for pid in self._manifest.plates],
         }
 
-    def fetch_topology_yaml(self, _url: str) -> dict:
-        return {"devices": []}
+    def fetch_topology_yaml(self, url: str) -> dict:
+        # Grid containers carry their management switch, where the battery's
+        # controller patches in (ADR-019); otherwise no devices.
+        if "grid" not in url:
+            return {"devices": []}
+        switch = {
+            "template": "grid_mgmt_switch",
+            "tag": "SW-MGMT-1",
+            "description": "stub",
+        }
+        return {"devices": [switch]}
 
     def fetch_spec(self, _url: str) -> dict:
         return {}

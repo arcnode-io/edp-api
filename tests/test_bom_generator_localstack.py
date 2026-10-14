@@ -283,14 +283,15 @@ def test_dtm_generator_against_localstack(
     )
 
     # assert — Q9-C-equivalent for DTM (canonical Dtm shape)
-    assert dtm.mode == EmsMode.LIVE
-    # 2 compute_module devices (one per container), no grid
-    module_devices = [
-        d
+    # The battery waits for its commissioning-time address, so SIM until then
+    assert dtm.mode == EmsMode.SIM
+    # 2 compute_module devices (one per container), no grid, + the battery
+    module_devices = sorted(
+        d.template
         for d in dtm.devices.values()
         if dtm.templates_used[d.template].kind == TemplateKind.MODULE
-    ]
-    assert len(module_devices) == 2
+    )
+    assert module_devices == ["bess_module", "compute_module", "compute_module"]
     # 2 leaf gpu_node devices (1 per topology x 2 containers)
     gpu_devices = [d for d in dtm.devices.values() if d.template == "gpu_node"]
     assert len(gpu_devices) == 2

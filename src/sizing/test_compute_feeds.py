@@ -1,6 +1,6 @@
 """compute_feeds: compute containers split evenly over grid containers (ADR-018)."""
 
-from src.drawing._one_line import compute_feeds
+from src.sizing.compute_feeds import compute_feeds
 
 
 def test_compute_containers_fill_grid_containers_in_order() -> None:

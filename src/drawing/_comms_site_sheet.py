@@ -26,7 +26,9 @@ def draw_site_sheet(msp: Modelspace, dtm: Dtm, bom: Bom) -> None:
     k.wire(msp, (210, 229.5), (210, _LAN_Y))
 
     boxes = [device_lines(dtm, d) for d in networked_children(dtm, "grid_module_1")]
-    boxes.append(["BESS SITE CONTROLLER", "MODBUS TCP", "BY OTHERS"])
+    # The customer's battery, from the device data (BESS-1)
+    modules = [d.device_id for d in dtm.devices.values() if d.template == "bess_module"]
+    boxes += [device_lines(dtm, d) for d in dtm.devices.values() if d.parent in modules]
     if m > 1:
         boxes.append(
             [f"G2-G{m} MGMT SWITCHES x{m - 1}", "RELAY BEHIND EACH", "TYPICAL"]
