@@ -1,0 +1,20 @@
+template: bess_catl
+kind: leaf
+equipment_id: EXT-BESS-002
+vendor: CATL (Contemporary Amperex Technology Co.)
+model: EnerOne+ 379.4 kWh / 1C
+description: CATL EnerOne+ DC battery, customer-supplied (dc_int with its own PCS, dc_ext to the ARCNODE PCS pair)
+
+# Passive: CATL's BMS register map isn't verified, so nothing is polled.
+# The customer sets and ties in the battery (ADR-001); these are ARCNODE's
+# interface steps.
+
+install_tasks:
+  - name: witness_tie_in
+    est_minutes: 60
+    crew_role: general
+    cx_level: L2
+  - name: connect_bms_ethernet
+    est_minutes: 30
+    crew_role: it
+    cx_level: L2

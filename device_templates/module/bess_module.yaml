@@ -5,6 +5,8 @@ description: BESS module aggregation — published rollups + setpoint fanout
 contains:
   - template: bess_rack
     qty: scalable
+  - template: bess_catl
+    qty: scalable
 
 measurements:
   # Rollups project a bess_rack measurement across however many racks this
