@@ -37,6 +37,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 _A3_LANDSCAPE_INCHES: tuple[float, float] = (16.54, 11.69)
 _A3_LANDSCAPE_MM: tuple[float, float] = (420.0, 297.0)
 _SHEET_GAP_MM: float = 30.0
+# x distance between consecutive sheets in a multi-sheet DXF
+SHEET_PITCH_MM: float = _A3_LANDSCAPE_MM[0] + _SHEET_GAP_MM
 # Bitmap fallback DPI — only kicks in for elements matplotlib can't vectorize
 # (none in our pipeline today; setting high so future raster fallbacks are sharp).
 _PDF_DPI: int = 400
@@ -57,7 +59,7 @@ def serialize_dxf(pages: list[Drawing]) -> bytes:
         importer = Importer(page, target)
         importer.import_modelspace()
         importer.finalize()
-        dx = k * (_A3_LANDSCAPE_MM[0] + _SHEET_GAP_MM)
+        dx = k * SHEET_PITCH_MM
         for entity in msp:
             if entity.dxf.handle not in before:
                 entity.translate(dx, 0, 0)

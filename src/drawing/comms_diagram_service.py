@@ -11,6 +11,7 @@ from src.bom_generator.bom_models import Bom
 from src.drawing._comms_compute_sheet import draw_compute_sheet
 from src.drawing._comms_site_sheet import draw_site_sheet
 from src.drawing._draw_kit import LAYERS
+from src.drawing._drawing_area import bind_to_drawing_area
 from src.drawing._eng_render import serialize_dxf, serialize_pdf
 from src.drawing._eng_title_block import new_sheet
 from src.shared.schemas.dtm import Dtm
@@ -45,6 +46,8 @@ class CommsDiagramService:
         ]
         draw_site_sheet(sheets[0].modelspace(), dtm, bom)
         draw_compute_sheet(sheets[1].modelspace(), dtm, bom)
+        for sheet in sheets:
+            bind_to_drawing_area(sheet.modelspace())
         return CommsDiagramOutputs(
             dxf=serialize_dxf(sheets),
             pdf=serialize_pdf(sheets, title="ARCNODE COMMS DIAGRAM"),

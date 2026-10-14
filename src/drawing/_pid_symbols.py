@@ -67,8 +67,26 @@ def ensure_manifold_block(doc: Drawing) -> str:
 
 
 def ensure_dry_cooler_block(doc: Drawing) -> str:
-    """50x30 mm BY-OTHERS placeholder labelled 'DRY COOLER (BY OTHERS)'."""
-    return ensure_by_others_block(doc, "dry_cooler", "DRY COOLER (BY OTHERS)")
+    """50x30 mm dry cooler. ARCNODE supplies it (EXT-DC-001/-002), so solid."""
+    name = "equip_dry_cooler"
+    if name in doc.blocks:
+        return name
+    blk = doc.blocks.new(name=name)
+    _equipment_rectangle(blk, w=50, h=30, label="DRY COOLER")
+    return name
+
+
+def ensure_offsheet_block(doc: Drawing) -> str:
+    """Off-page connector: a 15x6 mm flag pointing -X; the pipe lands on (0, 0).
+
+    Insert with rotation 180 for a flag pointing +X.
+    """
+    name = "offsheet_connector"
+    if name in doc.blocks:
+        return name
+    blk = doc.blocks.new(name=name)
+    blk.add_lwpolyline([(0, -3), (0, 3), (-12, 3), (-15, 0), (-12, -3)], close=True)
+    return name
 
 
 def ensure_buffer_tank_block(doc: Drawing) -> str:
@@ -163,25 +181,6 @@ def ensure_instrument_bubble(doc: Drawing, tag: str) -> str:
             "halign": 4,
             "valign": 2,
             "align_point": (0, -1.8),
-        },
-    )
-    return name
-
-
-def ensure_by_others_block(doc: Drawing, kind: str, label: str) -> str:
-    """Generic BY-OTHERS placeholder — dashed rectangle + centered label."""
-    name = f"byother_{kind}"
-    if name in doc.blocks:
-        return name
-    blk = doc.blocks.new(name=name)
-    _dashed_rectangle(blk, w=50, h=30)
-    blk.add_text(
-        label,
-        dxfattribs={
-            "height": 2.5,
-            "halign": 4,
-            "valign": 2,
-            "align_point": (0, 0),
         },
     )
     return name

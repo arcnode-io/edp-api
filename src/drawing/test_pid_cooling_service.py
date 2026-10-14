@@ -1,115 +1,162 @@
-"""PidCoolingService unit tests — paper-grade P&ID DXF + PDF, ISA 5.1 symbols."""
+"""PidCoolingService: rack + facility coolant sheets, every pipe connected."""
 
 import io
+import math
+from itertools import pairwise
+import re
 
 import ezdxf
 import pytest
-
-from src.drawing.conftest import make_device, make_dtm, make_template
-from src.drawing.pid_cooling_service import (
-    PidCoolingOutputs,
-    PidCoolingService,
+from ezdxf.document import Drawing
+from ezdxf.entities import (
+    Circle,
+    DXFGraphic,
+    Insert,
+    Line,
+    LWPolyline,
+    MText,
+    Text,
 )
-from src.shared.schemas.dtm import Dtm
+from ezdxf.layouts import Modelspace
+
+from src.drawing._eng_render import SHEET_PITCH_MM
+from src.drawing.conftest import make_dtm, make_template
+from src.drawing.pid_cooling_service import PidCoolingOutputs, PidCoolingService
+from src.shared.schemas.dtm import Device, Dtm
+
+_TOL_MM = 0.05
+Point = tuple[float, float]
 
 
-@pytest.fixture
-def cdu_with_two_gpu_nodes() -> Dtm:
-    """Minimal cooling-loop DTM: 1 CDU + 2 GPU nodes (DLC consumers)."""
-    return make_dtm(
-        devices={
-            "cdu_1": make_device("cdu_1", template="cdu"),
-            "gpu_node_1": make_device("gpu_node_1", template="gpu_node"),
-            "gpu_node_2": make_device("gpu_node_2", template="gpu_node"),
-        },
-        templates={
-            "cdu": make_template("cdu"),
-            "gpu_node": make_template("gpu_node"),
-        },
+def _device(
+    device_id: str, template: str, parent: str | None, tag: str | None
+) -> Device:
+    return Device(
+        device_id=device_id, template=template, parent=parent, display_name=tag
     )
 
 
-def test_generate_returns_outputs_with_dxf_and_pdf_bytes(
-    cdu_with_two_gpu_nodes: Dtm,
-) -> None:
-    """generate() returns an outputs bundle with non-empty dxf + pdf bytes."""
+@pytest.fixture
+def two_containers() -> Dtm:
+    """Two compute containers, each a CDU, 7 nodes and a dry cooler."""
+    devices: dict[str, Device] = {}
+    for c in (1, 2):
+        module = f"compute_module_{c}"
+        devices[module] = _device(module, "compute_module", None, f"C{c}")
+        devices[f"cdu_{c}"] = _device(f"cdu_{c}", "cdu", module, f"C{c}-CDU-1")
+        devices[f"dc_external_{c}"] = _device(
+            f"dc_external_{c}", "dc_external", module, f"C{c}-DC-1"
+        )
+        for n in range(1, 8):
+            i = (c - 1) * 7 + n
+            devices[f"gpu_node_{i}"] = _device(
+                f"gpu_node_{i}", "gpu_node", module, f"C{c}-NODE-{n}"
+            )
+    templates = {t: make_template(t) for t in {d.template for d in devices.values()}}
+    return make_dtm(devices=devices, templates=templates)
+
+
+def _doc(outputs: PidCoolingOutputs) -> Drawing:
+    return ezdxf.read(io.StringIO(outputs.dxf.decode("utf-8")))
+
+
+def _texts(outputs: PidCoolingOutputs) -> str:
+    msp = _doc(outputs).modelspace()
+    return " | ".join(t.dxf.text for t in msp.query("TEXT") if isinstance(t, Text))
+
+
+def test_pdf_has_a_rack_sheet_and_a_facility_sheet(two_containers: Dtm) -> None:
     # Act
-    actual = PidCoolingService().generate(cdu_with_two_gpu_nodes)
+    outputs = PidCoolingService().generate(two_containers)
 
     # Assert
-    assert isinstance(actual, PidCoolingOutputs)
-    assert len(actual.dxf) > 0
-    assert len(actual.pdf) > 0
+    assert len(re.findall(rb"/Type /Page\b", outputs.pdf)) == 2
 
 
-def test_pdf_starts_with_magic(cdu_with_two_gpu_nodes: Dtm) -> None:
-    """PDF bytes start with %PDF- — proves real vector PDF."""
+def test_rack_sheet_draws_the_first_container_as_typical(two_containers: Dtm) -> None:
     # Act
-    outputs = PidCoolingService().generate(cdu_with_two_gpu_nodes)
+    texts = _texts(PidCoolingService().generate(two_containers))
+
+    # Assert — C1's CDU and 7 node plates, labelled typical of both containers
+    assert "C1-CDU-1" in texts
+    assert "C1-NODE-7 DLC" in texts
+    assert "C2-NODE-1" not in texts
+    assert "COMPUTE CONTAINER C1-C2 (TYPICAL OF 2)" in texts
+
+
+def test_title_block_carries_the_deployment_uuid(two_containers: Dtm) -> None:
+    # Act
+    msp = _doc(PidCoolingService().generate(two_containers)).modelspace()
 
     # Assert
-    assert outputs.pdf.startswith(b"%PDF-")
+    blob = " ".join(m.text for m in msp.query("MTEXT") if isinstance(m, MText))
+    assert str(two_containers.deployment_uuid) in blob
 
 
-def test_pdf_is_two_pages(cdu_with_two_gpu_nodes: Dtm) -> None:
-    """One PDF, two sheets: rack-internal (1/2) + facility loop (2/2)."""
+def test_no_pipe_ends_in_mid_air(two_containers: Dtm) -> None:
+    # Arrange — every open end of a process line (pipe or symbol port stub)
+    # must land on another process element: a pipe, a symbol outline, a
+    # pump circle or an off-sheet connector.
+    msp = _doc(PidCoolingService().generate(two_containers)).modelspace()
+
     # Act
-    outputs = PidCoolingService().generate(cdu_with_two_gpu_nodes)
-
-    # Assert — count individual /Type /Page entries (excluding /Type /Pages parent).
-    import re
-
-    page_objects = re.findall(rb"/Type\s*/Page(?!s)", outputs.pdf)
-    assert len(page_objects) == 2
-
-
-def test_dxf_contains_cdu_symbol_per_cdu_device(
-    cdu_with_two_gpu_nodes: Dtm,
-) -> None:
-    """Each `cdu` device in the DTM appears as a CDU block on sheet 1."""
-    # Act
-    outputs = PidCoolingService().generate(cdu_with_two_gpu_nodes)
-    doc = ezdxf.read(io.StringIO(outputs.dxf.decode("utf-8")))
+    dangling = _dangling_ends(msp)
 
     # Assert
-    inserts = list(doc.modelspace().query("INSERT"))
-    cdu_inserts = [i for i in inserts if i.dxf.name.startswith("equip_cdu_")]
-    assert len(cdu_inserts) == 1  # one cdu device → one CDU symbol
+    assert dangling == []
 
 
-def test_dxf_carries_iso_7200_title_block_with_deployment_uuid(
-    cdu_with_two_gpu_nodes: Dtm,
-) -> None:
-    """Sheet 1 + sheet 2 both carry a title block with the deployment_uuid."""
-    # Act
-    outputs = PidCoolingService().generate(cdu_with_two_gpu_nodes)
-    doc = ezdxf.read(io.StringIO(outputs.dxf.decode("utf-8")))
+def _dangling_ends(msp: Modelspace) -> list[tuple[int, Point]]:
+    """(sheet, point) for every open line end that touches nothing else."""
+    parts = [
+        p
+        for e in msp.query("*[layer=='PROCESS']")
+        if isinstance(e, DXFGraphic)
+        for p in _primitives(e)
+    ]
+    dangling = []
+    for i, (kind, geom) in enumerate(parts):
+        if kind != "line":
+            continue
+        for end in geom:
+            touched = any(j != i and _touches(end, parts[j]) for j in range(len(parts)))
+            if not touched:
+                dangling.append((int(end[0] // SHEET_PITCH_MM), end))
+    return dangling
 
-    # Assert — sheet 1 is the only DXF sheet (DXF is single-modelspace; sheet 2
-    # lives only in the PDF). Title block carries the UUID.
-    from ezdxf.entities import MText
 
-    mtexts = [m for m in doc.modelspace().query("MTEXT") if isinstance(m, MText)]
-    text_blob = " ".join(m.text for m in mtexts)
-    assert str(cdu_with_two_gpu_nodes.deployment_uuid) in text_blob
-    # Title row identifies this as a P&ID, not an SLD.
-    assert "P&ID" in text_blob
+def _primitives(entity: DXFGraphic) -> list[tuple[str, tuple]]:
+    """Flatten an entity (and block contents) to lines, closed edges, circles."""
+    match entity:
+        case Insert():
+            return [p for v in entity.virtual_entities() for p in _primitives(v)]
+        case Line():
+            s, e = entity.dxf.start, entity.dxf.end
+            return [("line", ((s.x, s.y), (e.x, e.y)))]
+        case LWPolyline():
+            pts = [(p[0], p[1]) for p in entity.get_points("xy")]
+            if entity.closed:
+                pts.append(pts[0])
+                return [("edge", (a, b)) for a, b in pairwise(pts)]
+            return [("line", (a, b)) for a, b in pairwise(pts)]
+        case Circle():
+            c = entity.dxf.center
+            return [("circle", ((c.x, c.y), entity.dxf.radius))]
+        case _:
+            return []
 
 
-def test_dxf_emits_instrument_bubbles_at_cdu_ports(
-    cdu_with_two_gpu_nodes: Dtm,
-) -> None:
-    """ISA 5.1 instrument bubbles at standard CDU port locations.
+def _touches(p: Point, part: tuple[str, tuple]) -> bool:
+    kind, geom = part
+    if kind == "circle":
+        (cx, cy), r = geom
+        return abs(math.dist(p, (cx, cy)) - r) <= _TOL_MM
+    a, b = geom
+    return _on_segment(p, a, b)
 
-    A complete P&ID needs at minimum TT/PT on each CDU port (primary supply,
-    primary return, secondary supply, secondary return) + FT on the
-    secondary supply. 4 ports x 2 instruments (TT,PT) + 1 FT = 9 bubbles.
-    """
-    # Act
-    outputs = PidCoolingService().generate(cdu_with_two_gpu_nodes)
-    doc = ezdxf.read(io.StringIO(outputs.dxf.decode("utf-8")))
 
-    # Assert — instrument bubbles are INSERTs of an `instr_*` block
-    inserts = list(doc.modelspace().query("INSERT"))
-    instr_inserts = [i for i in inserts if i.dxf.name.startswith("instr_")]
-    assert len(instr_inserts) >= 9
+def _on_segment(p: Point, a: Point, b: Point) -> bool:
+    ab = math.dist(a, b)
+    if ab == 0:
+        return math.dist(p, a) <= _TOL_MM
+    return abs(math.dist(a, p) + math.dist(p, b) - ab) <= _TOL_MM

@@ -24,12 +24,12 @@ from ezdxf.layouts import Modelspace
 from src.drawing._arcnode_logo import arcnode_logo_polylines
 from src.shared.schemas.dtm import Dtm
 
-_SHEET_WIDTH: float = 420.0
-_SHEET_HEIGHT: float = 297.0
-_FRAME_INSET: float = 5.0
+SHEET_W_MM: float = 420.0
+SHEET_H_MM: float = 297.0
+FRAME_INSET_MM: float = 5.0
 
-_TITLE_BLOCK_WIDTH: float = 200.0
-_TITLE_BLOCK_HEIGHT: float = 50.0
+TITLE_BLOCK_W_MM: float = 200.0
+TITLE_BLOCK_H_MM: float = 50.0
 _LOGO_STRIP_WIDTH: float = 30.0
 
 
@@ -49,13 +49,13 @@ def new_sheet(
 
 def draw_sheet_frame(msp: Modelspace) -> None:
     """ISO 5457-style rectangular border, 5mm inset from sheet edges."""
-    inset = _FRAME_INSET
+    inset = FRAME_INSET_MM
     msp.add_lwpolyline(
         [
             (inset, inset),
-            (_SHEET_WIDTH - inset, inset),
-            (_SHEET_WIDTH - inset, _SHEET_HEIGHT - inset),
-            (inset, _SHEET_HEIGHT - inset),
+            (SHEET_W_MM - inset, inset),
+            (SHEET_W_MM - inset, SHEET_H_MM - inset),
+            (inset, SHEET_H_MM - inset),
         ],
         close=True,
         dxfattribs={"layer": "FRAME"},
@@ -83,10 +83,10 @@ def draw_title_block(
         sheet_n: 1-based sheet number on this drawing.
         sheet_m: total sheets on this drawing.
     """
-    right = _SHEET_WIDTH - _FRAME_INSET
-    bottom = _FRAME_INSET
-    left = right - _TITLE_BLOCK_WIDTH
-    top = bottom + _TITLE_BLOCK_HEIGHT
+    right = SHEET_W_MM - FRAME_INSET_MM
+    bottom = FRAME_INSET_MM
+    left = right - TITLE_BLOCK_W_MM
+    top = bottom + TITLE_BLOCK_H_MM
     text_left = left + _LOGO_STRIP_WIDTH
 
     # Outer rectangle.
@@ -104,7 +104,7 @@ def draw_title_block(
 
     # 4 horizontal rows in the text column.
     text_column_width = right - text_left
-    row_height = _TITLE_BLOCK_HEIGHT / 4
+    row_height = TITLE_BLOCK_H_MM / 4
     for i in range(1, 4):
         y = bottom + i * row_height
         msp.add_line(
@@ -164,7 +164,7 @@ def _draw_logo(msp: Modelspace, *, left: float, bottom: float) -> None:
     # Fit the glyph into the logo strip with a 3mm margin all around.
     margin = 3.0
     dst_w = _LOGO_STRIP_WIDTH - 2 * margin
-    dst_h = _TITLE_BLOCK_HEIGHT - 2 * margin
+    dst_h = TITLE_BLOCK_H_MM - 2 * margin
     scale = min(dst_w / src_w, dst_h / src_h)
 
     # Center the glyph horizontally + vertically inside the strip.
