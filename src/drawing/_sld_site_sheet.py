@@ -130,7 +130,6 @@ def _notes(msp: Modelspace, dc_ext: bool) -> None:
         "1. Compute containers split evenly over grid containers (ADR-018).",
         battery,
         "3. POI meter ships loose with G1, installed at the service (ADR-020).",
-        "4. PART TBD: selection + fit pending (ADR-017, ADR-019).",
     ]
     for i, note in enumerate(notes):
         k.text(msp, 15, 52 - i * 5, note, h=2.5 if i == 0 else 2.2)

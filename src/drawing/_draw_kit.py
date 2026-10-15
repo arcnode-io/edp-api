@@ -118,6 +118,13 @@ def model(bom: Bom, equipment_id: str) -> str:
     return f"{line.vendor} {line.part_number.split(' (')[0]}"[:70]
 
 
+def ordered(bom: Bom, *equipment_ids: str) -> str:
+    """Which of these variant parts the order carries (H100 vs B200 node,
+    commercial vs defense cooler); the first id when the BOM has none."""
+    carried = {li.equipment_id for li in bom.line_items}
+    return next((e for e in equipment_ids if e in carried), equipment_ids[0])
+
+
 def part(bom: Bom, equipment_id: str) -> str:
     """'<id> <short model>' — the equipment list's row text."""
     return f"{equipment_id} {model(bom, equipment_id)}"

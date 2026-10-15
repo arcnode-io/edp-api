@@ -6,9 +6,11 @@ model: GFD Series (V-shape, ECM fans, fluid cooler)
 description: Güntner GFD outdoor V-shape dry cooler with EC fan motors via Modbus TCP
 
 # Registers from Güntner "Interface Specification – Modbus GMM V_3.0" (GMM EC
-# controller); addresses are on-wire decimal. The GMM is Modbus RTU over RS-485,
-# reached through an RS-485/TCP converter. Which sensor sits on AI1/AI2/AI3 is
-# set in the GMM service menu at commissioning.
+# controller); addresses are on-wire decimal. The GFD ships with the GMMnext
+# (aicore air) controller, polled directly over Modbus TCP on its ETH1 port with
+# Modbus mapping set to "Compatibility mode", which keeps this GMM EC interface
+# (GMMnext operating instructions V1.0.0 §6.4.8.1.2, §6.4.8.1.4). Which sensor
+# sits on AI1/AI2/AI3 is set in the controller's service menu at commissioning.
 
 measurements:
   leaving_fluid_temp:

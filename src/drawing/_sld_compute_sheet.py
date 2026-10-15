@@ -14,20 +14,13 @@ _PANEL_BUS_Y: float = 245.0
 _BRANCH_X0: float = 45.0
 _BRANCH_PITCH: float = 45.0
 _PDUS: int = 6
-_EQUIPMENT: list[str] = [
-    "CMP-PNL-001",
-    "CMP-PDU-001",
-    "CMP-CDU-001",
-    "EXT-DC-001",
-    "CMP-NODE-001",
-    "CMP-SWITCH-001",
-    "CMP-SWITCH-003",
-]
 
 
 def draw_compute_sheet(msp: Modelspace, bom: Bom) -> None:
     """Draw the typical compute container one-line."""
     n = bom.compute_container_qty
+    node = k.ordered(bom, "CMP-NODE-001", "CMP-NODE-002")
+    cooler = k.ordered(bom, "EXT-DC-001", "EXT-DC-002")
     k.text(msp, 66, 278, "FROM GRID CONTAINER LV FEEDER (SHEET 1) VIA CG PLATE", h=2.2)
     k.wire(msp, (60, 280), (60, 257.5))
     k.breaker(msp, 60, 255)
@@ -40,7 +33,7 @@ def draw_compute_sheet(msp: Modelspace, bom: Bom) -> None:
         for i in range(_PDUS)
     ]
     labels.append(["CDU", "CMP-CDU-001"])
-    labels.append(["DRY COOLER", "EXT-DC-001"])
+    labels.append(["DRY COOLER", cooler])
     for i, lines in enumerate(labels):
         x = _BRANCH_X0 + i * _BRANCH_PITCH
         k.wire(msp, (x, _PANEL_BUS_Y), (x, 237.5))
@@ -57,7 +50,7 @@ def draw_compute_sheet(msp: Modelspace, bom: Bom) -> None:
         200,
         16,
         [
-            "7x GPU NODE CMP-NODE-001 · PSUs SPLIT A/B",
+            f"7x GPU NODE {node} · PSUs SPLIT A/B",
             "DATA SWITCH CMP-SWITCH-001 + MGMT SWITCH CMP-SWITCH-003",
         ],
     )
@@ -66,12 +59,20 @@ def draw_compute_sheet(msp: Modelspace, bom: Bom) -> None:
 
     k.dashed_rect(msp, 22, 132, 400, 270)
     k.text(msp, 24, 135, f"COMPUTE CONTAINER C1-C{n} (TYPICAL OF {n})", h=2.5)
-    k.equipment_list(msp, bom, _EQUIPMENT, 15, 120)
+    equipment = [
+        "CMP-PNL-001",
+        "CMP-PDU-001",
+        "CMP-CDU-001",
+        cooler,
+        node,
+        "CMP-SWITCH-001",
+        "CMP-SWITCH-003",
+    ]
+    k.equipment_list(msp, bom, equipment, 15, 120)
     for i, note in enumerate(
         [
             "NOTES",
             "1. A/B dual-path from one source, not 2N: both paths share one feeder (ADR-005).",
-            "2. PART TBD: selection + fit pending (ADR-017, ADR-019).",
         ]
     ):
         k.text(msp, 15, 52 - i * 5, note, h=2.5 if i == 0 else 2.2)

@@ -4,7 +4,7 @@ The engineering deliverable an electrical engineer reviews and signs:
 the power path from utility to loads. Two A3 sheets whatever the order
 size — site one-line (sheet 1) and one compute container drawn as
 typical (sheet 2). Equipment comes from the BOM; anything the BOM
-doesn't carry yet is labelled PART TBD.
+doesn't carry is labelled PART TBD in the equipment list.
 
 Not the HMI SLD: that one draws every EMS device from the DTM at runtime.
 """

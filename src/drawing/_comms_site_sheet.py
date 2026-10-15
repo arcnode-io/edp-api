@@ -50,7 +50,6 @@ def draw_site_sheet(msp: Modelspace, dtm: Dtm, bom: Bom) -> None:
             "NOTES",
             "1. 1 GbE management network, one managed switch per container (ADR-019).",
             "2. Addresses are assigned at commissioning (POST /topology).",
-            "3. PART TBD: selection + fit pending (ADR-019).",
         ]
     ):
         k.text(msp, 15, 52 - i * 5, note, h=2.5 if i == 0 else 2.2)
