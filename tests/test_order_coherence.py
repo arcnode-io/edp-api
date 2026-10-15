@@ -117,3 +117,21 @@ def test_every_tag_names_one_device(package: tuple) -> None:
 
     # Assert
     assert repeated == []
+
+
+def test_dc_ext_pcs_sits_on_the_battery_pad() -> None:
+    # Arrange — ADR-022: one CAB1000 per grid container, under the battery
+    _, bom, dtm, _ = package_for(ORDERS["600xB200-4MWh-dc_ext"])
+    battery = next(
+        d.device_id for d in dtm.devices.values() if d.display_name == "BESS"
+    )
+
+    # Act
+    pcs = [d for d in dtm.devices.values() if d.template == "pcs"]
+    lines = [li for li in bom.line_items if li.equipment_id == "GRD-PCS-001"]
+
+    # Assert
+    assert [d.parent for d in pcs] == [battery] * bom.grid_container_qty
+    assert [(li.section.value, li.qty) for li in lines] == [
+        ("site_and_interfaces", bom.grid_container_qty)
+    ]

@@ -58,8 +58,7 @@ def site_peak_mw(gpu_variant: GpuVariant, target_gpu_count: int) -> float:
 GRID_CONTAINER_KVA: Final[float] = 1000.0
 # ADR-021: continuous design load is 80% of nameplate. The Trihal sits in a
 # closed container on natural convection with no overhead margin (ADR-013).
-# The dc-ext PCS pair (2x 417 kW) is above this limit, so the transformer
-# governs for every coupling.
+# On dc_ext one PCS (CAB1000, 1043 kW) per grid container covers it (ADR-022).
 TRANSFORMER_DESIGN_LOADING: Final[float] = 0.8
 
 

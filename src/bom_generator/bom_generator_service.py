@@ -20,6 +20,7 @@ from src.bom_generator.bom_models import (
     BomOrder,
     BomSection,
 )
+from src.bom_generator.bom_ref_des import compress
 from src.bom_generator.bom_site_lines import site_lines
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.spec_lines import (
@@ -102,7 +103,16 @@ class BomGeneratorService:
                 part_line=part_line,
                 plate_line=plate_line,
             )
-        lines += site_lines(order, compute_container_qty, grid_container_qty)
+        lines += site_lines(order, compute_container_qty)
+        if order.bess_coupling == "dc_external_pcs":
+            # ADR-022: ARCNODE's PCS on the battery pad, one per grid container
+            pcs_tags = [f"PCS-{n}" for n in range(1, grid_container_qty + 1)]
+            pcs_spec = self._client.fetch_spec(manifest.specs["GRD-PCS-001"])
+            lines.append(
+                spec_to_catalog_line(
+                    pcs_spec, grid_container_qty, BomSection.SITE, compress(pcs_tags)
+                )
+            )
         lines += field_lines or []
         return Bom(
             deployment_id=deployment_id,

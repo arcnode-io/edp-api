@@ -79,17 +79,19 @@ def test_ac_battery_ties_in_at_mv_through_customer_gear() -> None:
     texts = _texts(_sld("commercial_ac", compute_qty=2, grid_qty=1))
 
     # Assert — ADR-016
-    assert "T-BESS STEP-UP, BESS AC TO 13.8 kV — BY OTHERS" in texts
+    assert "T-BESS STEP-UP TO 13.8 kV" in texts
     assert "GRD-PCS-001" not in texts
 
 
-def test_dc_ext_battery_lands_on_the_pcs_pair() -> None:
+def test_dc_ext_battery_ties_in_at_mv_behind_one_pcs_per_grid_container() -> None:
     # Act
-    texts = _texts(_sld("commercial_dc_ext", compute_qty=2, grid_qty=1))
+    texts = _texts(_sld("commercial_dc_ext", compute_qty=12, grid_qty=2))
 
-    # Assert — PCS pair on the battery pad, AC in through BG-AC (ADR-022)
-    assert "GRD-PCS-001 x2 ON BATTERY PAD (ADR-022)" in texts
-    assert "STEP-UP" not in texts
+    # Assert — CATL → ARCNODE PCS x2 → customer step-up → 13.8 kV (ADR-022)
+    assert "GRD-PCS-001 x2" in texts
+    assert "T-BESS STEP-UP TO 13.8 kV" in texts
+    assert "CATL ENERONE+ (DC)" in texts
+    assert "GRID CONTAINER G2" in texts  # one feeder, not "G2-G2 (TYPICAL OF 1)"
 
 
 def test_labels_come_from_the_bom_or_say_part_tbd() -> None:

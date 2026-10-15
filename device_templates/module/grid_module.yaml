@@ -11,8 +11,6 @@ contains:
     qty: 1
   - template: grid_mgmt_switch
     qty: 1
-  - template: pcs
-    qty: scalable
   - template: poi_meter
     qty: 1
   - template: protective_relay

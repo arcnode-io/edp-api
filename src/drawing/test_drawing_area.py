@@ -38,6 +38,18 @@ def test_binding_scales_overflowing_content_into_the_drawing_area() -> None:
     assert violations(doc.modelspace()) == []
 
 
+def test_fitted_content_landing_on_the_edge_is_inside() -> None:
+    # Arrange — a width whose fitted right end lands on the drawing-area edge
+    # with a float rounding error (413.00000000000006 vs 413)
+    doc = _sheet_with_line((20, 150), (536.96, 150))
+
+    # Act
+    bind_to_drawing_area(doc.modelspace())
+
+    # Assert
+    assert violations(doc.modelspace()) == []
+
+
 def test_content_already_inside_the_drawing_area_is_left_alone() -> None:
     # Arrange
     doc = _sheet_with_line((20, 100), (200, 100))

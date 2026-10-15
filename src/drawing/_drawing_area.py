@@ -28,6 +28,7 @@ Rect = tuple[float, float, float, float]
 
 _FRAME_LAYERS: Final[frozenset[str]] = frozenset({"FRAME", "TITLE_BLOCK"})
 _MARGIN_MM: Final[float] = 2.0
+_TOLERANCE_MM: Final[float] = 1e-6
 # Inside the border, with a margin so nothing touches the frame line.
 FRAME_INNER: Final[Rect] = (
     FRAME_INSET_MM + _MARGIN_MM,
@@ -114,8 +115,14 @@ def _rect(entity: DXFGraphic, dx: float) -> Rect | None:
 
 
 def _inside(r: Rect, outer: Rect) -> bool:
+    # Reason: fitting scales content exactly onto the edge, and the transform
+    # lands it a float rounding error past it (413.00000000000006 vs 413).
+    t = _TOLERANCE_MM
     return (
-        r[0] >= outer[0] and r[1] >= outer[1] and r[2] <= outer[2] and r[3] <= outer[3]
+        r[0] >= outer[0] - t
+        and r[1] >= outer[1] - t
+        and r[2] <= outer[2] + t
+        and r[3] <= outer[3] + t
     )
 
 

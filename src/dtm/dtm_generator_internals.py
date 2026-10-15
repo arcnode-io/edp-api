@@ -104,14 +104,20 @@ def emit_container(
 
 
 def emit_battery(
-    coupling: BessCoupling, devices: dict[str, Device], slug_counter: dict[str, int]
+    coupling: BessCoupling,
+    devices: dict[str, Device],
+    slug_counter: dict[str, int],
+    *,
+    grid_container_count: int,
 ) -> None:
-    """The customer's battery (ADR-001): a battery module holding BESS-1.
+    """The battery pad: a battery module holding BESS-1 (and on dc_ext, the PCS).
 
-    The EMS supervises it, so it's in the device data even though ARCNODE
-    doesn't supply it. Megapack (AC) is polled over Modbus TCP and waits
-    for its commissioning-time address; CATL (DC) is passive until its BMS
-    map is verified.
+    The EMS supervises the customer's battery (ADR-001), so it's in the
+    device data even though ARCNODE doesn't supply it. Megapack (AC) is
+    polled over Modbus TCP and waits for its commissioning-time address;
+    CATL (DC) is passive until its BMS map is verified. On dc_ext the pad
+    also holds ARCNODE's PCS, PCS-1…PCS-N, one per grid container
+    (ADR-022), passive until EPC's register map is in hand.
     """
     ac = coupling == BessCoupling.AC_COUPLED
     # Reason: the DC module has no rack rollups — its CATL leaf is passive.
@@ -135,6 +141,13 @@ def emit_battery(
             else None
         ),
     )
+    if coupling != BessCoupling.DC_EXTERNAL_PCS:
+        return
+    for n in range(1, grid_container_count + 1):
+        pcs = assign_slug("pcs", slug_counter)
+        devices[pcs] = Device(
+            device_id=pcs, template="pcs", display_name=f"PCS-{n}", parent=module
+        )
 
 
 def fetch_topology(

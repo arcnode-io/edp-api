@@ -97,7 +97,12 @@ class DtmGeneratorService:
                 by_template=by_template,
             )
 
-        emit_battery(resolution.bess_coupling, devices, slug_counter)
+        emit_battery(
+            resolution.bess_coupling,
+            devices,
+            slug_counter,
+            grid_container_count=resolution.grid_container_count,
+        )
 
         return Dtm(
             deployment_uuid=resolution.deployment_id,

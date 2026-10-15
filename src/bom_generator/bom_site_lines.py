@@ -2,8 +2,10 @@
 
 Everything the SLD, comms and P&ID draw outside a container appears here,
 so the BOM covers what the drawings show: the customer's battery at the
-ordered size, the by-others MV and cooling gear it connects through, and
-(dc_ext) the outdoor enclosure for the PCS pair on the battery pad.
+ordered size and the by-others MV and cooling gear it connects through.
+Every battery ties in at 13.8 kV through the customer's step-up (ADR-016,
+ADR-022); on dc_ext ARCNODE's PCS, a spec'd part, is added by the BOM
+generator.
 """
 
 from src.bom_generator.bom_models import (
@@ -17,7 +19,7 @@ from src.bom_generator.bom_ref_des import containers
 _COUPLING: dict[str, str] = {
     "ac_coupled": "AC-coupled, ties in at 13.8 kV through customer gear (ADR-016)",
     "dc_integrated_pcs": "DC with its own PCS, ties in at 13.8 kV through customer gear (ADR-016)",
-    "dc_external_pcs": "DC strings to the ARCNODE PCS pair on the battery pad (ADR-022)",
+    "dc_external_pcs": "DC strings to the ARCNODE PCS on the battery pad, ties in at 13.8 kV through customer gear (ADR-022)",
 }
 
 
@@ -42,10 +44,9 @@ def _line(
     )
 
 
-def site_lines(order: BomOrder, compute_qty: int, grid_qty: int) -> list[BomLineItem]:
+def site_lines(order: BomOrder, compute_qty: int) -> list[BomLineItem]:
     """Site equipment for this order, ARCNODE-supplied or not."""
     by_others = ProcurementPath.BY_OTHERS
-    dc_ext = order.bess_coupling == "dc_external_pcs"
     lines = [
         _line(
             "BESS-1",
@@ -102,38 +103,23 @@ def site_lines(order: BomOrder, compute_qty: int, grid_qty: int) -> list[BomLine
             by_others,
             "Facility loop per P&ID sheet 2.",
         ),
+        _line(
+            "T-BESS",
+            "BESS step-up transformer",
+            "By others",
+            "Step-up transformer, BESS AC to 13.8 kV",
+            1,
+            by_others,
+            "BESS interconnection by others (ADR-016).",
+        ),
+        _line(
+            "Q-BESS",
+            "MV disconnect",
+            "By others",
+            "13.8 kV disconnect for the BESS tie-in",
+            1,
+            by_others,
+            "BESS interconnection by others (ADR-016).",
+        ),
     ]
-    if dc_ext:
-        lines.append(
-            _line(
-                f"{containers('G', 1, grid_qty)}: PCS-ENC-1",
-                "To spec ADR-022 (PCS enclosure)",
-                "EPC Power (RFQ)",
-                "Outdoor enclosure with liquid cooling for the 2x PD500 PCS pair",
-                grid_qty,
-                ProcurementPath.ENGINEERED_TO_ORDER,
-                "PCS pair sits on the battery pad (ADR-022); EPC spec via sales.",
-            )
-        )
-    else:
-        lines += [
-            _line(
-                "T-BESS",
-                "BESS step-up transformer",
-                "By others",
-                "Step-up transformer, BESS AC to 13.8 kV",
-                1,
-                by_others,
-                "BESS interconnection by others (ADR-016).",
-            ),
-            _line(
-                "Q-BESS",
-                "MV disconnect",
-                "By others",
-                "13.8 kV disconnect for the BESS tie-in",
-                1,
-                by_others,
-                "BESS interconnection by others (ADR-016).",
-            ),
-        ]
     return lines

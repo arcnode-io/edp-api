@@ -64,7 +64,7 @@ def _bom() -> Bom:
             1,
             ProcurementPath.ENGINEERED_TO_ORDER,
         ),
-        *site_lines(_ORDER, compute_qty=1, grid_qty=1),
+        *site_lines(_ORDER, compute_qty=1),
         _line(BomSection.FIELD, "Cat6 STP", 17, ProcurementPath.FIELD_SUPPLIED),
     ]
     return Bom(

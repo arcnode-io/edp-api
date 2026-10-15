@@ -15,7 +15,7 @@ from src.bom_generator.manifest_models import (
 )
 
 _GRID_PARTS = ("GRD-XFM-001", "GRD-SWG-001", "GRD-RLY-001", "GRD-MTR-001")
-_PLATES = ("CG", "CD", "BG-AC")
+_PLATES = ("CG", "CD")
 
 
 def _variant(name: str) -> AssemblyVariant:
@@ -73,9 +73,9 @@ def _client(manifest: Manifest) -> MagicMock:
         "s3://test/grid/bom.yaml": {
             "shell": _shell("ARC-CNT-GRD-001"),
             "parts": [{"equipment_id": eid, "qty": 1} for eid in _GRID_PARTS],
-            "plates": _plates("CG", "BG-AC"),
+            "plates": _plates("CG"),
         },
-        # Feeder = primary minus the POI meter, and no BESS plate
+        # Feeder = primary minus the POI meter
         "s3://test/feeder/bom.yaml": {
             "shell": _shell("ARC-CNT-GRD-001"),
             "parts": [{"equipment_id": eid, "qty": 1} for eid in _GRID_PARTS[:3]],
@@ -132,8 +132,7 @@ def test_every_container_brings_its_own_interface_plates() -> None:
     )
 
     # Assert — each section carries its own containers' plates: CG on both
-    # compute containers and all 3 grid containers, CD per compute, BG-AC on
-    # the primary only
+    # compute containers and all 3 grid containers, CD per compute
     actual = {
         (li.section, li.part_number): (li.qty, li.ref_des)
         for li in bom.line_items
@@ -143,7 +142,6 @@ def test_every_container_brings_its_own_interface_plates() -> None:
         (BomSection.COMPUTE, "ARC-PLT-CG-001"): (2, "C1-C2"),
         (BomSection.COMPUTE, "ARC-PLT-CD-001"): (2, "C1-C2"),
         (BomSection.GRID, "ARC-PLT-CG-001"): (3, "G1-G3"),
-        (BomSection.GRID, "ARC-PLT-BG-AC-001"): (1, "G1"),
     }
     assert actual == expected
 

@@ -51,7 +51,6 @@ def _manifest_fixture() -> Manifest:
         },
         plates={
             "CG": _plate("CG"),
-            "BG-AC": _plate("BG-AC"),
             "CD": _plate("CD"),
         },
         profiles={
@@ -62,12 +61,12 @@ def _manifest_fixture() -> Manifest:
                     GpuVariant.H100_SXM: "commercial-ac-h100",
                 },
                 grid_container="commercial-ac",
-                interface_plates=["CG", "BG-AC", "CD"],
+                interface_plates=["CG", "CD"],
             ),
             "defense_ac": ProfileAssemblies(
                 compute_container="defense-ac",
                 grid_container="commercial-ac",
-                interface_plates=["CG", "BG-AC", "CD"],
+                interface_plates=["CG", "CD"],
             ),
             "bad_grid_ref": ProfileAssemblies(
                 compute_container="commercial-ac",
@@ -91,7 +90,7 @@ def test_resolve_returns_resolved_profile_for_known_profile() -> None:
     assert resolved.compute.step.endswith("/compute-commercial-ac/assembly.step")
     assert resolved.grid is not None
     assert resolved.grid.step.endswith("/grid-commercial-ac/assembly.step")
-    assert [p.plate_id for p in resolved.plates] == ["CG", "BG-AC", "CD"]
+    assert [p.plate_id for p in resolved.plates] == ["CG", "CD"]
 
 
 def test_resolve_no_grid_when_profile_grid_container_is_none() -> None:
@@ -122,9 +121,9 @@ def test_resolve_plates_keep_plate_id_attached() -> None:
 
     # Assert
     plates_by_id = {p.plate_id: p for p in resolved.plates}
-    assert "BG-AC" in plates_by_id
-    assert isinstance(plates_by_id["BG-AC"], ResolvedPlate)
-    assert plates_by_id["BG-AC"].urls.dxf is not None
+    assert "CD" in plates_by_id
+    assert isinstance(plates_by_id["CD"], ResolvedPlate)
+    assert plates_by_id["CD"].urls.dxf is not None
 
 
 def test_resolve_unknown_profile_raises_key_error() -> None:

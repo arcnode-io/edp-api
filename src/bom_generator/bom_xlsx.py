@@ -22,7 +22,7 @@ _GPU: Final[dict[str, str]] = {"h100_sxm": "H100 SXM", "b200": "B200"}
 _COUPLING: Final[dict[str, str]] = {
     "ac_coupled": "AC-coupled",
     "dc_integrated_pcs": "DC with its own PCS",
-    "dc_external_pcs": "DC to the ARCNODE PCS pair",
+    "dc_external_pcs": "DC to the ARCNODE PCS",
 }
 _BOLD: Final[Font] = Font(bold=True)
 _HEAD_FILL: Final[PatternFill] = PatternFill("solid", fgColor="D9D9D9")

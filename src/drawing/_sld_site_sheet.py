@@ -1,5 +1,8 @@
 """SLD sheet 1 — site one-line: utility → 13.8 kV site bus → BESS + grid containers.
 
+Every battery ties in at 13.8 kV through customer gear (ADR-016); on dc_ext
+it's the CATL strings behind ARCNODE's PCS, one per grid container (ADR-022).
+
 Fixed size whatever the order: G1 (primary) is drawn, and G2-GM once as
 typical. The POI meter sits on the utility service (ADR-020). Each grid container's compute feeders are drawn
 as one feeder marked with the containers it stands for (ADR-018).
@@ -18,7 +21,6 @@ _LV_BUS_Y: float = 188.0
 
 def draw_site_sheet(msp: Modelspace, bom: Bom) -> None:
     """Draw the site one-line for this BOM's container counts + coupling."""
-    dc_ext = bom.profile.endswith("dc_ext")
     feeds = compute_feeds(bom.compute_container_qty, bom.grid_container_qty)
 
     k.source(msp, 40, 272)
@@ -29,15 +31,18 @@ def draw_site_sheet(msp: Modelspace, bom: Bom) -> None:
     k.text(msp, 56, 259, "CTs/PTs + INSTALL BY OTHERS", h=2.0)
     k.bus(msp, 30, 390, _MV_BUS_Y, "13.8 kV SITE BUS — BY OTHERS (ADR-018)", 46)
 
-    g1_x, typ_x = (110.0, 270.0) if dc_ext else (175.0, 300.0)
-    if not dc_ext:
-        _mv_battery(msp, 60, bom.profile)
-    _grid_column(msp, g1_x, "GRID CONTAINER G1 (PRIMARY)", feeds[0], dc_ext)
+    dc_ext = bom.profile.endswith("dc_ext")
+    _mv_battery(msp, 60, bom)
+    _grid_column(msp, 175.0, "GRID CONTAINER G1 (PRIMARY)", feeds[0])
     rest = [n for feed in feeds[1:] for n in feed]
     if bom.grid_container_qty > 1:
         m = bom.grid_container_qty
-        title = f"GRID CONTAINERS G2-G{m} (TYPICAL OF {m - 1})"
-        _grid_column(msp, typ_x, title, rest, dc_ext)
+        title = (
+            "GRID CONTAINER G2"
+            if m == 2
+            else f"GRID CONTAINERS G2-G{m} (TYPICAL OF {m - 1})"
+        )
+        _grid_column(msp, 300.0, title, rest)
     _notes(msp, dc_ext)
     k.equipment_list(msp, bom, _equipment(dc_ext), 15, 95)
 
@@ -47,17 +52,29 @@ def _equipment(dc_ext: bool) -> list[str]:
     return [*ids, "GRD-PCS-001"] if dc_ext else ids
 
 
-def _mv_battery(msp: Modelspace, x: float, profile: str) -> None:
-    """ADR-016: AC-output BESS ties to the site bus through customer gear."""
-    battery = "TESLA MEGAPACK 2 XL" if profile.endswith("_ac") else "CATL WITH OWN PCS"
+def _mv_battery(msp: Modelspace, x: float, bom: Bom) -> None:
+    """ADR-016/-022: the battery ties to the site bus through customer gear."""
     k.wire(msp, (x, _MV_BUS_Y), (x, 241))
     k.disconnect(msp, x, 238)
     k.text(msp, x + 6, 238, "MV DISCONNECT — BY OTHERS", h=2.0)
     k.wire(msp, (x, 235), (x, 225))
     k.transformer(msp, x, 220)
-    k.text(msp, x + 6, 220, "T-BESS STEP-UP, BESS AC TO 13.8 kV — BY OTHERS", h=2.0)
+    k.text(msp, x + 6, 221.5, "T-BESS STEP-UP TO 13.8 kV", h=2.0)
+    k.text(msp, x + 6, 218, "BY OTHERS", h=2.0)
     k.wire(msp, (x, 213), (x, 203))
-    k.box(msp, x, 196, 44, 13, [battery, "CUSTOMER-SUPPLIED (ADR-016)"])
+    if not bom.profile.endswith("dc_ext"):
+        battery = (
+            "TESLA MEGAPACK 2 XL"
+            if bom.profile.endswith("_ac")
+            else "CATL WITH OWN PCS"
+        )
+        k.box(msp, x, 196, 44, 13, [battery, "CUSTOMER-SUPPLIED (ADR-016)"])
+        return
+    n = bom.grid_container_qty
+    k.box(msp, x, 196, 44, 13, [f"GRD-PCS-001 x{n}", "ARCNODE PCS (ADR-022)"])
+    k.wire(msp, (x, 189.5), (x, 181))
+    k.text(msp, x + 4, 185, "DC", h=2.0)
+    k.box(msp, x, 174, 44, 13, ["CATL ENERONE+ (DC)", "CUSTOMER-SUPPLIED"])
 
 
 def _grid_column(
@@ -65,7 +82,6 @@ def _grid_column(
     x: float,
     title: str,
     computes: list[int],
-    dc_ext: bool,
 ) -> None:
     """One grid container: MV breaker → Trihal → LV main → LV bus."""
     lx = x + 7  # label column
@@ -88,8 +104,6 @@ def _grid_column(
     k.breaker(msp, fx, 178)
     k.wire(msp, (fx, 175.5), (fx, 168))
     k.box(msp, fx, 161, 34, 13, [_compute_label(computes), "FEEDER EACH · SHEET 2"])
-    if dc_ext:
-        _pcs_branch(msp, x + 30)
     k.dashed_rect(msp, x - 38, 150, x + 75, 244)
     k.text(msp, x - 36, 152.5, title, h=2.2)
 
@@ -101,27 +115,9 @@ def _compute_label(computes: list[int]) -> str:
     return f"COMPUTE C{first}" if first == last else f"COMPUTE C{first}-C{last}"
 
 
-def _pcs_branch(msp: Modelspace, x: float) -> None:
-    """dc_ext: PCS pair on the battery pad, AC in through BG-AC (ADR-022)."""
-    k.wire(msp, (x, _LV_BUS_Y), (x, 180.5))
-    k.breaker(msp, x, 178)
-    k.text(msp, x + 4, 172, "VIA BG-AC", h=2.0)
-    k.wire(msp, (x, 175.5), (x, 141))
-    k.box(
-        msp,
-        x,
-        135,
-        30,
-        11,
-        ["GRD-PCS-001 x2 ON BATTERY PAD (ADR-022)", "PD500 417 kW EA"],
-    )
-    k.wire(msp, (x, 129.5), (x, 121))
-    k.box(msp, x, 115, 36, 11, ["CATL ENERONE+ (DC)", "CUSTOMER-SUPPLIED"])
-
-
 def _notes(msp: Modelspace, dc_ext: bool) -> None:
     battery = (
-        "2. PCS pair on the battery pad feeds the LV bus through BG-AC (ADR-022)."
+        "2. CATL strings feed ARCNODE's PCS (one per grid container); 13.8 kV via customer step-up (ADR-022)."
         if dc_ext
         else "2. AC-output BESS ties in at 13.8 kV through customer gear (ADR-016)."
     )
