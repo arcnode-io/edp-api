@@ -2,23 +2,23 @@ template: pcs
 kind: leaf
 equipment_id: GRD-PCS-001
 vendor: EPC Power
-model: PD500/AC-480 (50-100195)
-description: EPC Power PD500 bidirectional PCS, 417 kW at 415 V, on the battery pad (ADR-022)
+model: CAB1000 (480 VAC)
+description: EPC Power CAB1000 bidirectional grid-forming PCS, 1043 kW at 480 V, on the battery pad; ties in at 13.8 kV through the customer's step-up (ADR-022)
 
-# Passive until EPC's Modbus map is in hand (EPC docs are sales-gated).
+# Passive until EPC's Modbus TCP map is in hand (EPC docs are sales-gated).
 
 install_tasks:
-  - name: set_in_outdoor_enclosure
+  - name: set_on_pad
+    est_minutes: 120
+    crew_role: general
+    cx_level: L1
+  - name: terminate_dc_strings
+    depends_on: [set_on_pad]
     est_minutes: 120
     crew_role: electrician
-    cx_level: L1
-  - name: terminate_dc_and_ac
-    depends_on: [set_in_outdoor_enclosure]
-    est_minutes: 180
-    crew_role: electrician
     cx_level: L2
-  - name: connect_coolant_loop
-    depends_on: [set_in_outdoor_enclosure]
-    est_minutes: 90
-    crew_role: plumber
+  - name: terminate_ac_to_step_up
+    depends_on: [set_on_pad]
+    est_minutes: 120
+    crew_role: electrician
     cx_level: L2

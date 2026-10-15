@@ -1,6 +1,6 @@
 template: bess_module_dc
 kind: module
-description: DC battery (CATL) module — POI headroom only; the battery itself is passive
+description: DC battery (CATL) module with ARCNODE's PCS — POI headroom only; battery and PCS are passive
 
 # A DC battery's BMS map isn't verified, so its CATL leaf is passive: no
 # state-of-charge or power to roll up, no racks to dispatch to. The POI
@@ -9,6 +9,9 @@ description: DC battery (CATL) module — POI headroom only; the battery itself 
 
 contains:
   - template: bess_catl
+    qty: scalable
+  # ARCNODE's PCS sits on the battery pad, one per grid container (ADR-022)
+  - template: pcs
     qty: scalable
 
 measurements:
