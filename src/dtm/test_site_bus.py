@@ -49,3 +49,32 @@ def test_the_battery_and_grid_containers_share_the_site_bus(
             ],
         )
     ]
+
+
+def test_each_grid_container_feeds_its_compute_containers_over_lv_main() -> None:
+    # Arrange — ADR-018: 5 compute over 2 grid → G1 feeds C1-C3, G2 C4-C5
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+    resolution = _resolution(container_count=5, grid_container_count=2)
+
+    # Act
+    dtm = service.generate(
+        profile="commercial_ac", resolution=resolution, manifest=_manifest()
+    )
+
+    # Assert
+    actual = {
+        b.bus_id: (b.type, [(m.device_id, m.port) for m in b.members])
+        for b in dtm.buses
+        if b.bus_id.startswith("lv_main")
+    }
+    feeds = [f"compute_module_{n}" for n in range(1, 6)]
+    assert actual == {
+        "lv_main_1": (
+            "ac",
+            [("lv_switchboard_1", "feeder_out")] + [(c, "ac_in") for c in feeds[:3]],
+        ),
+        "lv_main_2": (
+            "ac",
+            [("lv_switchboard_2", "feeder_out")] + [(c, "ac_in") for c in feeds[3:]],
+        ),
+    }

@@ -1,11 +1,9 @@
-"""The battery pad and the 13.8 kV site bus that ties it to the grid containers."""
+"""The battery pad: the customer's battery and, on dc_ext, ARCNODE's PCS."""
 
 from src.dtm.dtm_generator_internals import assign_slug
 from src.shared.enums import BessCoupling
 from src.shared.schemas.dtm import (
     PROVISIONED_AT_COMMISSIONING,
-    Bus,
-    BusMember,
     Connection,
     Device,
 )
@@ -59,23 +57,3 @@ def emit_battery(
                 device_id=pcs, template="pcs", display_name=f"PCS-{n}", parent=module
             )
     return module
-
-
-def site_bus(
-    battery: str, by_template: dict[str, list[str]], slug_counter: dict[str, int]
-) -> Bus:
-    """The 13.8 kV site bus (by others, ADR-018): each G's MV breaker + the battery.
-
-    Every battery ties in here through customer gear (ADR-016, ADR-022), so
-    the battery module is the member; the step-up and MV disconnect are
-    by others and not in the device data.
-    """
-    breakers = [
-        BusMember(device_id=sw, port="line_in")
-        for sw in by_template.get("switchgear", [])
-    ]
-    return Bus(
-        bus_id=assign_slug("site_mv", slug_counter),
-        type="ac",
-        members=[*breakers, BusMember(device_id=battery, port="ac_out")],
-    )

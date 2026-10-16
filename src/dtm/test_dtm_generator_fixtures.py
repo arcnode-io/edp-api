@@ -84,6 +84,7 @@ GRID_TOPOLOGY: dict = {
             "description": "relay",
             "connection": {"host": "mock-dnp3-server", "port": 20000},
         },
+        {"template": "lv_switchboard", "tag": "SWBD-1", "description": "swbd"},
     ],
     "buses": [
         {
