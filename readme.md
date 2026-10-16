@@ -147,6 +147,7 @@ src/
 ├── dtm/
 │   ├── dtm_generator_service.py     # profile + ModuleResolution → Dtm
 │   ├── dtm_generator_internals.py   # emit_container, collect_templates_used, sizing
+│   ├── battery_pad.py               # battery module + 13.8 kV site bus (site_mv_1)
 │   ├── template_loader.py           # walks device_templates/, builds catalog at startup
 │   └── topology_yaml.py             # per-assembly topology.yaml schema
 ├── drawing/
@@ -421,7 +422,9 @@ class JobResult(BaseModel):
 #
 # DTM is parent-chain Devices keyed by snake_case slug, with embedded
 # templates_used catalog and buses[] for electrical topology. Mode is
-# derived from device placeholders — not stored.
+# derived from device placeholders — not stored. Buses: one ac_main_N per
+# grid container, plus site_mv_1 joining every switchgear (line_in) and the
+# battery module (ac_out) on the 13.8 kV site bus.
 
 class EmsMode(StrEnum):
     SIM  = "sim"

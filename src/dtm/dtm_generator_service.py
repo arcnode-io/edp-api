@@ -2,9 +2,9 @@
 
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
+from src.dtm.battery_pad import emit_battery, site_bus
 from src.dtm.dtm_generator_internals import (
     collect_templates_used,
-    emit_battery,
     emit_container,
     sizing,
 )
@@ -97,12 +97,13 @@ class DtmGeneratorService:
                 by_template=by_template,
             )
 
-        emit_battery(
+        battery = emit_battery(
             resolution.bess_coupling,
             devices,
             slug_counter,
             grid_container_count=resolution.grid_container_count,
         )
+        buses.append(site_bus(battery, by_template, slug_counter))
 
         return Dtm(
             deployment_uuid=resolution.deployment_id,

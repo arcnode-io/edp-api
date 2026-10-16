@@ -9,10 +9,8 @@ from src.dtm.topology_yaml import (
     TopologyBusSpec,
     TopologyYaml,
 )
-from src.shared.enums import BessCoupling
 from src.shared.schemas.alarm import Alarm, load_alarms_from_spec
 from src.shared.schemas.dtm import (
-    PROVISIONED_AT_COMMISSIONING,
     Bus,
     BusMember,
     Connection,
@@ -100,53 +98,6 @@ def emit_container(
         # Numbered like device slugs, so each container's bus id is unique
         buses.append(
             bus.model_copy(update={"bus_id": assign_slug(bus.bus_id, slug_counter)})
-        )
-
-
-def emit_battery(
-    coupling: BessCoupling,
-    devices: dict[str, Device],
-    slug_counter: dict[str, int],
-    *,
-    grid_container_count: int,
-) -> None:
-    """The battery pad: a battery module holding BESS-1 (and on dc_ext, the PCS).
-
-    The EMS supervises the customer's battery (ADR-001), so it's in the
-    device data even though ARCNODE doesn't supply it. Megapack (AC) is
-    polled over Modbus TCP and waits for its commissioning-time address;
-    CATL (DC) is passive until its BMS map is verified. On dc_ext the pad
-    also holds ARCNODE's PCS, PCS-1…PCS-N, one per grid container
-    (ADR-022), passive until EPC's register map is in hand.
-    """
-    ac = coupling == BessCoupling.AC_COUPLED
-    # Reason: the DC module has no rack rollups — its CATL leaf is passive.
-    module_template = "bess_module" if ac else "bess_module_dc"
-    module = assign_slug(module_template, slug_counter)
-    devices[module] = Device(
-        device_id=module, template=module_template, display_name="BESS"
-    )
-    template = "bess_rack" if ac else "bess_catl"
-    leaf = assign_slug(template, slug_counter)
-    devices[leaf] = Device(
-        device_id=leaf,
-        template=template,
-        display_name="BESS-1",
-        parent=module,
-        connection=(
-            Connection(
-                host=PROVISIONED_AT_COMMISSIONING, port=PROVISIONED_AT_COMMISSIONING
-            )
-            if ac
-            else None
-        ),
-    )
-    if coupling != BessCoupling.DC_EXTERNAL_PCS:
-        return
-    for n in range(1, grid_container_count + 1):
-        pcs = assign_slug("pcs", slug_counter)
-        devices[pcs] = Device(
-            device_id=pcs, template="pcs", display_name=f"PCS-{n}", parent=module
         )
 
 
