@@ -42,6 +42,8 @@ measurements:
     type: float
     poll_rate_hz: 0.5
     display_name_default: "Inlet Temperature"
+    # CMP-SWITCH-001 operating ambient 0-40 °C; ASHRAE A1 recommended 18-27 °C
+    thresholds: { warn_min: 18, warn_max: 27, alarm_min: 0, alarm_max: 40 }
     binding:
       protocol: snmp
       oid: 1.3.6.1.2.1.99.1.1.1.4.1  # ENTITY-SENSOR-MIB entPhySensorValue.<index>

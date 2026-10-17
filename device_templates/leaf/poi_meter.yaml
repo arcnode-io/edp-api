@@ -67,6 +67,8 @@ measurements:
     type: float
     poll_rate_hz: 0.5
     display_name_default: "THD Voltage Phase A"
+    # IEEE 519-2022 Table 1: 5% voltage THD at a 1-69 kV PCC; warn at 80%
+    thresholds: { warn_min: 0, warn_max: 4, alarm_min: 0, alarm_max: 5 }
     binding:
       protocol: modbus_tcp
       function_code: 3
@@ -79,6 +81,8 @@ measurements:
     type: float
     poll_rate_hz: 0.5
     display_name_default: "THD Voltage Phase B"
+    # IEEE 519-2022 Table 1: 5% voltage THD at a 1-69 kV PCC; warn at 80%
+    thresholds: { warn_min: 0, warn_max: 4, alarm_min: 0, alarm_max: 5 }
     binding:
       protocol: modbus_tcp
       function_code: 3
@@ -91,6 +95,8 @@ measurements:
     type: float
     poll_rate_hz: 0.5
     display_name_default: "THD Voltage Phase C"
+    # IEEE 519-2022 Table 1: 5% voltage THD at a 1-69 kV PCC; warn at 80%
+    thresholds: { warn_min: 0, warn_max: 4, alarm_min: 0, alarm_max: 5 }
     binding:
       protocol: modbus_tcp
       function_code: 3

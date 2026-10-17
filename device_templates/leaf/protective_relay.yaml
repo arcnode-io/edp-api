@@ -15,6 +15,9 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Phase A Current"
+    # 13.8 kV side of GRD-XFM-001: 1000 kVA FLA = 41.8 A; GRD-SWG-001 rated 1200 A
+    bounds: { min: 0, max: 1200, nominal: 41.8 }
+    thresholds: { warn_min: 0, warn_max: 33.5, alarm_min: 0, alarm_max: 41.8 }
     binding:
       protocol: dnp3_tcp
       point_index: 0  # IA, A primary
@@ -25,6 +28,9 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Phase B Current"
+    # 13.8 kV side of GRD-XFM-001: 1000 kVA FLA = 41.8 A; GRD-SWG-001 rated 1200 A
+    bounds: { min: 0, max: 1200, nominal: 41.8 }
+    thresholds: { warn_min: 0, warn_max: 33.5, alarm_min: 0, alarm_max: 41.8 }
     binding:
       protocol: dnp3_tcp
       point_index: 2  # IB
@@ -35,6 +41,9 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Phase C Current"
+    # 13.8 kV side of GRD-XFM-001: 1000 kVA FLA = 41.8 A; GRD-SWG-001 rated 1200 A
+    bounds: { min: 0, max: 1200, nominal: 41.8 }
+    thresholds: { warn_min: 0, warn_max: 33.5, alarm_min: 0, alarm_max: 41.8 }
     binding:
       protocol: dnp3_tcp
       point_index: 4  # IC
@@ -45,6 +54,8 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Phase A Voltage"
+    # 13.8 kV = 7967 V L-N; ANSI C84.1 Range A warn (-2.5/+5%), Range B alarm (-5/+5.2%)
+    thresholds: { warn_min: 7768, warn_max: 8366, alarm_min: 7569, alarm_max: 8383 }
     binding:
       protocol: dnp3_tcp
       point_index: 8  # VA, kV primary
@@ -56,6 +67,8 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Phase B Voltage"
+    # 13.8 kV = 7967 V L-N; ANSI C84.1 Range A warn (-2.5/+5%), Range B alarm (-5/+5.2%)
+    thresholds: { warn_min: 7768, warn_max: 8366, alarm_min: 7569, alarm_max: 8383 }
     binding:
       protocol: dnp3_tcp
       point_index: 10  # VB
@@ -67,6 +80,8 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Phase C Voltage"
+    # 13.8 kV = 7967 V L-N; ANSI C84.1 Range A warn (-2.5/+5%), Range B alarm (-5/+5.2%)
+    thresholds: { warn_min: 7768, warn_max: 8366, alarm_min: 7569, alarm_max: 8383 }
     binding:
       protocol: dnp3_tcp
       point_index: 12  # VC
@@ -89,6 +104,8 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Voltage Unbalance"
+    # ANSI C84.1 Annex D: supply systems held to 3% unbalance; warn at 80%
+    thresholds: { warn_min: 0, warn_max: 2.4, alarm_min: 0, alarm_max: 3 }
     publisher: gateway
     binding:
       protocol: synthetic

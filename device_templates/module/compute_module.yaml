@@ -42,6 +42,10 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Module Total Power"
+    # CG feeder: 175 A at 415 V = 125.8 kVA, 80% continuous = 100.6 kW (ADR-017);
+    # nominal is the sizing figure (sizing_internals.CONTAINER_KW)
+    bounds: { min: 0, max: 125800, nominal: 80000 }
+    thresholds: { warn_min: 0, warn_max: 100600, alarm_min: 0, alarm_max: 125800 }
     publisher: gateway
     # PDUs feed every load in the container, so their input is the module total.
     binding:

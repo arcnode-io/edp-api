@@ -17,6 +17,9 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Input Current L1"
+    # CMP-PDU-001: 60 A inlet, 48 A rated (80% continuous); warn at 80% of rated
+    bounds: { min: 0, max: 60, nominal: 48 }
+    thresholds: { warn_min: 0, warn_max: 38.4, alarm_min: 0, alarm_max: 48 }
     binding:
       protocol: snmp
       oid: 1.3.6.1.4.1.13742.6.5.2.4.1.4.1.1.1.1
@@ -27,6 +30,9 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Input Current L2"
+    # CMP-PDU-001: 60 A inlet, 48 A rated (80% continuous); warn at 80% of rated
+    bounds: { min: 0, max: 60, nominal: 48 }
+    thresholds: { warn_min: 0, warn_max: 38.4, alarm_min: 0, alarm_max: 48 }
     binding:
       protocol: snmp
       oid: 1.3.6.1.4.1.13742.6.5.2.4.1.4.1.1.2.1
@@ -37,6 +43,9 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Input Current L3"
+    # CMP-PDU-001: 60 A inlet, 48 A rated (80% continuous); warn at 80% of rated
+    bounds: { min: 0, max: 60, nominal: 48 }
+    thresholds: { warn_min: 0, warn_max: 38.4, alarm_min: 0, alarm_max: 48 }
     binding:
       protocol: snmp
       oid: 1.3.6.1.4.1.13742.6.5.2.4.1.4.1.1.3.1
@@ -46,7 +55,11 @@ measurements:
     unit: volts
     type: float
     poll_rate_hz: 1
-    display_name_default: "Input Voltage L1"
+    display_name_default: "Input Voltage L1-L2"
+    # Pole rmsVoltage is line-to-line (Raritan Pole model). 415 V nominal, rated
+    # 380-440 V; ANSI C84.1 Range A warn (±5%), Range B alarm (-8.3/+5.8%)
+    bounds: { min: 0, max: 440, nominal: 415 }
+    thresholds: { warn_min: 394, warn_max: 436, alarm_min: 381, alarm_max: 439 }
     binding:
       protocol: snmp
       oid: 1.3.6.1.4.1.13742.6.5.2.4.1.4.1.1.1.4
@@ -55,7 +68,11 @@ measurements:
     unit: volts
     type: float
     poll_rate_hz: 1
-    display_name_default: "Input Voltage L2"
+    display_name_default: "Input Voltage L2-L3"
+    # Pole rmsVoltage is line-to-line (Raritan Pole model). 415 V nominal, rated
+    # 380-440 V; ANSI C84.1 Range A warn (±5%), Range B alarm (-8.3/+5.8%)
+    bounds: { min: 0, max: 440, nominal: 415 }
+    thresholds: { warn_min: 394, warn_max: 436, alarm_min: 381, alarm_max: 439 }
     binding:
       protocol: snmp
       oid: 1.3.6.1.4.1.13742.6.5.2.4.1.4.1.1.2.4
@@ -64,7 +81,11 @@ measurements:
     unit: volts
     type: float
     poll_rate_hz: 1
-    display_name_default: "Input Voltage L3"
+    display_name_default: "Input Voltage L3-L1"
+    # Pole rmsVoltage is line-to-line (Raritan Pole model). 415 V nominal, rated
+    # 380-440 V; ANSI C84.1 Range A warn (±5%), Range B alarm (-8.3/+5.8%)
+    bounds: { min: 0, max: 440, nominal: 415 }
+    thresholds: { warn_min: 394, warn_max: 436, alarm_min: 381, alarm_max: 439 }
     binding:
       protocol: snmp
       oid: 1.3.6.1.4.1.13742.6.5.2.4.1.4.1.1.3.4
@@ -74,6 +95,9 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Input Power"
+    # CMP-PDU-001: 34.5 kVA rated; warn at 80%
+    bounds: { min: 0, max: 34500, nominal: 34500 }
+    thresholds: { warn_min: 0, warn_max: 27600, alarm_min: 0, alarm_max: 34500 }
     binding:
       protocol: snmp
       oid: 1.3.6.1.4.1.13742.6.5.2.3.1.4.1.1.5  # inlet activePower
