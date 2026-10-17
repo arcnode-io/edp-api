@@ -1,6 +1,7 @@
 """Module-level bindings that name which children they act on."""
 
 from src.shared.schemas.template_module_bindings import (
+    DistributeBinding,
     PowerCapBinding,
     SyntheticBinding,
 )
@@ -33,3 +34,20 @@ def test_power_cap_names_the_child_template_and_its_cap_commands() -> None:
     # Assert
     assert (b.child_template, b.child_commands) == ("gpu_node", commands)
     assert b.hysteresis_dwell_secs == 30.0
+
+
+def test_distribute_can_target_one_child_template_sharing_the_module_soc() -> None:
+    # Arrange — dc_ext: every PCS draws from one CATL bank, so they share
+    # the module's SoC (device-api 5dcaeda)
+    raw = {
+        "protocol": "distribute",
+        "allocation_policy": "equal_split",
+        "child_template": "pcs",
+        "state_of_charge_source": "module",
+    }
+
+    # Act
+    actual = DistributeBinding.model_validate(raw)
+
+    # Assert
+    assert (actual.child_template, actual.state_of_charge_source) == ("pcs", "module")

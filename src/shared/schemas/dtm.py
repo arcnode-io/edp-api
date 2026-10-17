@@ -57,6 +57,9 @@ class Device(BaseModel):
     parent: str | None = None  # FK to another Device.device_id
     display_name: str | None = None
     connection: Connection | None = None  # required for gateway-bound leaves
+    # As-built energy when one device stands for an order-sized bank (CATL);
+    # consumers prefer it over the template's capacity_kwh
+    capacity_kwh: float | None = None
     extra_measurements: dict[str, Measurement] | None = None  # ADR §7 escape hatch
 
     @field_validator("device_id")

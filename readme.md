@@ -481,6 +481,7 @@ class Device(BaseModel):
     parent:       str | None = None # FK to another Device.device_id
     display_name: str | None = None
     connection:   Connection | None = None
+    capacity_kwh: float | None = None  # as-built bank energy (CATL); beats the template's
     blocking:     list[BlockingKind] = Field(default_factory=lambda: [BlockingKind.LIVE_MODE])
     extra_measurements: dict[str, Measurement] | None = None   # ADR §7 escape hatch
 

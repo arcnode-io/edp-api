@@ -83,6 +83,11 @@ class DistributeBinding(BaseModel):
 
     protocol: Literal["distribute"]
     allocation_policy: Literal["equal_split", "soc_weighted"]
+    # Only children of this template get a share; None = every child
+    child_template: str | None = None
+    # "module": every child shares the module's own state_of_charge (one
+    # battery behind several PCS); None/"child" = each child's own
+    state_of_charge_source: Literal["child", "module"] | None = None
     ramp_rate_per_sec: float | None = None
     hysteresis_margin: float | None = None
     hysteresis_dwell_secs: float | None = None

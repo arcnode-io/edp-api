@@ -19,6 +19,7 @@ from src.shared.schemas.alarm import Alarm
 from src.shared.schemas.install_task import CxLevel, InstallTask
 from src.shared.schemas.measurement import Measurement, Publisher
 from src.shared.schemas.measurement_ranges import Bounds, Thresholds
+from src.shared.schemas.template_heartbeat import Heartbeat
 from src.shared.schemas.template_protocols import (
     Binding,
     CanopenBinding,
@@ -139,6 +140,7 @@ class DeviceTemplate(BaseModel):
     contains: list[ContainsEntry] = Field(default_factory=list)
     measurements: dict[str, Measurement] = Field(default_factory=dict)
     commands: dict[str, Command] = Field(default_factory=dict)
+    heartbeat: Heartbeat | None = None  # keep-alive the EMS must write
     install_tasks: list[InstallTask] = Field(default_factory=list)
     alarms: list[Alarm] = Field(default_factory=list)
 
