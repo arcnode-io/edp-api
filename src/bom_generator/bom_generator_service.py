@@ -20,6 +20,7 @@ from src.bom_generator.bom_models import (
     BomOrder,
     BomSection,
 )
+from src.bom_generator.bom_pricing import book_price, order_budget, price_key
 from src.bom_generator.bom_ref_des import compress
 from src.bom_generator.bom_site_lines import site_lines
 from src.bom_generator.manifest_client import ManifestClient
@@ -29,6 +30,7 @@ from src.bom_generator.spec_lines import (
     spec_to_catalog_line,
 )
 from src.bom_generator.manifest_models import Manifest, ProfileAssemblies
+from src.bom_generator.pricing_models import PriceBook
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +107,7 @@ class BomGeneratorService:
             )
         lines += site_lines(order, compute_container_qty)
         if order.bess_coupling == "dc_external_pcs":
-            # ADR-022: ARCNODE's PCS on the battery pad, one per grid container
+            # ADR-022: a PCS on the battery pad, one per grid container
             pcs_tags = [f"PCS-{n}" for n in range(1, grid_container_qty + 1)]
             pcs_spec = self._client.fetch_spec(manifest.specs["GRD-PCS-001"])
             lines.append(
@@ -114,6 +116,15 @@ class BomGeneratorService:
                 )
             )
         lines += field_lines or []
+        book = (
+            self._client.fetch_pricing(manifest.pricing)
+            if manifest.pricing
+            else PriceBook()
+        )
+        order_qty: dict[str, int] = {}
+        for li in lines:
+            order_qty[price_key(li)] = order_qty.get(price_key(li), 0) + li.qty
+        lines = [book_price(li, book, order_qty[price_key(li)]) for li in lines]
         return Bom(
             deployment_id=deployment_id,
             profile=profile,
@@ -123,6 +134,7 @@ class BomGeneratorService:
             grid_container_qty=grid_container_qty,
             order=order,
             line_items=_numbered(lines),
+            budget=order_budget(lines),
         )
 
     def _container_groups(

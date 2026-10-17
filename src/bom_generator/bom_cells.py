@@ -1,15 +1,17 @@
 """What each BOM column shows for a line — every cell has a value.
 
-A sourced value wins. Where none exists the cell says why: "RFQ" (price
-or lead time comes from the request for quote), the supplier for lines
-ARCNODE doesn't buy ("Customer", "By others", "Installer"), or "N/A"
-where a column doesn't apply. Notes default to traceability: the
-equipment spec a catalog line comes from, a plate's material and finish.
+A sourced value wins. Where none exists the cell says why: "Unpriced"
+(no budget price yet), "RFQ" (lead time comes from the customer's
+request for quote), the supplier for lines nobody buys new ("Customer",
+"By others", "Installer"), or "N/A" where a column doesn't apply. Notes
+default to traceability: the equipment spec a catalog line comes from,
+a plate's material and finish.
 """
 
 from typing import Final
 
 from src.bom_generator.bom_models import BomLineItem, ProcurementPath
+from src.bom_generator.bom_pricing import BAND, PURCHASED
 
 Cell = str | int | float
 
@@ -27,6 +29,7 @@ COLUMNS: Final[tuple[tuple[str, int], ...]] = (
     ("Lead time (wk)", 10),
     ("Unit cost (USD)", 14),
     ("Ext. cost (USD)", 14),
+    ("Price basis", 40),
     ("Datasheet / drawing", 40),
     ("Fab tier", 16),
     ("NDAA 889", 10),
@@ -47,7 +50,7 @@ _SET_AT_RFQ: Final[str] = "Set at RFQ"
 
 def row(line: BomLineItem) -> list[Cell]:
     """One sheet row for a line, in COLUMNS order, no empty cells."""
-    unit = unit_cost(line)
+    unit = line.unit_cost_usd
     return [
         line.item,
         line.ref_des,
@@ -58,9 +61,10 @@ def row(line: BomLineItem) -> list[Cell]:
         line.description,
         line.supplied_by,
         _PATH_LABEL[line.procurement_path],
-        _or_status(line, line.lead_time_weeks),
-        _or_status(line, unit),
-        _or_status(line, None if unit is None else unit * line.qty),
+        _or_status(line, line.lead_time_weeks, "RFQ"),
+        _or_status(line, unit, "Unpriced"),
+        _or_status(line, None if unit is None else unit * line.qty, "Unpriced"),
+        _price_basis(line),
         _document(line),
         _compliance(line, line.fab_tier),
         _compliance(line, _yes_no(line.ndaa_compliant, "No")),
@@ -69,36 +73,39 @@ def row(line: BomLineItem) -> list[Cell]:
     ]
 
 
-def unit_cost(line: BomLineItem) -> float | None:
-    """Cheapest live distributor price, else the spec's unit cost."""
-    priced = [
-        o.unit_cost_usd for o in line.offers if o.error is None and o.unit_cost_usd
-    ]
-    return min(priced) if priced else line.unit_cost_usd
+def _purchased(line: BomLineItem) -> bool:
+    return line.procurement_path in PURCHASED
 
 
-def _arcnode(line: BomLineItem) -> bool:
-    return line.supplied_by == "ARCNODE"
-
-
-def _or_status(line: BomLineItem, value: float | int | None) -> Cell:
+def _or_status(line: BomLineItem, value: float | int | None, missing: str) -> Cell:
     if value is not None:
         return value
-    return "RFQ" if _arcnode(line) else line.supplied_by
+    return missing if _purchased(line) else line.supplied_by
+
+
+def _price_basis(line: BomLineItem) -> str:
+    """e.g. "Estimate 2026-10-17 ±40%: <basis>" — how far to trust the price."""
+    if not _purchased(line):
+        return line.supplied_by
+    if line.price_source is None or line.price_as_of is None:
+        return "Unpriced"
+    band = round(BAND[line.price_source] * 100)
+    head = f"{line.price_source.value.title()} {line.price_as_of} ±{band}%"
+    return f"{head}: {line.price_basis}" if line.price_basis else head
 
 
 def _document(line: BomLineItem) -> str:
     if line.datasheet_url or line.drawing_url:
         return line.datasheet_url or line.drawing_url or ""
-    if not _arcnode(line):
+    if not _purchased(line):
         return "N/A"
     if line.equipment_id:
         return f"Requirement spec {line.equipment_id}"
-    return "ARCNODE build spec (ADR-004)"
+    return "ARCNODE drawing (ADR-004)"
 
 
 def _compliance(line: BomLineItem, value: str | None) -> str:
-    if not _arcnode(line):
+    if not _purchased(line):
         return "N/A"
     return value if value is not None else _SET_AT_RFQ
 
@@ -116,5 +123,5 @@ def _notes(line: BomLineItem) -> str:
             f"{line.material}, {line.finish}." if line.finish else f"{line.material}."
         )
     if not parts:
-        parts.append("ARCNODE design, fabricated to order.")
+        parts.append("Fabricated to the ARCNODE drawing.")
     return " ".join(parts)

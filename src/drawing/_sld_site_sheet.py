@@ -71,7 +71,7 @@ def _mv_battery(msp: Modelspace, x: float, bom: Bom) -> None:
         k.box(msp, x, 196, 44, 13, [battery, "CUSTOMER-SUPPLIED (ADR-016)"])
         return
     n = bom.grid_container_qty
-    k.box(msp, x, 196, 44, 13, [f"GRD-PCS-001 x{n}", "ARCNODE PCS (ADR-022)"])
+    k.box(msp, x, 196, 44, 13, [f"GRD-PCS-001 x{n}", "PCS ON PAD (ADR-022)"])
     k.wire(msp, (x, 189.5), (x, 181))
     k.text(msp, x + 4, 185, "DC", h=2.0)
     k.box(msp, x, 174, 44, 13, ["CATL ENERONE+ (DC)", "CUSTOMER-SUPPLIED"])

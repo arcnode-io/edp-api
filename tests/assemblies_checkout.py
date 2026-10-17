@@ -12,6 +12,7 @@ from typing import Final
 import yaml
 
 from src.bom_generator.manifest_models import Manifest
+from src.bom_generator.pricing_models import PriceBook
 
 REPO: Final[Path] = Path(
     os.environ.get(
@@ -23,7 +24,7 @@ _S3: Final[str] = "s3://arcnode-artifacts/"
 
 
 class AssembliesCheckoutClient:
-    """Serves manifest, bom.yaml, topology.yaml and specs from the checkout."""
+    """Serves manifest, bom.yaml, topology.yaml, specs and prices from the checkout."""
 
     def __init__(self) -> None:
         self.uploads: dict[str, bytes] = {}
@@ -48,6 +49,10 @@ class AssembliesCheckoutClient:
         if "/plates/" in url:
             return {}
         return yaml.safe_load(self._local(url).read_text())
+
+    def fetch_pricing(self, url: str) -> PriceBook:
+        """The checkout's pricing.yaml."""
+        return PriceBook.model_validate(yaml.safe_load(self._local(url).read_text()))
 
     def upload_bytes(self, body: bytes, target_url: str) -> None:
         """Keep the upload in memory."""

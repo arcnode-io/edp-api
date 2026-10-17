@@ -14,6 +14,7 @@ from typing import cast
 
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
+from src.bom_generator.pricing_models import PriceBook
 
 
 class _StubManifestClient:
@@ -55,6 +56,9 @@ class _StubManifestClient:
 
     def fetch_spec(self, _url: str) -> dict:
         return {}
+
+    def fetch_pricing(self, _url: str) -> PriceBook:
+        return PriceBook()
 
     def upload_bom_json(self, body: bytes, target_url: str) -> None:
         self.uploads[target_url] = body

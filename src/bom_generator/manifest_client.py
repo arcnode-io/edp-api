@@ -12,6 +12,7 @@ import yaml
 from botocore.client import BaseClient
 
 from src.bom_generator.manifest_models import Manifest
+from src.bom_generator.pricing_models import PriceBook
 
 _BUCKET_PREFIX: Final[str] = "s3://"
 
@@ -74,6 +75,12 @@ class ManifestClient:
         bucket, key = _split_s3_url(topology_url)
         body = self._s3.get_object(Bucket=bucket, Key=key)["Body"].read()
         return yaml.safe_load(body)
+
+    def fetch_pricing(self, pricing_url: str) -> PriceBook:
+        """Fetch + parse the budget price list."""
+        bucket, key = _split_s3_url(pricing_url)
+        body = self._s3.get_object(Bucket=bucket, Key=key)["Body"].read()
+        return PriceBook.model_validate(yaml.safe_load(body))
 
     def upload_bom_json(self, bom_json_bytes: bytes, target_url: str) -> None:
         """Upload generated bom.json to S3."""

@@ -32,7 +32,6 @@ def spec_to_catalog_line(
         equipment_id=spec["equipment_id"],
         datasheet_url=spec.get("datasheet_url"),
         lead_time_weeks=spec.get("lead_time_weeks"),
-        unit_cost_usd=spec.get("unit_cost_usd"),
         fab_tier=spec.get("fab_tier"),
         # Track-A enrichment — install_video_url is a new spec field;
         # NDAA + TAA are DERIVED from existing schema (restricted_entities
@@ -90,7 +89,7 @@ def plate_spec_to_custom_line(
         section=section,
         ref_des=ref_des,
         part_number=pn,
-        vendor="ARCNODE (custom fab)",
+        vendor="CNC shop, to ARCNODE drawing",
         description=plate_spec.get("description", f"Interface Plate, {plate_id}"),
         qty=qty,
         procurement_path=ProcurementPath.CUSTOM_FABRICATION,
@@ -104,12 +103,15 @@ def plate_spec_to_custom_line(
 def shell_to_custom_line(
     shell: dict, qty: int, section: BomSection, ref_des: str
 ) -> BomLineItem:
-    """Container shell (bom.yaml `shell:` block) → custom_fabrication line."""
+    """Container shell (bom.yaml `shell:` block) → custom_fabrication line.
+
+    A stock 10ft ISO container; a fab shop cuts it to the ARCNODE drawings.
+    """
     return BomLineItem(
         section=section,
         ref_des=ref_des,
         part_number=shell["part_number"],
-        vendor="ARCNODE (custom fab)",
+        vendor="Container supplier",
         description=shell["description"],
         qty=qty,
         procurement_path=ProcurementPath.CUSTOM_FABRICATION,

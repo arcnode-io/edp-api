@@ -74,7 +74,6 @@ def _make_mock_client(manifest: Manifest) -> MagicMock:
                 "description": "4U HGX B200 server",
                 "datasheet_url": "https://example.com/datasheet.pdf",
                 "lead_time_weeks": 4,
-                "unit_cost_usd": None,
                 "fab_tier": "dod_eligible",  # → TAA-compliant (derived)
                 "restricted_entities": None,  # → NDAA-compliant (derived)
                 "install_video_url": "https://youtu.be/abc123",
@@ -159,7 +158,7 @@ def test_generate_includes_cg_plate_as_custom_fabrication() -> None:
     plate = next(li for li in bom.line_items if li.part_number == "ARC-PLT-CG-001")
     assert plate.procurement_path == ProcurementPath.CUSTOM_FABRICATION
     assert plate.material == "6061-T6 aluminum"
-    assert plate.vendor == "ARCNODE (custom fab)"
+    assert plate.vendor == "CNC shop, to ARCNODE drawing"
 
 
 def test_generate_defense_plate_appends_d_suffix() -> None:

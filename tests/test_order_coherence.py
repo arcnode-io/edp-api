@@ -3,7 +3,8 @@
 Runs real orders against the real assemblies data and checks the
 package the way a design reviewer would: the order reaches the hardware,
 the BOM and the device data list the same devices, every device has
-install steps and every polled device a comms run, and every tag is unique.
+install steps and every polled device a comms run, every tag is unique,
+and every part the customer buys has a budget price.
 """
 
 from collections import Counter
@@ -138,3 +139,15 @@ def test_dc_ext_pcs_sits_on_the_battery_pad() -> None:
     assert [(li.section.value, li.qty) for li in lines] == [
         ("site_and_interfaces", bom.grid_container_qty)
     ]
+
+
+def test_every_part_the_customer_buys_has_a_budget_price(package: tuple) -> None:
+    # Arrange
+    _, bom, _, _ = package
+
+    # Act
+    actual = bom.budget
+
+    # Assert
+    assert actual is not None
+    assert (actual.unpriced_lines, actual.total_usd > 0) == (0, True)

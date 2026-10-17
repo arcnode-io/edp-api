@@ -4,7 +4,7 @@ Everything the SLD, comms and P&ID draw outside a container appears here,
 so the BOM covers what the drawings show: the customer's battery at the
 ordered size and the by-others MV and cooling gear it connects through.
 Every battery ties in at 13.8 kV through the customer's step-up (ADR-016,
-ADR-022); on dc_ext ARCNODE's PCS, a spec'd part, is added by the BOM
+ADR-022); on dc_ext the PCS, a spec'd part, is added by the BOM
 generator.
 """
 
@@ -19,7 +19,7 @@ from src.bom_generator.bom_ref_des import containers
 _COUPLING: dict[str, str] = {
     "ac_coupled": "AC-coupled, ties in at 13.8 kV through customer gear (ADR-016)",
     "dc_integrated_pcs": "DC with its own PCS, ties in at 13.8 kV through customer gear (ADR-016)",
-    "dc_external_pcs": "DC strings to the ARCNODE PCS on the battery pad, ties in at 13.8 kV through customer gear (ADR-022)",
+    "dc_external_pcs": "DC strings to the PCS on the battery pad, ties in at 13.8 kV through customer gear (ADR-022)",
 }
 
 
@@ -45,7 +45,7 @@ def _line(
 
 
 def site_lines(order: BomOrder, compute_qty: int) -> list[BomLineItem]:
-    """Site equipment for this order, ARCNODE-supplied or not."""
+    """Site equipment for this order, bought new or already the customer's."""
     by_others = ProcurementPath.BY_OTHERS
     lines = [
         _line(

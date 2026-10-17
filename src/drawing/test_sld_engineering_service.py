@@ -87,7 +87,7 @@ def test_dc_ext_battery_ties_in_at_mv_behind_one_pcs_per_grid_container() -> Non
     # Act
     texts = _texts(_sld("commercial_dc_ext", compute_qty=12, grid_qty=2))
 
-    # Assert — CATL → ARCNODE PCS x2 → customer step-up → 13.8 kV (ADR-022)
+    # Assert — CATL → PCS x2 → customer step-up → 13.8 kV (ADR-022)
     assert "GRD-PCS-001 x2" in texts
     assert "T-BESS STEP-UP TO 13.8 kV" in texts
     assert "CATL ENERONE+ (DC)" in texts

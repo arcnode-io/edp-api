@@ -20,7 +20,7 @@ def with_summaries(
     plate_qty: dict[str, int] = {}
     for li in bom.line_items:
         plate_qty[li.part_number] = plate_qty.get(li.part_number, 0) + li.qty
-    # Manufacturers ARCNODE buys from — not "Customer", "By others", "RFQ"
+    # Manufacturers the customer buys from — not "Customer", "By others", "RFQ"
     vendors = {
         li.vendor
         for li in bom.line_items

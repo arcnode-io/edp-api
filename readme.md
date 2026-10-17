@@ -37,7 +37,7 @@ DTM is self-describing in both modes — EMS reads `(host, port)` and polls. No 
 
 | #  | Artifact                      | URL Format(s)    | Source and Target                                                                             |
 |----|-------------------------------|------------------|-----------------------------------------------------------------------------------------------|
-| 1  | Bill of Materials             | json + xlsx      | created by internal BOM generator service and put into artifact_s3                            |
+| 1  | Bill of Materials             | json + xlsx      | created by internal BOM generator service and put into artifact_s3. Prices are budgetary: live distributor offer, else pricing.yaml; the customer runs their own RFQs |
 | 2  | Compute Container 3D          | step + glb       | selected from artifact_s3. put by edp-module-assemblies                                       |
 | 3  | Grid Container 3D             | step + glb       | selected from artifact_s3 defense, commercial-dc, commercial-ac put by edp-module-assemblies  |
 | 4  | Interface Plates              | step + dxf + pdf | fetched from artifact_s3. put by edp-module-assemblies                                        |
@@ -139,7 +139,10 @@ src/
 │   └── cable_hose_schedule_models.py   # CableEntry, HoseEntry, CableHoseSchedule
 ├── bom_generator/
 │   ├── bom_generator_service.py     # ModuleResolution → bom.json
-│   ├── bom_models.py                # BomLineItem, BomDocument
+│   ├── bom_models.py                # BomLineItem, BomBudget, Bom
+│   ├── bom_pricing.py               # budget price per line + budgetary order total (± per source)
+│   ├── pricing_models.py            # mirror of edp-module-assemblies/pricing.yaml
+│   ├── bom_xlsx.py / bom_rollup_xlsx.py  # BOM sheet + purchase roll-up
 │   ├── manifest_service.py          # profile → ResolvedProfile lookups
 │   ├── manifest_client.py           # S3 fetch + upload wrapper (also handles DTM/SVG bytes)
 │   ├── manifest_module.py

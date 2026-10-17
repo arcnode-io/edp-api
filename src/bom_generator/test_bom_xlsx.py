@@ -1,6 +1,6 @@
 """BOM workbook: order header, sectioned lines with no empty cell, purchase roll-up."""
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from io import BytesIO
 from uuid import UUID
 
@@ -15,6 +15,7 @@ from src.bom_generator.bom_models import (
 )
 from src.bom_generator.bom_site_lines import site_lines
 from src.bom_generator.bom_xlsx import serialize_bom_xlsx
+from src.bom_generator.pricing_models import PriceSource
 
 _ORDER = BomOrder(
     customer="acme",
@@ -52,6 +53,10 @@ def _bom() -> Bom:
                 "ndaa_compliant": True,
                 "taa_compliant": True,
                 "datasheet_url": "https://example.com/ds",
+                "unit_cost_usd": 300_000.0,
+                "price_source": PriceSource.ESTIMATE,
+                "price_basis": "reseller list",
+                "price_as_of": date(2026, 10, 17),
             }
         ),
         _line(
@@ -108,7 +113,7 @@ def test_every_cell_of_every_line_is_filled() -> None:
     assert (len(lines), empty) == (len(_bom().line_items), [])
 
 
-def test_rollup_totals_each_part_arcnode_buys_across_sections() -> None:
+def test_rollup_totals_each_part_the_customer_buys_across_sections() -> None:
     # Act
     _, rollup = _sheets()
 
@@ -116,3 +121,14 @@ def test_rollup_totals_each_part_arcnode_buys_across_sections() -> None:
     qty = {r[1]: r[2] for r in rollup if isinstance(r[2], int)}
     assert qty["ARC-PLT-CG-001"] == 2
     assert "Customer-selected" not in qty
+
+
+def test_lines_show_their_price_basis_and_the_order_a_budgetary_total() -> None:
+    # Act
+    bom, _ = _sheets()
+
+    # Assert — 7 nodes at a ±40% estimate; everything else is unpriced
+    cells = [c for r in bom for c in r if isinstance(c, str)]
+    total = next(r for r in bom if r[1] == "BUDGET TOTAL (budgetary)")
+    assert "Estimate 2026-10-17 ±40%: reseller list" in cells
+    assert (total[11], total[12]) == (2_100_000, "Range $1,260,000 to $2,940,000")

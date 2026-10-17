@@ -1,7 +1,7 @@
 """P&ID sheet 2 — facility (primary) coolant loop of one compute container, typical.
 
 Closed loop: CDU primary return → through the CD plate → dry cooler
-(ARCNODE-supplied, on the customer's pad) → pump → buffer tank (both by
+(in the BOM, on the customer's pad) → pump → buffer tank (both by
 others) → back through the CD plate → CDU primary supply. The CDU's
 secondary ports run to off-sheet connectors (rack loop, sheet 1).
 """

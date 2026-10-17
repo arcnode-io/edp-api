@@ -4,13 +4,14 @@ Flat line-items with `procurement_path` discriminator. Top-level metadata
 block (deployment_id, profile, manifest_version, generated_at).
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from uuid import UUID
 
 from pydantic import BaseModel, Field, computed_field
 
 from src.bom_enrichment.enrichment_models import DistributorOffer
+from src.bom_generator.pricing_models import PriceSource
 
 
 class ProcurementPath(StrEnum):
@@ -18,7 +19,7 @@ class ProcurementPath(StrEnum):
 
     CATALOG = "catalog"  # bought by manufacturer part number
     ENGINEERED_TO_ORDER = "engineered_to_order"  # built to our spec, by RFQ
-    CUSTOM_FABRICATION = "custom_fabrication"  # ARCNODE design, shop-fabricated
+    CUSTOM_FABRICATION = "custom_fabrication"  # cut by a shop to ARCNODE drawings
     CUSTOMER_SUPPLIED = "customer_supplied"  # the customer's own equipment
     BY_OTHERS = "by_others"  # site work by the customer's contractors
     FIELD_SUPPLIED = "field_supplied"  # bulk material the installer provides
@@ -34,7 +35,6 @@ class BomSection(StrEnum):
 
 
 _SUPPLIER: dict[ProcurementPath, str] = {
-    ProcurementPath.CUSTOMER_SUPPLIED: "Customer",
     ProcurementPath.BY_OTHERS: "By others",
     ProcurementPath.FIELD_SUPPLIED: "Installer",
 }
@@ -71,7 +71,11 @@ class BomLineItem(BaseModel):
     equipment_id: str | None = None  # edp-module-assemblies equipment/<id>
     datasheet_url: str | None = None
     lead_time_weeks: int | None = None
+    # The price used: live distributor offer, else the budget price list
     unit_cost_usd: float | None = None
+    price_source: PriceSource | None = None
+    price_basis: str | None = None  # distributor, quote ref or estimate method
+    price_as_of: date | None = None
     fab_tier: str | None = None
 
     # Track-A enrichment: static fields curated in equipment/<id>/spec.yaml.
@@ -98,8 +102,22 @@ class BomLineItem(BaseModel):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def supplied_by(self) -> str:
-        """ARCNODE, Customer, By others or Installer — from the procurement path."""
-        return _SUPPLIER.get(self.procurement_path, "ARCNODE")
+        """Customer, By others or Installer — from the procurement path.
+
+        ARCNODE sells software only; the customer buys or already owns
+        everything not left to their contractors or installer.
+        """
+        return _SUPPLIER.get(self.procurement_path, "Customer")
+
+
+class BomBudget(BaseModel):
+    """Budgetary total of the parts the customer buys. Not a quote."""
+
+    total_usd: float
+    low_usd: float  # each priced line less its source's band
+    high_usd: float
+    quote_backed_pct: float  # share of total dollars from vendor quotes
+    unpriced_lines: int  # bought lines with no price, not in the total
 
 
 class Bom(BaseModel):
@@ -113,3 +131,4 @@ class Bom(BaseModel):
     grid_container_qty: int
     order: BomOrder
     line_items: list[BomLineItem] = Field(default_factory=list)
+    budget: BomBudget | None = None  # set once line prices are final

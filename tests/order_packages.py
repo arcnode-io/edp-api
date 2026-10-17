@@ -18,6 +18,7 @@ from src.dtm.template_loader import TemplateLoader
 from src.module_resolver.module_resolver_service import ModuleResolverService
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 from src.shared.schemas.dtm import Dtm
+from src.pipeline.pipeline_service import _context_string
 from tests.assemblies_checkout import AssembliesCheckoutClient
 
 BASE: Final[dict] = {
@@ -95,6 +96,7 @@ def package_for(
         ),
         compute_container_qty=resolution.compute_container_count,
         grid_container_qty=resolution.grid_container_count,
+        deployment_context=_context_string(payload.deployment_context),
         field_lines=cable_hose_lines(schedule),
     )
     return payload, bom, dtm, schedule

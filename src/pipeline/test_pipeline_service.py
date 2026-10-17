@@ -669,3 +669,8 @@ def test_attach_offers_merges_distributor_offers_onto_catalog_lines() -> None:
     assert catalog_line.offers[0].unit_cost_usd == 99.99
     assert catalog_line.offers[0].distributor == "graybar"
     assert plate_line.offers == []
+    # the live price lands on the line and in the order budget
+    assert (catalog_line.unit_cost_usd, bom.budget and bom.budget.total_usd) == (
+        99.99,
+        99.99,
+    )

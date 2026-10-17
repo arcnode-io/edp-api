@@ -30,6 +30,7 @@ from src.bom_enrichment.enrichment_models import DistributorOffer
 from src.bom_enrichment.enrichment_service import EnrichmentService
 from src.bom_generator.cable_hose_lines import cable_hose_lines
 from src.bom_generator.bom_models import Bom, BomOrder
+from src.bom_generator.bom_pricing import live_price, order_budget
 from src.bom_generator.manifest_client import ManifestClient
 from src.bom_generator.manifest_models import Manifest
 from src.cable_hose_schedule.cable_hose_schedule_models import CableHoseSchedule
@@ -223,7 +224,7 @@ def _attach_offers(bom: Bom, enrichment: EnrichmentService) -> None:
 
     Looks up by `BomLineItem.part_number` (which IS the MPN for catalog
     items per `spec_lines.spec_to_catalog_line`). Custom-fab
-    lines (ARCNODE plates) are skipped — no external distributor offer
+    lines (plates, shells) are skipped — no external distributor offer
     exists. Each line's `offers` field gets the full list of returned
     offers (including error-offers, so a reviewer sees which distributors
     failed for this MPN).
@@ -246,6 +247,9 @@ def _attach_offers(bom: Bom, enrichment: EnrichmentService) -> None:
         cheapest = _cheapest_priced_offer(result.offers)
         if cheapest is not None:
             line.price_change_pct_7d = enrichment.price_delta_pct_7d(cheapest)
+    # Live distributor prices beat the price list, so the budget moves too
+    bom.line_items = [live_price(li) for li in bom.line_items]
+    bom.budget = order_budget(bom.line_items)
 
 
 def _cheapest_priced_offer(offers: list[DistributorOffer]) -> DistributorOffer | None:

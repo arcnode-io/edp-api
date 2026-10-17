@@ -68,3 +68,4 @@ class Manifest(BaseModel):
     assemblies: dict[str, dict[str, AssemblyVariant]] = Field(default_factory=dict)
     plates: dict[str, PlateUrls] = Field(default_factory=dict)
     profiles: dict[str, ProfileAssemblies] = Field(default_factory=dict)
+    pricing: str | None = None  # budget price list (pricing_models.PriceBook)
