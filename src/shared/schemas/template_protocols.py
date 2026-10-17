@@ -75,6 +75,24 @@ class RedfishBinding(BaseModel):
     value_map: dict[str, str] | None = None
 
 
+class SunspecBinding(BaseModel):
+    """SunSpec point by model and name; the gateway discovers the address.
+
+    At connect the gateway finds the SunSpec header, walks the model chain,
+    and resolves `point` in `model_id` to its offset, type and scale factor
+    from the model definitions it ships. So a firmware that reorders models
+    still reads right.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    protocol: Literal["sunspec"]
+    model_id: int  # e.g. 103 three-phase inverter, 65534 EPC control
+    point: str  # point id in that model, e.g. "W", "CmdRealPwr"
+    bit: int | None = None  # one bit of a bitfield point, e.g. CmdBits.En = 0
+    value_map: dict[str, str] | None = None  # enum: raw value (as string) → label
+
+
 class CanopenBinding(BaseModel):
     """CANopen-over-Ethernet per-measurement PDO mapping."""
 
@@ -92,6 +110,7 @@ Binding = Annotated[
     | SnmpBinding
     | RedfishBinding
     | CanopenBinding
+    | SunspecBinding
     | SyntheticBinding
     | DistributeBinding
     | PowerCapBinding,
