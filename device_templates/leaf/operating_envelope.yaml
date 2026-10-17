@@ -14,7 +14,7 @@ measurements:
   import_limit:
     unit: watts
     type: float
-    poll_rate_hz: 0.0033
+    poll_rate_hz: null           # on change, retained
     display_name_default: "Import Limit"
     iec_61850_ref: CSIP.opModImpLimW
     bounds: { min: 0, max: 10000000, nominal: 5000000 }
@@ -23,7 +23,7 @@ measurements:
   export_limit:
     unit: watts
     type: float
-    poll_rate_hz: 0.0033
+    poll_rate_hz: null           # on change, retained
     display_name_default: "Export Limit"
     iec_61850_ref: CSIP.opModExpLimW
     bounds: { min: 0, max: 10000000, nominal: 0 }
@@ -33,7 +33,7 @@ measurements:
   status:
     unit: none
     type: enum
-    poll_rate_hz: 1
+    poll_rate_hz: null           # on change, retained
     display_name_default: "Status"
     iec_61850_ref: ZGEN.Mod.stVal
     values: { 0: OK, 1: STALE, 2: INVALID, 3: COMM_FAIL }

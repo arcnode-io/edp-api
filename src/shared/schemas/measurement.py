@@ -45,6 +45,7 @@ class Measurement(BaseModel):
 
     unit: str  # ADR-002 §3 enum-locked vocabulary
     type: Literal["float", "bool", "enum"]
+    # None = published on change (retained), no cadence; consumers never age it out
     poll_rate_hz: float | None = None
     display_name_default: str | None = None
     iec_61850_ref: str | None = None

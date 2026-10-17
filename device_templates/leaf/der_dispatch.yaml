@@ -16,7 +16,7 @@ measurements:
   target_active_power:
     unit: watts
     type: float
-    poll_rate_hz: 0.0033          # event-driven; nominal rate only
+    poll_rate_hz: null           # on change, retained
     display_name_default: "DER Target Active Power"
     iec_61850_ref: CSIP.opModTargetW
     bounds: { min: -10000000, max: 10000000, nominal: 0 }
@@ -28,14 +28,14 @@ measurements:
   target_setpoint_present:
     unit: none
     type: bool
-    poll_rate_hz: 0.0033          # event-driven; nominal rate only
+    poll_rate_hz: null           # on change, retained
     display_name_default: "DER Target Setpoint In Force"
     publisher: der_control_api
 
   event_active:
     unit: none
     type: bool
-    poll_rate_hz: 0.0033
+    poll_rate_hz: null           # on change, retained
     display_name_default: "DER Event Active"
     iec_61850_ref: CSIP.DERControl.EventStatus
     publisher: der_control_api
@@ -49,7 +49,7 @@ measurements:
   der_event_state:
     unit: none
     type: enum
-    poll_rate_hz: 0.0033
+    poll_rate_hz: null           # on change, retained
     display_name_default: "DER Event State"
     values:
       0: IDLE
@@ -65,7 +65,7 @@ measurements:
   der_event_program:
     unit: none
     type: enum
-    poll_rate_hz: 0.0033
+    poll_rate_hz: null           # on change, retained
     display_name_default: "Curtailment Program"
     values:
       0: NONE
@@ -79,7 +79,7 @@ measurements:
   dispatch_mode:
     unit: none
     type: enum
-    poll_rate_hz: 0.0033          # event-driven; nominal rate only
+    poll_rate_hz: null           # on change, retained
     display_name_default: "Dispatch Mode"
     values:
       0: AUTO
@@ -94,14 +94,14 @@ measurements:
   operator_reserve:
     unit: watt_hours
     type: float
-    poll_rate_hz: 0.0033          # event-driven; nominal rate only
+    poll_rate_hz: null           # on change, retained
     display_name_default: "Operator Energy Reserve"
     publisher: der_control_api
 
   energize_enabled:
     unit: none
     type: bool
-    poll_rate_hz: 0.0033
+    poll_rate_hz: null           # on change, retained
     display_name_default: "DER Energize Permitted"
     iec_61850_ref: CSIP.opModEnergize
     publisher: der_control_api
@@ -111,7 +111,7 @@ measurements:
   dispatch_shortfall:
     unit: none
     type: bool
-    poll_rate_hz: 0.0033
+    poll_rate_hz: null           # on change, retained
     display_name_default: "Dispatch Shortfall"
     publisher: der_control_api
 
