@@ -9,8 +9,15 @@ from src.dtm.test_dtm_generator_fixtures import (
     _real_catalog,
     _resolution,
 )
-from src.shared.enums import GridPath, MarketRegion, ServiceType, WiresOwnerType
+from src.shared.enums import (
+    BessCoupling,
+    GridPath,
+    MarketRegion,
+    ServiceType,
+    WiresOwnerType,
+)
 from src.shared.schemas.configurator_grid import Grid, WiresOwner
+from src.shared.schemas.template_protocols import ModbusBinding
 
 _FIRM_ERCOT = Grid(
     path=GridPath.FIRM,
@@ -70,3 +77,33 @@ def test_grid_connected_orders_carry_the_utility_devices(
         if d.template in {"der_dispatch", "operating_envelope"}
     )
     assert actual == expected
+
+
+def test_the_dc_battery_is_polled_at_catls_bms_unit_for_its_state_of_charge() -> None:
+    # Arrange — CATL ETH board answers as Modbus unit 0x64; system SoC at
+    # 0x0022 (unofficial map, see bess_catl.yaml)
+    catalog = _real_catalog()
+    service = DtmGeneratorService(_make_client(), template_catalog=catalog)
+    resolution = _resolution().model_copy(
+        update={"bess_coupling": BessCoupling.DC_EXTERNAL_PCS}
+    )
+
+    # Act
+    dtm = service.generate(
+        profile="commercial_ac", resolution=resolution, manifest=_manifest()
+    )
+
+    # Assert
+    battery = next(d for d in dtm.devices.values() if d.template == "bess_catl")
+    soc = (catalog["bess_catl"].measurements or {})["state_of_charge"]
+    assert battery.connection is not None
+    assert (battery.connection.unit_id, soc.binding) == (
+        "100",
+        ModbusBinding(
+            protocol="modbus_tcp",
+            function_code=3,
+            address=0x0022,
+            data_type="uint16",
+            scale=0.1,
+        ),
+    )

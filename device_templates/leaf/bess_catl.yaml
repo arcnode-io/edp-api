@@ -5,9 +5,124 @@ vendor: CATL (Contemporary Amperex Technology Co.)
 model: EnerOne+ 379.4 kWh / 1C
 description: CATL EnerOne+ DC battery, customer-supplied (dc_int with its own PCS, dc_ext to the ARCNODE PCS pair)
 
-# Passive: CATL's BMS register map isn't verified, so nothing is polled.
-# The customer sets and ties in the battery (ADR-001); these are ARCNODE's
-# interface steps.
+# UNVERIFIED register map: CATL "Battery Energy Storage System ModBus TCP
+# Communication Protocol" V1.3/1.4 (2022), an unofficial copy that names the
+# outdoor liquid-cooled platform but not the EnerOne+ 379.4 kWh rack. Never
+# checked on a live unit; offsets were read from a garbled scaling table.
+# Modbus TCP, unit 0x64, FC 03, big-endian, ≤127 registers per read.
+# One device = the whole bank, so it reads the system (MBMU) block at 0x0000;
+# racks (SBMU n) sit at 0x0400·n. Sign: + discharge, − charge.
+# The EMS must write a heartbeat to 0x0380 every second (gateway), or the BMS
+# raises "EMS heartbeat fault"; a Modbus exception 0x04 means the ETH board
+# lost its BMS link, so the data is stale.
+# The customer sets and ties in the battery (ADR-001); install tasks are
+# ARCNODE's interface steps.
+
+measurements:
+  state_of_charge:
+    unit: percent
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "State of Charge"
+    iec_61850_ref: ZBAT.BatChaSt
+    bounds: { min: 0, max: 100, nominal: 50 }
+    # Same bands as the Megapack (bess_rack)
+    thresholds: { warn_min: 15, warn_max: 100, alarm_min: 5, alarm_max: 100 }
+    binding: { protocol: modbus_tcp, function_code: 3, address: 0x0022, data_type: uint16, scale: 0.1 }
+
+  dc_voltage:
+    unit: volts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "DC Voltage"
+    # 1164.8-1497.6 V SoC operating range, 1331 V mid (EXT-BESS-002)
+    bounds: { min: 0, max: 1500, nominal: 1331 }
+    binding: { protocol: modbus_tcp, function_code: 3, address: 0x0020, data_type: uint16, scale: 0.1 }
+
+  dc_current:
+    unit: amperes
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "DC Current (+ discharge, - charge)"
+    binding: { protocol: modbus_tcp, function_code: 3, address: 0x0021, data_type: uint16, scale: 1.0, offset: -20000 }
+
+  active_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "System Power (+ discharge, - charge)"
+    binding: { protocol: modbus_tcp, function_code: 3, address: 0x0313, data_type: uint16, scale: 100.0, offset: -2000000 }
+
+  # The BMS's present limits; the EMS must hold the PCS inside them
+  max_discharge_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Max Discharge Power"
+    binding: { protocol: modbus_tcp, function_code: 3, address: 0x030F, data_type: uint16, scale: 100.0, offset: -2000000 }
+
+  max_charge_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Max Charge Power"
+    binding: { protocol: modbus_tcp, function_code: 3, address: 0x0310, data_type: uint16, scale: 100.0, offset: -2000000 }
+
+  remaining_discharge_energy:
+    unit: watt_hours
+    type: float
+    poll_rate_hz: 0.2
+    display_name_default: "Remaining Discharge Energy"
+    binding: { protocol: modbus_tcp, function_code: 3, address: 0x0308, data_type: uint16, scale: 100.0 }
+
+  bms_status:
+    unit: none
+    type: enum
+    poll_rate_hz: 1
+    display_name_default: "BMS Status"
+    values: { 0: INIT, 1: NORMAL, 2: FULL_CHARGE, 3: FULL_DISCHARGE, 4: WARNING, 5: FAULT }
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 0x0302
+      data_type: uint16
+      value_map: { "0": INIT, "1": NORMAL, "2": FULL_CHARGE, "3": FULL_DISCHARGE, "4": WARNING, "5": FAULT }
+
+  contactor_status:
+    unit: none
+    type: enum
+    poll_rate_hz: 1
+    display_name_default: "High-Voltage Status"
+    values: { 0: POWER_OFF_READY, 1: POWER_ON_READY, 2: POWER_ON_FAULT, 3: POWER_OFF_FAULT }
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 0x0301
+      data_type: uint16
+      value_map: { "0": POWER_OFF_READY, "1": POWER_ON_READY, "2": POWER_ON_FAULT, "3": POWER_OFF_FAULT }
+
+  # Bitfields, raw (bit tables in the map): 2-bit leveled warnings, then
+  # alarm/fault bits without levels (0x0001 bit 8 = EMS heartbeat fault)
+  warning_word:
+    unit: none
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "System Warning Word"
+    binding: { protocol: modbus_tcp, function_code: 3, address: 0x0000, data_type: uint16 }
+
+  alarm_word_1:
+    unit: none
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "System Alarm Word 1"
+    binding: { protocol: modbus_tcp, function_code: 3, address: 0x0001, data_type: uint16 }
+
+  alarm_word_2:
+    unit: none
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "System Alarm Word 2"
+    binding: { protocol: modbus_tcp, function_code: 3, address: 0x0002, data_type: uint16 }
 
 install_tasks:
   - name: witness_tie_in

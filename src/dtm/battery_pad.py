@@ -1,6 +1,7 @@
 """The battery pad: the customer's battery and, on dc_ext, ARCNODE's PCS."""
 
 from math import ceil
+from typing import Final
 
 from src.dtm.dtm_generator_internals import assign_slug
 from src.shared.enums import BessCoupling
@@ -11,6 +12,9 @@ from src.shared.schemas.dtm import (
 )
 from src.shared.schemas.module_resolution import ModuleResolution
 from src.shared.schemas.template import DeviceTemplate
+
+# CATL's ETH board answers as Modbus unit 0x64 (bess_catl.yaml)
+CATL_BMS_UNIT_ID: Final[str] = "100"
 
 
 def emit_battery(
@@ -25,8 +29,9 @@ def emit_battery(
     device data even though ARCNODE doesn't supply it. Megapack (AC) is one
     device per unit, enough units for the ordered energy, each polled over
     Modbus TCP once commissioning gives it an address; device-api derives
-    the module's dispatch range from their summed ratings. CATL (DC) is
-    passive until its BMS map is verified. On dc_ext the pad also holds
+    the module's dispatch range from their summed ratings. CATL (DC) is one
+    device for the bank, polled at its BMS's fixed Modbus unit (unverified
+    map, see bess_catl.yaml). On dc_ext the pad also holds
     ARCNODE's PCS, PCS-1…PCS-N, one per grid container (ADR-022), passive
     until EPC's register map is in hand.
 
@@ -34,7 +39,7 @@ def emit_battery(
         The battery module's device_id.
     """
     ac = resolution.bess_coupling == BessCoupling.AC_COUPLED
-    # Reason: the DC module has no rack rollups — its CATL leaf is passive.
+    # Reason: the DC module has no rack rollups — one CATL leaf is the bank.
     module_template = "bess_module" if ac else "bess_module_dc"
     module = assign_slug(module_template, slug_counter)
     devices[module] = Device(
@@ -45,7 +50,15 @@ def emit_battery(
     else:
         leaf = assign_slug("bess_catl", slug_counter)
         devices[leaf] = Device(
-            device_id=leaf, template="bess_catl", display_name="BESS-1", parent=module
+            device_id=leaf,
+            template="bess_catl",
+            display_name="BESS-1",
+            parent=module,
+            connection=Connection(
+                host=PROVISIONED_AT_COMMISSIONING,
+                port=PROVISIONED_AT_COMMISSIONING,
+                unit_id=CATL_BMS_UNIT_ID,
+            ),
         )
     if resolution.bess_coupling == BessCoupling.DC_EXTERNAL_PCS:
         for n in range(1, resolution.grid_container_count + 1):

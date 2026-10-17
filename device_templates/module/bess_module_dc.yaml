@@ -1,11 +1,12 @@
 template: bess_module_dc
 kind: module
-description: DC battery (CATL) module with ARCNODE's PCS — POI headroom only; battery and PCS are passive
+description: DC battery (CATL) module with the PCS on its pad — bank SoC and POI headroom
 
-# A DC battery's BMS map isn't verified, so its CATL leaf is passive: no
-# state-of-charge or power to roll up, no racks to dispatch to. The POI
-# headroom measurements don't depend on the battery and stay available for
-# envelope compliance.
+# One CATL leaf is the whole bank (unverified BMS map, see bess_catl), so
+# the module's SoC is that leaf's. Every PCS draws from this one battery;
+# dispatch (equal_split to the PCS, sharing this SoC) waits on device-api's
+# distribute contract naming its SoC source. The POI headroom measurements
+# don't depend on the battery and stay available for envelope compliance.
 
 contains:
   - template: bess_catl
@@ -15,6 +16,19 @@ contains:
     qty: scalable
 
 measurements:
+  state_of_charge:
+    unit: percent
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Module State of Charge"
+    bounds: { min: 0, max: 100, nominal: 50 }
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      operation: weighted_mean
+      source_measurement: state_of_charge
+      child_template: bess_catl
+
   # Synthetic headroom measurements — gateway computes from cached MQTT inputs.
   # Envelope limits apply at the connection point, so headroom is referenced to
   # POI net power P_poi (poi_meter.active_power, + = import from grid), not to
