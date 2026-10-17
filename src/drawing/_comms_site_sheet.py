@@ -10,7 +10,9 @@ from ezdxf.layouts import Modelspace
 from src.dtm.device_roles import BESS_MODULE_TEMPLATES
 from src.bom_generator.bom_models import Bom
 from src.drawing import _draw_kit as k
+from src.bom_generator.bom_ref_des import compress
 from src.drawing._comms_devices import device_lines, networked_children
+from src.shared.schemas.dtm import Device
 from src.shared.schemas.dtm import Dtm
 
 _LAN_Y: float = 215.0
@@ -31,7 +33,9 @@ def draw_site_sheet(msp: Modelspace, dtm: Dtm, bom: Bom) -> None:
     modules = [
         d.device_id for d in dtm.devices.values() if d.template in BESS_MODULE_TEMPLATES
     ]
-    boxes += [device_lines(dtm, d) for d in dtm.devices.values() if d.parent in modules]
+    boxes += _battery_boxes(
+        dtm, [d for d in dtm.devices.values() if d.parent in modules]
+    )
     if m > 1:
         boxes.append(
             [f"G2-G{m} MGMT SWITCHES x{m - 1}", "RELAY BEHIND EACH", "TYPICAL"]
@@ -53,3 +57,18 @@ def draw_site_sheet(msp: Modelspace, dtm: Dtm, bom: Bom) -> None:
         ]
     ):
         k.text(msp, 15, 52 - i * 5, note, h=2.5 if i == 0 else 2.2)
+
+
+def _battery_boxes(dtm: Dtm, units: list[Device]) -> list[list[str]]:
+    """One box per battery device type: a Megapack fleet is BESS-1-MP-1…N xN."""
+    by_template: dict[str, list[Device]] = {}
+    for d in units:
+        by_template.setdefault(d.template, []).append(d)
+    boxes = []
+    for same in by_template.values():
+        tag, protocol, address = device_lines(dtm, same[0])
+        if len(same) > 1:
+            tag = compress([d.display_name or d.device_id for d in same])
+            protocol = f"{protocol} x{len(same)}"
+        boxes.append([tag, protocol, address])
+    return boxes

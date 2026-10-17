@@ -263,9 +263,9 @@ def test_the_customers_battery_is_in_the_device_data(
     )
 
     # Assert
-    batteries = [
-        (actual.devices[d.parent].template, d.template, d.display_name)
+    batteries = {
+        (actual.devices[d.parent].template, d.template)
         for d in actual.devices.values()
         if d.parent is not None and d.template.startswith("bess")
-    ]
-    assert batteries == [(module, template, "BESS-1")]
+    }
+    assert batteries == {(module, template)}

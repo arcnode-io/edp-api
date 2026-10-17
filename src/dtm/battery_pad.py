@@ -1,5 +1,7 @@
 """The battery pad: the customer's battery and, on dc_ext, ARCNODE's PCS."""
 
+from math import ceil
+
 from src.dtm.dtm_generator_internals import assign_slug
 from src.shared.enums import BessCoupling
 from src.shared.schemas.dtm import (
@@ -7,53 +9,76 @@ from src.shared.schemas.dtm import (
     Connection,
     Device,
 )
+from src.shared.schemas.module_resolution import ModuleResolution
+from src.shared.schemas.template import DeviceTemplate
 
 
 def emit_battery(
-    coupling: BessCoupling,
+    resolution: ModuleResolution,
+    catalog: dict[str, DeviceTemplate],
     devices: dict[str, Device],
     slug_counter: dict[str, int],
-    *,
-    grid_container_count: int,
 ) -> str:
     """The battery pad: a battery module holding BESS-1 (and on dc_ext, the PCS).
 
     The EMS supervises the customer's battery (ADR-001), so it's in the
-    device data even though ARCNODE doesn't supply it. Megapack (AC) is
-    polled over Modbus TCP and waits for its commissioning-time address;
-    CATL (DC) is passive until its BMS map is verified. On dc_ext the pad
-    also holds ARCNODE's PCS, PCS-1…PCS-N, one per grid container
-    (ADR-022), passive until EPC's register map is in hand.
+    device data even though ARCNODE doesn't supply it. Megapack (AC) is one
+    device per unit, enough units for the ordered energy, each polled over
+    Modbus TCP once commissioning gives it an address; device-api derives
+    the module's dispatch range from their summed ratings. CATL (DC) is
+    passive until its BMS map is verified. On dc_ext the pad also holds
+    ARCNODE's PCS, PCS-1…PCS-N, one per grid container (ADR-022), passive
+    until EPC's register map is in hand.
 
     Returns:
         The battery module's device_id.
     """
-    ac = coupling == BessCoupling.AC_COUPLED
+    ac = resolution.bess_coupling == BessCoupling.AC_COUPLED
     # Reason: the DC module has no rack rollups — its CATL leaf is passive.
     module_template = "bess_module" if ac else "bess_module_dc"
     module = assign_slug(module_template, slug_counter)
     devices[module] = Device(
         device_id=module, template=module_template, display_name="BESS"
     )
-    template = "bess_rack" if ac else "bess_catl"
-    leaf = assign_slug(template, slug_counter)
-    devices[leaf] = Device(
-        device_id=leaf,
-        template=template,
-        display_name="BESS-1",
-        parent=module,
-        connection=(
-            Connection(
-                host=PROVISIONED_AT_COMMISSIONING, port=PROVISIONED_AT_COMMISSIONING
-            )
-            if ac
-            else None
-        ),
-    )
-    if coupling == BessCoupling.DC_EXTERNAL_PCS:
-        for n in range(1, grid_container_count + 1):
+    if ac:
+        _emit_megapacks(resolution, catalog["bess_rack"], module, devices, slug_counter)
+    else:
+        leaf = assign_slug("bess_catl", slug_counter)
+        devices[leaf] = Device(
+            device_id=leaf, template="bess_catl", display_name="BESS-1", parent=module
+        )
+    if resolution.bess_coupling == BessCoupling.DC_EXTERNAL_PCS:
+        for n in range(1, resolution.grid_container_count + 1):
             pcs = assign_slug("pcs", slug_counter)
             devices[pcs] = Device(
                 device_id=pcs, template="pcs", display_name=f"PCS-{n}", parent=module
             )
     return module
+
+
+def _emit_megapacks(
+    resolution: ModuleResolution,
+    megapack: DeviceTemplate,
+    module: str,
+    devices: dict[str, Device],
+    slug_counter: dict[str, int],
+) -> None:
+    """BESS-1-MP-1…N: one Megapack per capacity_kwh of ordered energy, rounded up.
+
+    The customer picks the real battery (ADR-001), so the count is the
+    smallest Megapack 2 XL fleet that holds the ordered energy.
+    """
+    if megapack.capacity_kwh is None:
+        raise ValueError("bess_rack template needs capacity_kwh to size the fleet")
+    units = ceil(resolution.bess_capacity_mwh * 1000 / megapack.capacity_kwh)
+    for n in range(1, units + 1):
+        rack = assign_slug("bess_rack", slug_counter)
+        devices[rack] = Device(
+            device_id=rack,
+            template="bess_rack",
+            display_name=f"BESS-1-MP-{n}",
+            parent=module,
+            connection=Connection(
+                host=PROVISIONED_AT_COMMISSIONING, port=PROVISIONED_AT_COMMISSIONING
+            ),
+        )

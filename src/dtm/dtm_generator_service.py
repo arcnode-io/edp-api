@@ -9,6 +9,7 @@ from src.dtm.dtm_generator_internals import (
     sizing,
 )
 from src.dtm.site_buses import lv_main_buses, site_bus
+from src.dtm.utility_devices import emit_utility_devices
 from src.shared.schemas.dtm import (
     Bus,
     Device,
@@ -98,12 +99,8 @@ class DtmGeneratorService:
                 by_template=by_template,
             )
 
-        battery = emit_battery(
-            resolution.bess_coupling,
-            devices,
-            slug_counter,
-            grid_container_count=resolution.grid_container_count,
-        )
+        battery = emit_battery(resolution, self._catalog, devices, slug_counter)
+        emit_utility_devices(resolution, devices)
         buses.append(site_bus(battery, by_template, slug_counter))
         buses.extend(lv_main_buses(resolution, devices, by_template, slug_counter))
 

@@ -147,7 +147,8 @@ src/
 ├── dtm/
 │   ├── dtm_generator_service.py     # profile + ModuleResolution → Dtm
 │   ├── dtm_generator_internals.py   # emit_container, collect_templates_used, sizing
-│   ├── battery_pad.py               # battery module (+ PCS on dc_ext)
+│   ├── battery_pad.py               # battery module: one bess_rack per Megapack (+ PCS on dc_ext)
+│   ├── utility_devices.py           # der_dispatch + operating_envelope on grid-connected orders
 │   ├── site_buses.py                # site_mv_1 + lv_main_N (ADR-018 compute feeds)
 │   ├── template_loader.py           # walks device_templates/, builds catalog at startup
 │   └── topology_yaml.py             # per-assembly topology.yaml schema

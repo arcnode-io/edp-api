@@ -67,7 +67,10 @@ def test_bom_and_device_data_list_the_same_devices(package: tuple) -> None:
 
     # Assert
     assert in_bom == in_dtm
-    assert any(d.display_name == "BESS-1" for d in dtm.devices.values())
+    # BOM line BESS-1 is the customer's battery; AC splits it into BESS-1-MP-N
+    assert any(
+        (d.display_name or "").startswith("BESS-1") for d in dtm.devices.values()
+    )
 
 
 def test_every_device_has_install_steps(package: tuple) -> None:

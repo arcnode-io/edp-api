@@ -48,10 +48,11 @@ def _device(device_id: str, template: str, parent: str | None) -> Device:
     )
 
 
-def _comms() -> CommsDiagramOutputs:
+def _comms(devices: dict[str, Device] | None = None) -> CommsDiagramOutputs:
+    devices = devices or {d: _device(d, t, p) for d, t, p in _DEVICES}
     dtm = make_dtm(
-        devices={d: _device(d, t, p) for d, t, p in _DEVICES},
-        templates={t: make_template(t) for _, t, _ in _DEVICES},
+        devices=devices,
+        templates={d.template: make_template(d.template) for d in devices.values()},
     )
     bom = Bom(
         deployment_id=DEPLOYMENT_ID,
@@ -103,3 +104,20 @@ def test_compute_sheet_draws_the_first_container_as_typical() -> None:
     assert "C1-NODE-1" in compute
     assert "gpu_node_8" not in compute
     assert "ADDR TBD" in compute
+
+
+def test_a_megapack_fleet_draws_as_one_box() -> None:
+    # Arrange — a 10 MWh order is 3 Megapacks; one box each would crowd the
+    # sheet as orders grow
+    devices = {d: _device(d, t, p) for d, t, p in _DEVICES}
+    for n in (1, 2, 3):
+        rack = _device(f"bess_rack_{n}", "bess_rack", "bess_module_1")
+        devices[rack.device_id] = rack.model_copy(
+            update={"display_name": f"BESS-1-MP-{n}"}
+        )
+
+    # Act
+    site, _ = _sheet_texts(_comms(devices))
+
+    # Assert
+    assert ("BESS-1-MP-1…3" in site, "BESS-1-MP-2" in site) == (True, False)
