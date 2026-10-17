@@ -16,6 +16,7 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Module State of Charge"
+    bounds: { min: 0, max: 100, nominal: 50 }  # empty to full; mid-charge nominal
     publisher: gateway
     binding:
       protocol: synthetic

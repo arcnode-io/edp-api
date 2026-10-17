@@ -55,6 +55,7 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Power Factor"
+    bounds: { min: -1, max: 1, nominal: 1 }  # signed PF, unity nominal
     binding:
       protocol: modbus_tcp
       function_code: 3

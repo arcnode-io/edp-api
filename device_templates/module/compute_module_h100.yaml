@@ -59,6 +59,8 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Module Thermal Load"
+    # every watt in becomes heat, so the same limits as total_power
+    bounds: { min: 0, max: 125800, nominal: 62600 }
     publisher: local_process
 
   pue:

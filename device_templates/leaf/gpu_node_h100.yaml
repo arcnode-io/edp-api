@@ -16,6 +16,8 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Power Consumed"
+    # 4x 5250 W PSUs run 2+2 → 10.5 kW usable; nominal is the sizing figure (CMP-NODE-002)
+    bounds: { min: 0, max: 10500, nominal: 7940 }
     binding: { protocol: redfish, uri: /Chassis/1/Power, json_pointer: /PowerControl/0/PowerConsumedWatts }
 
   power_limit:
@@ -23,6 +25,7 @@ measurements:
     type: float
     poll_rate_hz: 0.1
     display_name_default: "Power Limit"
+    bounds: { min: 0, max: 10500, nominal: 10500 }
     binding: { protocol: redfish, uri: /Chassis/1/Power, json_pointer: /PowerControl/0/PowerLimit/LimitInWatts }
 
   inlet_temp:
@@ -31,6 +34,7 @@ measurements:
     poll_rate_hz: 0.5
     display_name_default: "Inlet Temperature"
     # CMP-NODE-002 operating 10-35 °C; ASHRAE A1 recommended 18-27 °C
+    bounds: { min: 10, max: 35, nominal: 22 }
     thresholds: { warn_min: 18, warn_max: 27, alarm_min: 10, alarm_max: 35 }
     binding: { protocol: redfish, uri: /Chassis/1/Sensors/InletTemp, json_pointer: /Reading }
 
@@ -46,6 +50,7 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "GPU Total Power"
+    bounds: { min: 0, max: 5600, nominal: 5600 }  # 8x H100 SXM at 700 W TDP
     publisher: gateway
     binding:
       protocol: synthetic

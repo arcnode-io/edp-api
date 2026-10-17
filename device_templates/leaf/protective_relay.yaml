@@ -54,6 +54,8 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Phase A Voltage"
+    # 15 kV class switchgear (GRD-SWG-001) = 8660 V L-N max
+    bounds: { min: 0, max: 8660, nominal: 7967 }
     # 13.8 kV = 7967 V L-N; ANSI C84.1 Range A warn (-2.5/+5%), Range B alarm (-5/+5.2%)
     thresholds: { warn_min: 7768, warn_max: 8366, alarm_min: 7569, alarm_max: 8383 }
     binding:
@@ -67,6 +69,8 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Phase B Voltage"
+    # 15 kV class switchgear (GRD-SWG-001) = 8660 V L-N max
+    bounds: { min: 0, max: 8660, nominal: 7967 }
     # 13.8 kV = 7967 V L-N; ANSI C84.1 Range A warn (-2.5/+5%), Range B alarm (-5/+5.2%)
     thresholds: { warn_min: 7768, warn_max: 8366, alarm_min: 7569, alarm_max: 8383 }
     binding:
@@ -80,6 +84,8 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "Phase C Voltage"
+    # 15 kV class switchgear (GRD-SWG-001) = 8660 V L-N max
+    bounds: { min: 0, max: 8660, nominal: 7967 }
     # 13.8 kV = 7967 V L-N; ANSI C84.1 Range A warn (-2.5/+5%), Range B alarm (-5/+5.2%)
     thresholds: { warn_min: 7768, warn_max: 8366, alarm_min: 7569, alarm_max: 8383 }
     binding:

@@ -46,6 +46,7 @@ measurements:
     type: float
     poll_rate_hz: 1
     display_name_default: "GPU Total Power"
+    bounds: { min: 0, max: 8000, nominal: 8000 }  # 8x B200 at 1000 W TDP
     publisher: gateway
     binding:
       protocol: synthetic
