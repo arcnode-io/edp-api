@@ -3,15 +3,14 @@ kind: module
 description: DC battery (CATL) module with the PCS on its pad — bank SoC and POI headroom
 
 # One CATL leaf is the whole bank (unverified BMS map, see bess_catl), so
-# the module's SoC is that leaf's. Every PCS draws from this one battery;
-# dispatch (equal_split to the PCS, sharing this SoC) waits on device-api's
-# distribute contract naming its SoC source. The POI headroom measurements
+# the module's SoC is that leaf's. Every PCS draws from this one battery,
+# so dispatch splits evenly across the PCS sharing this SoC. The POI headroom measurements
 # don't depend on the battery and stay available for envelope compliance.
 
 contains:
   - template: bess_catl
     qty: scalable
-  # ARCNODE's PCS sits on the battery pad, one per grid container (ADR-022)
+  # The PCS sits on the battery pad, one per grid container (ADR-022)
   - template: pcs
     qty: scalable
 
@@ -28,6 +27,19 @@ measurements:
       operation: weighted_mean
       source_measurement: state_of_charge
       child_template: bess_catl
+
+  # AC-side power is the PCS sum (the bank's DC power is on bess_catl)
+  active_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Module Active Power"
+    publisher: gateway
+    binding:
+      protocol: synthetic
+      operation: sum
+      source_measurement: active_power
+      child_template: pcs
 
   # Synthetic headroom measurements — gateway computes from cached MQTT inputs.
   # Envelope limits apply at the connection point, so headroom is referenced to
@@ -63,6 +75,22 @@ measurements:
       inputs:
         - sites/{site_id}/devices/operating_envelope/measurements/export_limit/watts
         - sites/{site_id}/devices/{poi_meter_device_id}/measurements/active_power/watts
+
+commands:
+  # Every PCS draws from the one CATL bank, so the setpoint splits evenly
+  # across the PCS and each shares the module's SoC (reserve floor); the
+  # bank's energy comes from its device capacity_kwh (device-api 5dcaeda)
+  set_active_power:
+    verb: set
+    target: active_power
+    unit: watts
+    payload: float
+    display_name_default: "Set Active Power"
+    binding:
+      protocol: distribute
+      allocation_policy: equal_split
+      child_template: pcs
+      state_of_charge_source: module
 
 # No install tasks: the customer sets and ties in the battery (ADR-001);
 # ARCNODE's interface steps are on the bess_catl leaf.

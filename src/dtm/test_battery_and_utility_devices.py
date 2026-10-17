@@ -107,3 +107,43 @@ def test_the_dc_battery_is_polled_at_catls_bms_unit_for_its_state_of_charge() ->
             scale=0.1,
         ),
     )
+
+
+def test_the_catl_bank_carries_the_ordered_energy_as_its_capacity() -> None:
+    # Arrange — one bess_catl device is the whole bank, so the reserve floor
+    # needs this bank's energy, not one rack's
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+    resolution = _resolution().model_copy(
+        update={"bess_coupling": BessCoupling.DC_EXTERNAL_PCS, "bess_capacity_mwh": 4.0}
+    )
+
+    # Act
+    dtm = service.generate(
+        profile="commercial_ac", resolution=resolution, manifest=_manifest()
+    )
+
+    # Assert
+    actual = [d.capacity_kwh for d in dtm.devices.values() if d.template == "bess_catl"]
+    assert actual == [4000.0]
+
+
+def test_each_pcs_is_polled_and_bounded_at_its_rating() -> None:
+    # Arrange — CAB1000 1043 kW at 480 V, PF 1 (GRD-PCS-001); SunSpec, so
+    # commissioning gives the address and the gateway finds the models
+    catalog = _real_catalog()
+    service = DtmGeneratorService(_make_client(), template_catalog=catalog)
+    resolution = _resolution(grid_container_count=2).model_copy(
+        update={"bess_coupling": BessCoupling.DC_EXTERNAL_PCS}
+    )
+
+    # Act
+    dtm = service.generate(
+        profile="commercial_ac", resolution=resolution, manifest=_manifest()
+    )
+
+    # Assert
+    pcs = [d for d in dtm.devices.values() if d.template == "pcs"]
+    bounds = (catalog["pcs"].measurements or {})["active_power"].bounds
+    assert [d.connection is not None for d in pcs] == [True, True]
+    assert bounds is not None
+    assert (bounds.min, bounds.max) == (-1_043_000, 1_043_000)

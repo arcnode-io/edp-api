@@ -1,4 +1,4 @@
-"""The battery pad: the customer's battery and, on dc_ext, ARCNODE's PCS."""
+"""The battery pad: the customer's battery and, on dc_ext, the PCS beside it."""
 
 from math import ceil
 from typing import Final
@@ -32,8 +32,8 @@ def emit_battery(
     the module's dispatch range from their summed ratings. CATL (DC) is one
     device for the bank, polled at its BMS's fixed Modbus unit (unverified
     map, see bess_catl.yaml). On dc_ext the pad also holds
-    ARCNODE's PCS, PCS-1…PCS-N, one per grid container (ADR-022), passive
-    until EPC's register map is in hand.
+    the PCS, PCS-1…PCS-N, one per grid container (ADR-022), polled over
+    SunSpec (the gateway discovers the models).
 
     Returns:
         The battery module's device_id.
@@ -54,6 +54,8 @@ def emit_battery(
             template="bess_catl",
             display_name="BESS-1",
             parent=module,
+            # Reason: one device is the whole bank, sized by the order
+            capacity_kwh=resolution.bess_capacity_mwh * 1000,
             connection=Connection(
                 host=PROVISIONED_AT_COMMISSIONING,
                 port=PROVISIONED_AT_COMMISSIONING,
@@ -64,7 +66,14 @@ def emit_battery(
         for n in range(1, resolution.grid_container_count + 1):
             pcs = assign_slug("pcs", slug_counter)
             devices[pcs] = Device(
-                device_id=pcs, template="pcs", display_name=f"PCS-{n}", parent=module
+                device_id=pcs,
+                template="pcs",
+                display_name=f"PCS-{n}",
+                parent=module,
+                connection=Connection(
+                    host=PROVISIONED_AT_COMMISSIONING,
+                    port=PROVISIONED_AT_COMMISSIONING,
+                ),
             )
     return module
 

@@ -5,7 +5,139 @@ vendor: EPC Power
 model: CAB1000 (480 VAC)
 description: EPC Power CAB1000 bidirectional grid-forming PCS, 1043 kW at 480 V, on the battery pad; ties in at 13.8 kV through the customer's step-up (ADR-022)
 
-# Passive until EPC's Modbus TCP map is in hand (EPC docs are sales-gated).
+# SunSpec over Modbus TCP: models 1, 103 (inverter) and EPC's 65534
+# (epc_control). Points come from EPC's public SMDX (github.com/epcpower/pm,
+# src/epcpm/tests/sunspec, firmware ~1.2.x, not labelled CAB1000); the
+# gateway discovers the model chain, so addresses aren't pinned here.
+# UNVERIFIED on CAB1000 firmware: confirm the point names at commissioning.
+# EPC: CmdBits must be written at least once a second in every state.
+
+measurements:
+  active_power:
+    unit: watts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Active Power (+ discharge, - charge)"
+    iec_61850_ref: MMXU.W
+    # 1043 kW rated at 480 V, PF 1 (GRD-PCS-001); + is power into the AC network
+    bounds: { min: -1043000, max: 1043000, nominal: 0 }
+    binding: { protocol: sunspec, model_id: 103, point: W }
+
+  reactive_power:
+    unit: vars
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "Reactive Power"
+    iec_61850_ref: MMXU.TotVAr
+    binding: { protocol: sunspec, model_id: 103, point: VAr }
+
+  grid_frequency:
+    unit: hertz
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "AC Frequency"
+    binding: { protocol: sunspec, model_id: 103, point: Hz }
+
+  ac_voltage_ab:
+    unit: volts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "AC Voltage A-B"
+    # 480 V ±10% (GRD-PCS-001 voltage_range_v)
+    bounds: { min: 0, max: 528, nominal: 480 }
+    binding: { protocol: sunspec, model_id: 103, point: PPVphAB }
+
+  dc_voltage:
+    unit: volts
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "DC Link Voltage"
+    # 720-1500 V DC window (GRD-PCS-001)
+    bounds: { min: 0, max: 1500, nominal: 1100 }
+    binding: { protocol: sunspec, model_id: 103, point: DCV }
+
+  dc_current:
+    unit: amperes
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "DC Current"
+    binding: { protocol: sunspec, model_id: 103, point: DCA }
+
+  cabinet_temp:
+    unit: celsius
+    type: float
+    poll_rate_hz: 0.5
+    display_name_default: "Cabinet Temperature"
+    binding: { protocol: sunspec, model_id: 103, point: TmpCab }
+
+  operating_state:
+    unit: none
+    type: enum
+    poll_rate_hz: 1
+    display_name_default: "Operating State"
+    values: { 1: "OFF", 2: SLEEPING, 3: STARTING, 4: MPPT, 5: THROTTLED, 6: SHUTTING_DOWN, 7: FAULT, 8: STANDBY }
+    binding:
+      protocol: sunspec
+      model_id: 103
+      point: St
+      value_map: { "1": "OFF", "2": SLEEPING, "3": STARTING, "4": MPPT, "5": THROTTLED, "6": SHUTTING_DOWN, "7": FAULT, "8": STANDBY }
+
+  # Read back the run bit the EMS commands (enable_run / disable_run)
+  run_enabled:
+    unit: none
+    type: bool
+    poll_rate_hz: 1
+    display_name_default: "Run Enabled"
+    binding: { protocol: sunspec, model_id: 65534, point: CmdBits, bit: 0 }
+
+  system_fault_code:
+    unit: none
+    type: float
+    poll_rate_hz: 1
+    display_name_default: "System Fault Code (0 = none)"
+    binding: { protocol: sunspec, model_id: 65534, point: SysFlt }
+
+commands:
+  set_active_power:
+    verb: set
+    target: active_power
+    unit: watts
+    payload: float
+    display_name_default: "Set Active Power Setpoint"
+    binding: { protocol: sunspec, model_id: 65534, point: CmdRealPwr }
+
+  set_reactive_power:
+    verb: set
+    target: reactive_power
+    unit: vars
+    payload: float
+    display_name_default: "Set Reactive Power Setpoint"
+    binding: { protocol: sunspec, model_id: 65534, point: CmdReactivePwr }
+
+  # Enable/disable pair on one bit, like der_dispatch's approve/reject
+  enable_run:
+    verb: enable
+    target: run_enabled
+    unit: none
+    payload: bool
+    display_name_default: "Enable (Run)"
+    binding: { protocol: sunspec, model_id: 65534, point: CmdBits, bit: 0 }
+
+  disable_run:
+    verb: disable
+    target: run_enabled
+    unit: none
+    payload: bool
+    display_name_default: "Disable (Stop)"
+    binding: { protocol: sunspec, model_id: 65534, point: CmdBits, bit: 0 }
+
+  clear_faults:
+    verb: clear
+    target: system_fault_code
+    unit: none
+    payload: trigger
+    display_name_default: "Clear Latched Faults"
+    binding: { protocol: sunspec, model_id: 65534, point: CmdBits, bit: 1 }
 
 install_tasks:
   - name: set_on_pad

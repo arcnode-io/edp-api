@@ -3,7 +3,7 @@ kind: leaf
 equipment_id: EXT-BESS-002
 vendor: CATL (Contemporary Amperex Technology Co.)
 model: EnerOne+ 379.4 kWh / 1C
-description: CATL EnerOne+ DC battery, customer-supplied (dc_int with its own PCS, dc_ext to the ARCNODE PCS pair)
+description: CATL EnerOne+ DC battery, customer-supplied (dc_int with its own PCS, dc_ext to the PCS on its pad)
 
 # UNVERIFIED register map: CATL "Battery Energy Storage System ModBus TCP
 # Communication Protocol" V1.3/1.4 (2022), an unofficial copy that names the
@@ -12,9 +12,8 @@ description: CATL EnerOne+ DC battery, customer-supplied (dc_int with its own PC
 # Modbus TCP, unit 0x64, FC 03, big-endian, ≤127 registers per read.
 # One device = the whole bank, so it reads the system (MBMU) block at 0x0000;
 # racks (SBMU n) sit at 0x0400·n. Sign: + discharge, − charge.
-# The EMS must write a heartbeat to 0x0380 every second (gateway), or the BMS
-# raises "EMS heartbeat fault"; a Modbus exception 0x04 means the ETH board
-# lost its BMS link, so the data is stale.
+# The EMS writes the heartbeat below; a Modbus exception 0x04 means the ETH
+# board lost its BMS link, so that read fails and the value goes quiet.
 # The customer sets and ties in the battery (ADR-001); install tasks are
 # ARCNODE's interface steps.
 
@@ -123,6 +122,13 @@ measurements:
     poll_rate_hz: 0.5
     display_name_default: "System Alarm Word 2"
     binding: { protocol: modbus_tcp, function_code: 3, address: 0x0002, data_type: uint16 }
+
+# BMS raises "EMS heartbeat fault" (0x0001 bit 8) without a 0-255 counter
+# at 0x0380 every second
+heartbeat:
+  binding: { protocol: modbus_tcp, function_code: 6, address: 0x0380, data_type: uint16 }
+  counter_modulo: 256
+  period_s: 1.0
 
 install_tasks:
   - name: witness_tie_in
