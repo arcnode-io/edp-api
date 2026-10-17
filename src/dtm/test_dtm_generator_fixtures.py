@@ -84,16 +84,19 @@ GRID_TOPOLOGY: dict = {
             "description": "relay",
             "connection": {"host": "mock-dnp3-server", "port": 20000},
         },
+        {"template": "transformer", "tag": "T1", "description": "xfmr"},
         {"template": "lv_switchboard", "tag": "SWBD-1", "description": "swbd"},
     ],
+    # Feeder bus as edp-module-assemblies writes it; the POI meter goes on
+    # site_mv (site_buses)
     "buses": [
         {
             "bus_id": "ac_main",
             "type": "ac",
             "members": [
                 {"device_template": "switchgear", "port": "line_out"},
-                {"device_template": "poi_meter", "port": "voltage_in"},
                 {"device_template": "protective_relay", "port": "line_in"},
+                {"device_template": "transformer", "port": "hv_in"},
             ],
         }
     ],
@@ -103,16 +106,7 @@ GRID_TOPOLOGY: dict = {
 # Feeder grid container: primary minus the POI meter
 FEEDER_TOPOLOGY: dict = {
     "devices": [d for d in GRID_TOPOLOGY["devices"] if d["template"] != "poi_meter"],
-    "buses": [
-        {
-            "bus_id": "ac_main",
-            "type": "ac",
-            "members": [
-                {"device_template": "switchgear", "port": "line_out"},
-                {"device_template": "protective_relay", "port": "line_in"},
-            ],
-        }
-    ],
+    "buses": GRID_TOPOLOGY["buses"],
 }
 
 

@@ -75,8 +75,8 @@ class _RecordingClient:
 
     def fetch_topology_yaml(self, url: str) -> dict:
         # Grid containers carry their management switch, where the battery's
-        # controller patches in (ADR-019), and the LV switchboard their compute
-        # feeders hang off (ADR-018); otherwise no devices.
+        # controller patches in (ADR-019), and the transformer + LV switchboard
+        # their compute feeders hang off (ADR-018); otherwise no devices.
         if "grid" not in url:
             return {"devices": []}
         switch = {
@@ -84,8 +84,9 @@ class _RecordingClient:
             "tag": "SW-MGMT-1",
             "description": "stub",
         }
+        xfmr = {"template": "transformer", "tag": "T1", "description": "stub"}
         swbd = {"template": "lv_switchboard", "tag": "SWBD-1", "description": "stub"}
-        return {"devices": [switch, swbd]}
+        return {"devices": [switch, xfmr, swbd]}
 
     def fetch_spec(self, _url: str) -> dict:
         return {}

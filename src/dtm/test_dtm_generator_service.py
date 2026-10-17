@@ -137,7 +137,7 @@ def test_generate_expands_bus_members() -> None:
     bus = next(b for b in actual.buses if b.bus_id == "ac_main_1")
     member_ids = {m.device_id for m in bus.members}
     assert "switchgear_1" in member_ids
-    assert "poi_meter_1" in member_ids
+    assert "transformer_1" in member_ids
     assert "protective_relay_1" in member_ids
 
 
@@ -200,8 +200,8 @@ def test_each_grid_container_gets_its_own_bus() -> None:
         if b.bus_id.startswith("ac_main")
     }
     assert actual == {
-        "ac_main_1": ["poi_meter_1", "protective_relay_1", "switchgear_1"],
-        "ac_main_2": ["protective_relay_2", "switchgear_2"],
+        "ac_main_1": ["protective_relay_1", "switchgear_1", "transformer_1"],
+        "ac_main_2": ["protective_relay_2", "switchgear_2", "transformer_2"],
     }
 
 

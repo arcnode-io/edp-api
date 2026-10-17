@@ -154,7 +154,7 @@ def test_e2e_commercial_ac_dtm_validates() -> None:
     bus = next(b for b in dtm.buses if b.bus_id == "ac_main_1")
     member_ids = {m.device_id for m in bus.members}
     assert "switchgear_1" in member_ids
-    assert "poi_meter_1" in member_ids
+    assert "transformer_1" in member_ids
     assert "protective_relay_1" in member_ids
 
 

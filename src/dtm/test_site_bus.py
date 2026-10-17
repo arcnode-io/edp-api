@@ -22,7 +22,8 @@ from src.shared.enums import BessCoupling
 def test_the_battery_and_grid_containers_share_the_site_bus(
     coupling: BessCoupling, battery: str
 ) -> None:
-    # Arrange — the SLD site sheet: battery + each G's MV breaker on 13.8 kV
+    # Arrange — the SLD site sheet: the POI meter at the utility tie, each
+    # G's MV breaker and the battery on 13.8 kV
     service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
     resolution = _resolution(grid_container_count=2).model_copy(
         update={"bess_coupling": coupling}
@@ -43,6 +44,7 @@ def test_the_battery_and_grid_containers_share_the_site_bus(
         (
             "ac",
             [
+                ("poi_meter_1", "voltage_in"),
                 ("switchgear_1", "line_in"),
                 ("switchgear_2", "line_in"),
                 (battery, "ac_out"),
@@ -52,7 +54,8 @@ def test_the_battery_and_grid_containers_share_the_site_bus(
 
 
 def test_each_grid_container_feeds_its_compute_containers_over_lv_main() -> None:
-    # Arrange — ADR-018: 5 compute over 2 grid → G1 feeds C1-C3, G2 C4-C5
+    # Arrange — ADR-018: 5 compute over 2 grid → G1 feeds C1-C3, G2 C4-C5;
+    # each G's transformer secondary feeds its switchboard
     service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
     resolution = _resolution(container_count=5, grid_container_count=2)
 
@@ -71,10 +74,12 @@ def test_each_grid_container_feeds_its_compute_containers_over_lv_main() -> None
     assert actual == {
         "lv_main_1": (
             "ac",
-            [("lv_switchboard_1", "feeder_out")] + [(c, "ac_in") for c in feeds[:3]],
+            [("transformer_1", "lv_out"), ("lv_switchboard_1", "feeder_out")]
+            + [(c, "ac_in") for c in feeds[:3]],
         ),
         "lv_main_2": (
             "ac",
-            [("lv_switchboard_2", "feeder_out")] + [(c, "ac_in") for c in feeds[3:]],
+            [("transformer_2", "lv_out"), ("lv_switchboard_2", "feeder_out")]
+            + [(c, "ac_in") for c in feeds[3:]],
         ),
     }
