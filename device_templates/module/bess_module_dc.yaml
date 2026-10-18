@@ -91,6 +91,10 @@ commands:
       allocation_policy: equal_split
       child_template: pcs
       state_of_charge_source: module
+      # Same envelope-guard control law as the AC module (bess_module)
+      ramp_rate_per_sec: 0.10
+      hysteresis_margin: 0.05
+      hysteresis_dwell_secs: 30.0
 
 # No install tasks: the customer sets and ties in the battery (ADR-001);
 # ARCNODE's interface steps are on the bess_catl leaf.
