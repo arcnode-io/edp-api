@@ -24,6 +24,7 @@ class ModuleResolution(BaseModel):
 
     compute_container_count: int = Field(ge=1)
     grid_container_count: int = Field(ge=1)  # primary + feeders
+    pcs_count: int = Field(ge=0)  # dc_ext PCS on the battery pad, else 0
 
     bess_coupling: BessCoupling
     bess_capacity_mwh: float

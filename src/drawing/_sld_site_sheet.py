@@ -1,7 +1,7 @@
 """SLD sheet 1 — site one-line: utility → 13.8 kV site bus → BESS + grid containers.
 
 Every battery ties in at 13.8 kV through customer gear (ADR-016); on dc_ext
-it's the CATL strings behind the PCS, one per grid container (ADR-022).
+it's the CATL strings behind the PCS, sized to the battery's job (ADR-022).
 
 Fixed size whatever the order: G1 (primary) is drawn, and G2-GM once as
 typical. The POI meter sits on the utility service (ADR-020). Each grid container's compute feeders are drawn
@@ -70,7 +70,7 @@ def _mv_battery(msp: Modelspace, x: float, bom: Bom) -> None:
         )
         k.box(msp, x, 196, 44, 13, [battery, "CUSTOMER-SUPPLIED (ADR-016)"])
         return
-    n = bom.grid_container_qty
+    n = sum(li.qty for li in bom.line_items if li.equipment_id == "GRD-PCS-001")
     k.box(msp, x, 196, 44, 13, [f"GRD-PCS-001 x{n}", "PCS ON PAD (ADR-022)"])
     k.wire(msp, (x, 189.5), (x, 181))
     k.text(msp, x + 4, 185, "DC", h=2.0)
@@ -117,7 +117,7 @@ def _compute_label(computes: list[int]) -> str:
 
 def _notes(msp: Modelspace, dc_ext: bool) -> None:
     battery = (
-        "2. CATL strings feed the PCS (one per grid container); 13.8 kV via customer step-up (ADR-022)."
+        "2. CATL strings feed the PCS (sized to the battery's power); 13.8 kV via customer step-up (ADR-022)."
         if dc_ext
         else "2. AC-output BESS ties in at 13.8 kV through customer gear (ADR-016)."
     )

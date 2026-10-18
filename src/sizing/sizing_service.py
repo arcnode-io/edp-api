@@ -1,10 +1,11 @@
 """SizingService — composes the pure sizing math into a SizingPreview."""
 
 from src.grid.region_validation import check_flex_preset
-from src.shared.enums import FlexLevel, ServiceType
+from src.shared.enums import BessCoupling, FlexLevel, ServiceType
 from src.shared.schemas.configurator_grid import FlexObligation
 from src.shared.schemas.grid_regions import GridRegionsConfig
 from src.shared.schemas.sizing import SizingLimits, SizingPreview, SizingPreviewRequest
+from src.sizing.pcs_sizing import bess_dc_power_mw, bess_power_need_mw
 from src.sizing.sizing_flags import compute_flags
 from src.sizing.sizing_internals import (
     bess_min_mwh,
@@ -52,6 +53,7 @@ class SizingService:
         )
 
         flex = None
+        fx = None
         if effective_service_type(grid) == ServiceType.FLEXIBLE:
             fx = grid.flex_obligation or self._standard_preset()
             flex = flex_preview(
@@ -69,6 +71,7 @@ class SizingService:
             e_reserve_mwh=e_reserve,
             e_min_usable_mwh=flex.e_min_usable_mwh if flex else None,
             ride_through_hours=request.ride_through_hours,
+            bess_power_shortfall=self._bess_power_shortfall(request, g_peak, fx),
         )
 
         region_cfg = (
@@ -96,6 +99,24 @@ class SizingService:
             flex=flex,
             flags=flags,
         )
+
+    def _bess_power_shortfall(
+        self,
+        request: SizingPreviewRequest,
+        g_peak: float,
+        fx: FlexObligation | None,
+    ) -> bool:
+        """Both DC couplings are CATL racks (1C); can they carry the job?"""
+        if request.bess_coupling == BessCoupling.AC_COUPLED:
+            return False
+        need = bess_power_need_mw(
+            grid_peak_mw=g_peak,
+            ride_through_hours=request.ride_through_hours,
+            grid=request.grid,
+            flex=fx,
+            bess_capacity_mwh=request.bess_capacity_mwh,
+        )
+        return bess_dc_power_mw(request.bess_capacity_mwh) < need
 
     def _standard_preset(self) -> FlexObligation:
         """Absent flex_obligation + flexible -> use the `standard` preset (§4.2)."""

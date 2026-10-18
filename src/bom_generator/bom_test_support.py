@@ -13,4 +13,5 @@ ORDER: Final[BomOrder] = BomOrder(
     gpus_delivered=56,
     bess_capacity_mwh=1.0,
     bess_coupling="ac_coupled",
+    pcs_qty=0,
 )

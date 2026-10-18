@@ -20,7 +20,7 @@ from src.drawing.sld_engineering_service import (
 DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000042")
 
 
-def _bom(profile: str, compute_qty: int, grid_qty: int) -> Bom:
+def _bom(profile: str, compute_qty: int, grid_qty: int, pcs_qty: int = 0) -> Bom:
     xfm = BomLineItem(
         section=BomSection.COMPUTE,
         ref_des="C1",
@@ -31,6 +31,22 @@ def _bom(profile: str, compute_qty: int, grid_qty: int) -> Bom:
         procurement_path=ProcurementPath.CATALOG,
         equipment_id="GRD-XFM-001",
     )
+    pcs = (
+        [
+            BomLineItem(
+                section=BomSection.SITE,
+                ref_des="PCS-1",
+                part_number="CAB1000",
+                vendor="EPC Power",
+                description="PCS",
+                qty=pcs_qty,
+                procurement_path=ProcurementPath.CATALOG,
+                equipment_id="GRD-PCS-001",
+            )
+        ]
+        if pcs_qty
+        else []
+    )
     return Bom(
         deployment_id=DEPLOYMENT_ID,
         profile=profile,
@@ -39,14 +55,16 @@ def _bom(profile: str, compute_qty: int, grid_qty: int) -> Bom:
         compute_container_qty=compute_qty,
         grid_container_qty=grid_qty,
         order=ORDER,
-        line_items=[xfm],
+        line_items=[xfm, *pcs],
     )
 
 
-def _sld(profile: str, compute_qty: int, grid_qty: int) -> SldEngineeringOutputs:
+def _sld(
+    profile: str, compute_qty: int, grid_qty: int, pcs_qty: int = 0
+) -> SldEngineeringOutputs:
     dtm = make_dtm(devices={"pdu_1": make_device("pdu_1", template="pdu")})
     return SldEngineeringService().generate(
-        dtm, bom=_bom(profile, compute_qty, grid_qty), profile=profile
+        dtm, bom=_bom(profile, compute_qty, grid_qty, pcs_qty), profile=profile
     )
 
 
@@ -83,12 +101,12 @@ def test_ac_battery_ties_in_at_mv_through_customer_gear() -> None:
     assert "GRD-PCS-001" not in texts
 
 
-def test_dc_ext_battery_ties_in_at_mv_behind_one_pcs_per_grid_container() -> None:
-    # Act
-    texts = _texts(_sld("commercial_dc_ext", compute_qty=12, grid_qty=2))
+def test_dc_ext_battery_ties_in_at_mv_behind_the_bom_pcs_count() -> None:
+    # Act — PCS sized to the battery's job, not the 2 grid containers
+    texts = _texts(_sld("commercial_dc_ext", compute_qty=12, grid_qty=2, pcs_qty=3))
 
-    # Assert — CATL → PCS x2 → customer step-up → 13.8 kV (ADR-022)
-    assert "GRD-PCS-001 x2" in texts
+    # Assert — CATL → PCS x3 → customer step-up → 13.8 kV (ADR-022)
+    assert "GRD-PCS-001 x3" in texts
     assert "T-BESS STEP-UP TO 13.8 kV" in texts
     assert "CATL ENERONE+ (DC)" in texts
     assert "GRID CONTAINER G2" in texts  # one feeder, not "G2-G2 (TYPICAL OF 1)"

@@ -32,7 +32,7 @@ def emit_battery(
     the module's dispatch range from their summed ratings. CATL (DC) is one
     device for the bank, polled at its BMS's fixed Modbus unit (unverified
     map, see bess_catl.yaml). On dc_ext the pad also holds
-    the PCS, PCS-1…PCS-N, one per grid container (ADR-022), polled over
+    the PCS, PCS-1…PCS-N, sized to the battery's job (ADR-022), polled over
     SunSpec (the gateway discovers the models).
 
     Returns:
@@ -63,7 +63,7 @@ def emit_battery(
             ),
         )
     if resolution.bess_coupling == BessCoupling.DC_EXTERNAL_PCS:
-        for n in range(1, resolution.grid_container_count + 1):
+        for n in range(1, resolution.pcs_count + 1):
             pcs = assign_slug("pcs", slug_counter)
             devices[pcs] = Device(
                 device_id=pcs,

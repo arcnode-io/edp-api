@@ -107,12 +107,12 @@ class BomGeneratorService:
             )
         lines += site_lines(order, compute_container_qty)
         if order.bess_coupling == "dc_external_pcs":
-            # ADR-022: a PCS on the battery pad, one per grid container
-            pcs_tags = [f"PCS-{n}" for n in range(1, grid_container_qty + 1)]
+            # ADR-022: PCS on the battery pad, sized to the battery's job
+            pcs_tags = [f"PCS-{n}" for n in range(1, order.pcs_qty + 1)]
             pcs_spec = self._client.fetch_spec(manifest.specs["GRD-PCS-001"])
             lines.append(
                 spec_to_catalog_line(
-                    pcs_spec, grid_container_qty, BomSection.SITE, compress(pcs_tags)
+                    pcs_spec, order.pcs_qty, BomSection.SITE, compress(pcs_tags)
                 )
             )
         lines += field_lines or []

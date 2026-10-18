@@ -187,3 +187,30 @@ def test_carries_the_site_compute_shed_choice() -> None:
     actual = service.resolve(payload)
     # Assert
     assert actual.compute_shed_enabled is True
+
+
+def test_dc_ext_pcs_count_follows_the_battery_not_the_grid_containers() -> None:
+    """90 H100 containers off grid: 6.174 MW → 6 PCS, though 8 grid containers."""
+    # Arrange
+    service = ModuleResolverService()
+    payload = _payload(
+        coupling=BessCoupling.DC_EXTERNAL_PCS, capacity_mwh=10, gpu_count=90 * 56
+    )
+
+    # Act
+    actual = service.resolve(payload)
+
+    # Assert
+    assert (actual.grid_container_count, actual.pcs_count) == (8, 6)
+
+
+def test_no_pcs_unless_dc_ext() -> None:
+    # Arrange
+    service = ModuleResolverService()
+    payload = _payload(coupling=BessCoupling.AC_COUPLED)
+
+    # Act
+    actual = service.resolve(payload)
+
+    # Assert
+    assert actual.pcs_count == 0

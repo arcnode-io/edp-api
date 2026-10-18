@@ -262,6 +262,7 @@ def test_dtm_generator_against_localstack(
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=2,
         grid_container_count=1,
+        pcs_count=0,
         bess_coupling=BessCoupling.AC_COUPLED,
         bess_capacity_mwh=5.0,
         sourcing_tier=SourcingTier.COMMERCIAL,

@@ -9,13 +9,20 @@ from src.module_resolver.deployment_profile import (
     TIER_FROM_CONTEXT,
 )
 from src.shared.enums import (
+    BessCoupling,
     DeploymentProfile,
     EmsTarget,
     SourcingTier,
 )
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 from src.shared.schemas.module_resolution import ModuleResolution
-from src.sizing.sizing_internals import grid_container_count, site_peak_mw
+from src.sizing.pcs_sizing import bess_power_need_mw, pcs_count
+from src.sizing.sizing_internals import (
+    firm_onsite_mw,
+    grid_container_count,
+    grid_peak_mw,
+    site_peak_mw,
+)
 
 
 class ModuleResolverService:
@@ -29,6 +36,7 @@ class ModuleResolverService:
             deployment_profile=self._profile(payload),
             compute_container_count=count,
             grid_container_count=self._grid_container_count(payload),
+            pcs_count=self._pcs_count(payload),
             bess_coupling=payload.bess_coupling,
             bess_capacity_mwh=payload.bess_capacity_mwh,
             sourcing_tier=self._sourcing_tier(payload),
@@ -53,6 +61,21 @@ class ModuleResolverService:
     def _grid_container_count(self, payload: ConfiguratorPayload) -> int:
         peak = site_peak_mw(payload.gpu_variant, payload.target_gpu_count)
         return grid_container_count(peak)
+
+    def _pcs_count(self, payload: ConfiguratorPayload) -> int:
+        if payload.bess_coupling != BessCoupling.DC_EXTERNAL_PCS:
+            return 0
+        peak = site_peak_mw(payload.gpu_variant, payload.target_gpu_count)
+        firm = firm_onsite_mw(payload.onsite_generation)
+        need = bess_power_need_mw(
+            grid_peak_mw=grid_peak_mw(site_peak=peak, firm_onsite=firm),
+            ride_through_hours=payload.ride_through_hours,
+            grid=payload.grid,
+            # Reason: Grid guarantees flex_obligation is set iff flexible
+            flex=payload.grid.flex_obligation,
+            bess_capacity_mwh=payload.bess_capacity_mwh,
+        )
+        return pcs_count(need)
 
     def _sourcing_tier(self, payload: ConfiguratorPayload) -> SourcingTier:
         return TIER_FROM_CONTEXT[payload.deployment_context]

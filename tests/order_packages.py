@@ -93,6 +93,7 @@ def package_for(
             gpus_delivered=resolution.gpu_count,
             bess_capacity_mwh=payload.bess_capacity_mwh,
             bess_coupling=payload.bess_coupling.value,
+            pcs_qty=resolution.pcs_count,
         ),
         compute_container_qty=resolution.compute_container_count,
         grid_container_qty=resolution.grid_container_count,

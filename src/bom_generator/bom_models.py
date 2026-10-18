@@ -51,6 +51,7 @@ class BomOrder(BaseModel):
     gpus_delivered: int  # whole compute containers of 56 GPUs
     bess_capacity_mwh: float
     bess_coupling: str
+    pcs_qty: int  # dc_ext PCS sized to the battery's job, else 0
 
 
 class BomLineItem(BaseModel):

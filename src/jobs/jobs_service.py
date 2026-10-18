@@ -49,6 +49,7 @@ def _sizing_request(payload: ConfiguratorPayload) -> SizingPreviewRequest:
             service_type=grid.service_type,
             flex_obligation=grid.flex_obligation,
             export_mode=grid.export_mode,
+            export_limit_mw=grid.export_limit_mw,
             intentional_islanding=grid.intentional_islanding,
         ),
     )

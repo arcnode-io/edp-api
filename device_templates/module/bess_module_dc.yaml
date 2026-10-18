@@ -10,7 +10,7 @@ description: DC battery (CATL) module with the PCS on its pad — bank SoC and P
 contains:
   - template: bess_catl
     qty: scalable
-  # The PCS sits on the battery pad, one per grid container (ADR-022)
+  # The PCS sits on the battery pad, sized to the battery's job (ADR-022)
   - template: pcs
     qty: scalable
 

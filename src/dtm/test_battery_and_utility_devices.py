@@ -132,8 +132,9 @@ def test_each_pcs_is_polled_and_bounded_at_its_rating() -> None:
     # commissioning gives the address and the gateway finds the models
     catalog = _real_catalog()
     service = DtmGeneratorService(_make_client(), template_catalog=catalog)
+    # sized to the battery's job, not the 2 grid containers
     resolution = _resolution(grid_container_count=2).model_copy(
-        update={"bess_coupling": BessCoupling.DC_EXTERNAL_PCS}
+        update={"bess_coupling": BessCoupling.DC_EXTERNAL_PCS, "pcs_count": 3}
     )
 
     # Act
@@ -144,6 +145,6 @@ def test_each_pcs_is_polled_and_bounded_at_its_rating() -> None:
     # Assert
     pcs = [d for d in dtm.devices.values() if d.template == "pcs"]
     bounds = (catalog["pcs"].measurements or {})["active_power"].bounds
-    assert [d.connection is not None for d in pcs] == [True, True]
+    assert [d.connection is not None for d in pcs] == [True, True, True]
     assert bounds is not None
     assert (bounds.min, bounds.max) == (-1_043_000, 1_043_000)

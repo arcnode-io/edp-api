@@ -181,3 +181,30 @@ def test_bess_min_mwh_includes_reserve_and_flex() -> None:
     )
     assert preview.flex is not None
     assert preview.bess_min_mwh == preview.e_reserve_mwh + preview.flex.e_flex_mwh
+
+
+@pytest.mark.parametrize(
+    ("coupling", "mwh", "expected"),
+    [
+        (BessCoupling.DC_EXTERNAL_PCS, 1.0, True),  # 3 racks = 1.14 MW < 2.32 MW
+        (BessCoupling.DC_INTEGRATED_PCS, 1.0, True),  # same CATL racks
+        (BessCoupling.DC_EXTERNAL_PCS, 10.0, False),  # 27 racks = 10.2 MW
+        (BessCoupling.AC_COUPLED, 1.0, False),  # Megapack, not CATL racks
+    ],
+)
+def test_bess_power_shortfall_when_catl_racks_cant_carry_the_job(
+    coupling: BessCoupling, mwh: float, expected: bool
+) -> None:
+    # Arrange — 27 B200 containers riding through: battery carries 2.322 MW
+    request = _request(
+        target_gpu_count=27 * 56,
+        bess_coupling=coupling,
+        bess_capacity_mwh=mwh,
+        ride_through_hours=2,
+    )
+
+    # Act
+    actual = SizingService(regions=_REGIONS).preview(request)
+
+    # Assert
+    assert (SizingFlagCode.BESS_POWER_SHORTFALL in _codes(actual)) is expected

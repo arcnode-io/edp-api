@@ -45,6 +45,7 @@ class SizingFlagCode(StrEnum):
     NEAR_DISTRIBUTION_LIMIT = "NEAR_DISTRIBUTION_LIMIT"
     FLEX_BESS_SHORTFALL = "FLEX_BESS_SHORTFALL"
     RESERVE_SHORTFALL = "RESERVE_SHORTFALL"
+    BESS_POWER_SHORTFALL = "BESS_POWER_SHORTFALL"
     RECHARGE_HEADROOM = "RECHARGE_HEADROOM"
     EXPORT_REVIEW = "EXPORT_REVIEW"
     EXPORT_PCS_RATING_UNVERIFIED = "EXPORT_PCS_RATING_UNVERIFIED"
@@ -73,6 +74,7 @@ class SizingGridInput(BaseModel):
     service_type: ServiceType | None = None
     flex_obligation: FlexObligation | None = None
     export_mode: ExportMode | None = None
+    export_limit_mw: float | None = None  # sizes the dc_ext PCS on limited export
     intentional_islanding: bool = False
 
 

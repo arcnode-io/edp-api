@@ -175,6 +175,7 @@ def _resolution(
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=container_count,
         grid_container_count=grid_container_count,
+        pcs_count=0,
         bess_coupling=BessCoupling.AC_COUPLED,
         bess_capacity_mwh=5.0,
         sourcing_tier=SourcingTier.COMMERCIAL,

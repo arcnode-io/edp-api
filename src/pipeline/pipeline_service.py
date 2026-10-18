@@ -271,6 +271,7 @@ def _bom_order(payload: ConfiguratorPayload, resolution: ModuleResolution) -> Bo
         gpus_delivered=resolution.gpu_count,
         bess_capacity_mwh=payload.bess_capacity_mwh,
         bess_coupling=payload.bess_coupling.value,
+        pcs_qty=resolution.pcs_count,
     )
 
 

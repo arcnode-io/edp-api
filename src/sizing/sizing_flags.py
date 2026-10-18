@@ -25,6 +25,7 @@ def compute_flags(
     e_reserve_mwh: float,
     e_min_usable_mwh: float | None,
     ride_through_hours: float,
+    bess_power_shortfall: bool,
 ) -> list[SizingFlag]:
     """§5.5. path/export_mode=None means "not yet chosen" — not-applicable,
     not a specific value, so the corresponding rows don't fire."""
@@ -64,6 +65,12 @@ def compute_flags(
             SizingFlagCode.RESERVE_SHORTFALL,
             warn,
             "BESS capacity is below the ride-through reserve you requested.",
+        ),
+        (
+            bess_power_shortfall,
+            SizingFlagCode.BESS_POWER_SHORTFALL,
+            warn,
+            "The battery's racks can't deliver the power its job needs.",
         ),
         (
             grid.export_mode is not None and grid.export_mode != ExportMode.NON_EXPORT,
