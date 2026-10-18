@@ -137,3 +137,25 @@ def test_generated_bom_prices_lines_from_the_manifest_price_list() -> None:
         1_800,
         1_800,
     )
+
+
+def test_price_book_carries_installer_material_by_cable_type() -> None:
+    # Arrange — pricing.yaml's field section, keyed by cable/hose type
+    raw = {
+        "field": {
+            "Cat6 STP": [
+                {
+                    "unit_usd": 15,
+                    "source": "estimate",
+                    "basis": "5 m run",
+                    "as_of": _DAY,
+                }
+            ]
+        }
+    }
+
+    # Act
+    actual = PriceBook.model_validate(raw).field["Cat6 STP"][0].unit_usd
+
+    # Assert
+    assert actual == 15
