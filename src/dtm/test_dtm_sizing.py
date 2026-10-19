@@ -18,12 +18,12 @@ from src.shared.enums import (
     WiresOwnerType,
 )
 from src.shared.schemas.configurator_grid import FlexObligation, Grid, WiresOwner
+from src.sizing.compute_nodes import site_peak_mw
 from src.sizing.sizing_internals import (
     flex_energy_mwh,
     grid_peak_mw,
     recharge_mw,
     reserve_mwh,
-    site_peak_mw,
 )
 
 

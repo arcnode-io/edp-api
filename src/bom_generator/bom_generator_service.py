@@ -13,7 +13,11 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from src.shared.enums import GpuVariant
-from src.bom_generator.bom_container_lines import ContainerGroup, section_lines
+from src.bom_generator.bom_container_groups import (
+    container_groups,
+    with_partial_panel_note,
+)
+from src.bom_generator.bom_container_lines import section_lines
 from src.bom_generator.bom_models import (
     Bom,
     BomLineItem,
@@ -29,7 +33,7 @@ from src.bom_generator.spec_lines import (
     shell_to_custom_line,
     spec_to_catalog_line,
 )
-from src.bom_generator.manifest_models import Manifest, ProfileAssemblies
+from src.module_resolver.deployment_profile import GPUS_PER_NODE
 from src.bom_generator.pricing_models import PriceBook
 
 logger = logging.getLogger(__name__)
@@ -74,8 +78,13 @@ class BomGeneratorService:
                 f"profile {profile!r} not in manifest (available: {sorted(manifest.profiles)})"
             )
         prof = manifest.profiles[profile]
-        groups = self._container_groups(
-            manifest, prof, gpu_variant, compute_container_qty, grid_container_qty
+        nodes = order.gpus_delivered // GPUS_PER_NODE
+        groups = container_groups(
+            self._client,
+            manifest,
+            prof,
+            gpu_variant,
+            (nodes, compute_container_qty, grid_container_qty),
         )
 
         def part_line(
@@ -105,6 +114,7 @@ class BomGeneratorService:
                 part_line=part_line,
                 plate_line=plate_line,
             )
+        lines = with_partial_panel_note(lines, nodes, compute_container_qty)
         lines += site_lines(order, compute_container_qty)
         if order.bess_coupling == "dc_external_pcs":
             # ADR-022: PCS on the battery pad, sized to the battery's job
@@ -136,55 +146,6 @@ class BomGeneratorService:
             line_items=_numbered(lines),
             budget=order_budget(lines),
         )
-
-    def _container_groups(
-        self,
-        manifest: Manifest,
-        prof: ProfileAssemblies,
-        gpu_variant: GpuVariant,
-        compute_qty: int,
-        grid_qty: int,
-    ) -> list[ContainerGroup]:
-        """Compute C1-CN; grid G1 (primary, POI meter) + G2-GM feeders."""
-        wanted = [
-            (
-                BomSection.COMPUTE,
-                "C",
-                1,
-                compute_qty,
-                "compute_container",
-                prof.compute_variant(gpu_variant),
-            ),
-        ]
-        if prof.grid_container is not None:
-            wanted.append(
-                (BomSection.GRID, "G", 1, 1, "grid_container", prof.grid_container)
-            )
-            if grid_qty > 1:
-                if prof.grid_feeder_container is None:
-                    raise ValueError(
-                        f"{grid_qty} grid containers but no feeder variant"
-                    )
-                wanted.append(
-                    (
-                        BomSection.GRID,
-                        "G",
-                        2,
-                        grid_qty,
-                        "grid_container",
-                        prof.grid_feeder_container,
-                    )
-                )
-        return [
-            ContainerGroup(
-                section,
-                prefix,
-                first,
-                last,
-                self._client.fetch_bom_yaml(manifest.assemblies[kind][name].bom),
-            )
-            for section, prefix, first, last, kind, name in wanted
-        ]
 
 
 def _numbered(lines: list[BomLineItem]) -> list[BomLineItem]:

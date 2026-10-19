@@ -6,10 +6,8 @@ dtm_generator_internals.py).
 from math import ceil
 from typing import Final
 
-from src.module_resolver.deployment_profile import GPUS_PER_COMPUTE_CONTAINER
 from src.shared.enums import (
     DeploymentContext,
-    GpuVariant,
     GridPath,
     InterconnectionLevel,
     MarketRegion,
@@ -20,38 +18,8 @@ from src.shared.schemas.configurator_grid import FlexObligation, OnsiteGeneratio
 from src.shared.schemas.grid_regions import RegionDefaults
 from src.shared.schemas.sizing import FlexPreview, LimitState, SizingGridInput
 
-# source: edp-module-assemblies/equipment/CMP-NODE-001/spec.yaml
-# confidence_flags note on spec.electrical.power_kw. B200 first-principles:
-# 8x1000W GPU + 2x350W CPU + 32x9W RAM + 8x12W NVMe + 8x35W NIC + 2x75W DPU +
-# ~5% VRM (450W) + 150W fans/BMC/misc = 10,114W internal / 0.96 PSU efficiency
-# = 10.5 kW/node. Container = 7 nodes x 10.5 + ~7kW switch/CDU/PDU overhead
-# = 80 kW (CONTRACT §5.1, fixed).
-#
-# H100_SXM derived the same way, swapping only GPU TDP (700W vs 1000W):
-# 8x700W GPU + same 700+288+96+280+150=1514W non-GPU + ~5% VRM (356W of the
-# 7114W pre-VRM subtotal) + 150W fans/BMC = 7,620W internal / 0.96 = 7.94
-# kW/node. Container = 7 x 7.94 + ~7kW overhead = 62.6 kW.
-# [OPEN: PM/PO to confirm — derived by TDP substitution, not a real H100_SXM
-# node datasheet; no such spec exists in edp-module-assemblies yet.]
-CONTAINER_KW: Final[dict[GpuVariant, float]] = {
-    GpuVariant.B200: 80.0,
-    GpuVariant.H100_SXM: 62.6,
-}
-
-# EXT-DC-001/-002 dry cooler fans, one cooler per compute container, fed from
-# its panelboard. Allowance (2 EC fans, conservative) until a Güntner GPC
-# selection gives the real input power — flagged in the equipment spec.
-DRY_COOLER_FAN_KW: Final[float] = 6.0
-
 ETA_D: Final[float] = 0.95  # [OPEN] per BESS OEM
 ETA_C: Final[float] = 0.95  # [OPEN] per BESS OEM
-
-
-def site_peak_mw(gpu_variant: GpuVariant, target_gpu_count: int) -> float:
-    """5.1: compute_containers * (container_kw + dry cooler fans) / 1000."""
-    containers = ceil(target_gpu_count / GPUS_PER_COMPUTE_CONTAINER)
-    return containers * (CONTAINER_KW[gpu_variant] + DRY_COOLER_FAN_KW) / 1000
-
 
 # GRD-XFM-001 Trihal rating. Each grid container carries one transformer.
 # Reason: kW ~ kVA here; the HGX PSUs run near unity power factor.

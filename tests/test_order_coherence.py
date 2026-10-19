@@ -8,6 +8,7 @@ and every part the customer buys has a budget price.
 """
 
 from collections import Counter
+from math import ceil
 
 import pytest
 
@@ -48,6 +49,13 @@ def test_the_order_reaches_the_hardware(package: tuple) -> None:
     assert nodes == {NODE_FOR_GPU[payload.gpu_variant.value]}
     assert f"{payload.bess_capacity_mwh:g} MWh" in bess[0].description
     assert bom.order.gpus_requested == payload.target_gpu_count
+    # Whole servers of 8 GPUs; only the last container can be partial
+    servers = sum(li.qty for li in bom.line_items if li.equipment_id in nodes)
+    assert (
+        bom.order.gpus_delivered
+        == servers * 8
+        == ceil(payload.target_gpu_count / 8) * 8
+    )
 
 
 def test_bom_and_device_data_list_the_same_devices(package: tuple) -> None:

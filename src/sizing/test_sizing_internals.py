@@ -8,6 +8,7 @@ import pytest
 
 from src.shared.enums import FlexLevel, GpuVariant, OnsiteGenerationType
 from src.shared.schemas.configurator_grid import FlexObligation, OnsiteGeneration
+from src.sizing.compute_nodes import site_peak_mw
 from src.sizing.sizing_internals import (
     ETA_D,
     firm_onsite_mw,
@@ -17,7 +18,6 @@ from src.sizing.sizing_internals import (
     grid_peak_mw,
     recharge_mw,
     reserve_mwh,
-    site_peak_mw,
 )
 
 
@@ -131,9 +131,15 @@ def test_site_peak_mw_b200_one_container() -> None:
     assert site_peak_mw(GpuVariant.B200, 56) == pytest.approx(0.086)
 
 
-def test_site_peak_mw_rounds_up_to_full_container() -> None:
-    # 57 GPUs -> 2 containers
-    assert site_peak_mw(GpuVariant.B200, 57) == pytest.approx(0.172)
+def test_site_peak_mw_counts_servers_in_a_partial_container() -> None:
+    # 57 GPUs -> 8 servers: C1 full (86 kW) + C2 with 1 server
+    # (10.5 + 6.5 overhead + 6 cooler = 23 kW)
+    assert site_peak_mw(GpuVariant.B200, 57) == pytest.approx(0.109)
+
+
+def test_site_peak_mw_one_h100_server() -> None:
+    # 7.94 + (62.6 - 7 x 7.94) overhead + 6 cooler = 20.96 kW
+    assert site_peak_mw(GpuVariant.H100_SXM, 8) == pytest.approx(0.02096)
 
 
 def test_grid_container_count_loads_each_trihal_to_80_pct() -> None:

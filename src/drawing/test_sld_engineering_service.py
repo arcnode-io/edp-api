@@ -136,3 +136,20 @@ def test_poi_meter_sits_at_the_utility_service() -> None:
     # Assert — ADR-020: one meter at the POI, none inside the grid containers
     assert texts.count("POI METER") == 1
     assert "POI METER GRD-MTR-001 AT UTILITY SERVICE (ADR-020)" in texts
+
+
+def test_a_partial_last_container_is_called_out() -> None:
+    # Arrange — 64 GPUs = 8 servers: C1 full, C2 holds 1 on one PDU per side
+    bom = _bom("commercial_ac", compute_qty=2, grid_qty=1)
+    bom = bom.model_copy(
+        update={"order": bom.order.model_copy(update={"gpus_delivered": 64})}
+    )
+    dtm = make_dtm(devices={"pdu_1": make_device("pdu_1", template="pdu")})
+
+    # Act
+    texts = _texts(
+        SldEngineeringService().generate(dtm, bom=bom, profile="commercial_ac")
+    )
+
+    # Assert
+    assert "C2 HOLDS 1 SERVER ON PDU A1/B1; ITS OTHER PDU SPACES STAY EMPTY" in texts

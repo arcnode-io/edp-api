@@ -23,7 +23,7 @@ _ORDER = BomOrder(
     deployment_context="commercial",
     gpu_variant="h100_sxm",
     gpus_requested=8,
-    gpus_delivered=56,
+    gpus_delivered=8,
     bess_capacity_mwh=1.0,
     bess_coupling="ac_coupled",
     pcs_qty=0,
@@ -100,7 +100,7 @@ def test_header_states_the_order_as_placed_and_as_delivered() -> None:
     header = " | ".join(str(c) for r in bom[:12] for c in r if c is not None)
     assert "acme" in header
     assert "brookside dc-1" in header
-    assert "8 x H100 SXM requested → 1 compute container, 56 GPUs" in header
+    assert "8 x H100 SXM requested → 1 server (8 GPUs) in 1 compute container" in header
     assert "1 MWh" in header
 
 

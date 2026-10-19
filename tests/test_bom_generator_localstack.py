@@ -261,6 +261,7 @@ def test_dtm_generator_against_localstack(
         deployment_id=uuid4(),
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=2,
+        gpu_node_count=14,
         grid_container_count=1,
         pcs_count=0,
         bess_coupling=BessCoupling.AC_COUPLED,

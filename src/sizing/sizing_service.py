@@ -7,6 +7,7 @@ from src.shared.schemas.grid_regions import GridRegionsConfig
 from src.shared.schemas.sizing import SizingLimits, SizingPreview, SizingPreviewRequest
 from src.sizing.pcs_sizing import bess_dc_power_mw, bess_power_need_mw
 from src.sizing.sizing_flags import compute_flags
+from src.sizing.compute_nodes import site_peak_mw
 from src.sizing.sizing_internals import (
     bess_min_mwh,
     effective_service_type,
@@ -17,7 +18,6 @@ from src.sizing.sizing_internals import (
     limit_state,
     recommend,
     reserve_mwh,
-    site_peak_mw,
 )
 
 

@@ -9,10 +9,17 @@ vertical conductor through (x, y):
 - meter: CT ring on the conductor + "M" bubble off to the side
 """
 
+from math import ceil
+
 from ezdxf.enums import TextEntityAlignment
 from ezdxf.layouts import Modelspace
 
 from src.bom_generator.bom_models import Bom
+from src.module_resolver.deployment_profile import (
+    GPUS_PER_NODE,
+    NODES_PER_COMPUTE_CONTAINER,
+)
+from src.sizing.compute_nodes import NODES_PER_PDU, nodes_in_container
 
 LAYER_GEAR: str = "GEAR"
 LAYER_WIRE: str = "WIRE"
@@ -146,3 +153,18 @@ def _rect(msp: Modelspace, x0: float, y0: float, x1: float, y1: float) -> None:
         close=True,
         dxfattribs={"layer": LAYER_GEAR},
     )
+
+
+def partial_container_note(bom: Bom) -> str | None:
+    """The last compute container's servers and PDUs, when it isn't full.
+
+    The typical sheet draws a full container; this says how the last differs.
+    """
+    n = bom.compute_container_qty
+    last = nodes_in_container(bom.order.gpus_delivered // GPUS_PER_NODE, n)
+    if last == NODES_PER_COMPUTE_CONTAINER:
+        return None
+    p = ceil(last / NODES_PER_PDU)
+    pdus = "A1/B1" if p == 1 else f"A1-A{p}/B1-B{p}"
+    servers = f"{last} SERVER{'S' if last != 1 else ''}"
+    return f"C{n} HOLDS {servers} ON PDU {pdus}; ITS OTHER PDU SPACES STAY EMPTY"

@@ -134,8 +134,8 @@ def test_resolves_full_profile_matrix(
     assert actual.deployment_profile == expected
 
 
-def test_rounds_up_to_full_compute_container() -> None:
-    """target_gpu_count=100 -> 2 containers of 56 (gpu_count=112)."""
+def test_rounds_up_to_whole_servers_not_whole_containers() -> None:
+    """100 GPUs -> 13 servers of 8 (104 GPUs) in 2 containers: 7 + 6."""
     # Arrange
     service = ModuleResolverService()
     payload = _payload(gpu_count=100)
@@ -144,8 +144,23 @@ def test_rounds_up_to_full_compute_container() -> None:
     actual = service.resolve(payload)
 
     # Assert
-    assert actual.compute_container_count == 2
-    assert actual.gpu_count == 112
+    assert (
+        actual.gpu_node_count,
+        actual.gpu_count,
+        actual.compute_container_count,
+    ) == (13, 104, 2)
+
+
+def test_one_server_order_is_one_partial_container() -> None:
+    # Arrange
+    service = ModuleResolverService()
+    payload = _payload(gpu_count=8)
+
+    # Act
+    actual = service.resolve(payload)
+
+    # Assert
+    assert (actual.gpu_node_count, actual.compute_container_count) == (1, 1)
 
 
 def test_grid_container_count_follows_compute_load() -> None:

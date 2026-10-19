@@ -15,22 +15,10 @@ from src.shared.schemas.dtm import (
     BusMember,
     Connection,
     Device,
-    SizingParams,
 )
-from src.shared.schemas.module_resolution import ModuleResolution
 from src.shared.schemas.template import DeviceTemplate
-from src.sizing.sizing_internals import (
-    firm_onsite_mw,
-    flex_energy_mwh,
-    grid_peak_mw,
-    recharge_mw,
-    reserve_mwh,
-    site_peak_mw,
-)
 
 logger = logging.getLogger(__name__)
-
-_T_COOLANT_SETPOINT_C: Final[float] = 30.0
 
 _MODULE_TEMPLATE_BY_ASSEMBLY_TYPE: Final[dict[str, str]] = {
     "compute_container": "compute_module",
@@ -49,11 +37,13 @@ def emit_container(
     slug_counter: dict[str, int],
     by_template: dict[str, list[str]],
     container_tag: str,
+    drop_tags: frozenset[str] = frozenset(),
 ) -> None:
     """Emit a module Device + its leaf children into devices/buses/counters.
 
     container_tag (C1, G2, ...) is the module's display name and prefixes
     each child's topology tag, so every device has one site-unique tag.
+    drop_tags are topology tags left out (a partial compute container).
     """
     topology = fetch_topology(client, manifest, asm_type, variant)
     module_template = (
@@ -77,6 +67,8 @@ def emit_container(
     # device emitted so far (a site can hold several grid containers).
     local_by_template: dict[str, list[str]] = {}
     for spec in topology.devices:
+        if spec.tag in drop_tags:
+            continue
         slug = assign_slug(spec.template, slug_counter)
         conn = spec.connection
         devices[slug] = Device(
@@ -175,40 +167,3 @@ def _load_alarms_for_template(
         )
         return []
     return load_alarms_from_spec(client.fetch_spec(spec_url))
-
-
-def sizing(resolution: ModuleResolution) -> SizingParams:
-    """Compute SizingParams from resolution.
-
-    Reason: compute load and bess_reserve_floor_mwh both come from the same
-    pure sizing_internals math the configurator's sizing-preview endpoint uses
-    (site_peak = whole containers x CONTAINER_KW) — one per-container figure,
-    so the load the reserve is sized against is the load the DTM declares, and
-    both match what the operator already saw in preview.
-    """
-    peak = site_peak_mw(resolution.gpu_variant, resolution.gpu_count)
-    firm = firm_onsite_mw(resolution.onsite_generation)
-    g_peak = grid_peak_mw(site_peak=peak, firm_onsite=firm)
-    e_reserve = reserve_mwh(
-        ride_through_hours=resolution.ride_through_hours, grid_peak_mw=g_peak
-    )
-    # Reason: Grid guarantees flex_obligation is set iff the path is flexible.
-    flex = resolution.grid.flex_obligation
-    e_flex = (
-        0.0
-        if flex is None
-        else flex_energy_mwh(grid_peak_mw=g_peak, flex_obligation=flex)
-    )
-    p_recharge = (
-        0.0 if flex is None else recharge_mw(e_flex_mwh=e_flex, flex_obligation=flex)
-    )
-    return SizingParams(
-        P_compute_total_kW=peak * 1000,
-        E_BESS_total_kWh=resolution.bess_capacity_mwh * 1000,
-        T_coolant_setpoint_C=_T_COOLANT_SETPOINT_C,
-        ride_through_hours=resolution.ride_through_hours,
-        bess_reserve_floor_mwh=e_reserve,
-        compute_shed_enabled=resolution.compute_shed_enabled,
-        bess_readiness_mwh=e_reserve + e_flex,
-        bess_recharge_mw=p_recharge,
-    )

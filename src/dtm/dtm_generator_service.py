@@ -6,8 +6,9 @@ from src.dtm.battery_pad import emit_battery
 from src.dtm.dtm_generator_internals import (
     collect_templates_used,
     emit_container,
-    sizing,
 )
+from src.dtm.dtm_sizing import sizing
+from src.sizing.compute_nodes import dropped_tags, nodes_in_container
 from src.dtm.site_buses import lv_main_buses, site_bus
 from src.dtm.utility_devices import emit_utility_devices
 from src.shared.schemas.dtm import (
@@ -66,6 +67,9 @@ class DtmGeneratorService:
         for n in range(1, resolution.compute_container_count + 1):
             emit_container(
                 container_tag=f"C{n}",
+                drop_tags=dropped_tags(
+                    nodes_in_container(resolution.gpu_node_count, n)
+                ),
                 client=self._client,
                 manifest=manifest,
                 asm_type="compute_container",

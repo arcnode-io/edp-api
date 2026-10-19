@@ -19,7 +19,7 @@ from src.bom_generator.bom_cells import COLUMNS, row
 from src.bom_generator.bom_models import Bom, BomBudget, BomSection
 from src.bom_generator.bom_pricing import PURCHASED, order_budget
 from src.bom_generator.bom_rollup_xlsx import rollup_sheet
-from src.module_resolver.deployment_profile import GPUS_PER_COMPUTE_CONTAINER
+from src.module_resolver.deployment_profile import GPUS_PER_NODE
 
 _GPU: Final[dict[str, str]] = {"h100_sxm": "H100 SXM", "b200": "B200"}
 _COUPLING: Final[dict[str, str]] = {
@@ -95,6 +95,7 @@ def _order_block(bom: Bom) -> list[tuple[str, str]]:
     o = bom.order
     n, m = bom.compute_container_qty, bom.grid_container_qty
     gpu = _GPU.get(o.gpu_variant, o.gpu_variant)
+    servers = o.gpus_delivered // GPUS_PER_NODE
     return [
         ("Customer", o.customer),
         ("Site", o.site),
@@ -102,9 +103,9 @@ def _order_block(bom: Bom) -> list[tuple[str, str]]:
         ("Profile", f"{bom.profile} ({o.deployment_context})"),
         (
             "Compute",
-            f"{o.gpus_requested} x {gpu} requested → {n} compute container"
-            f"{'s' if n != 1 else ''}, {o.gpus_delivered} GPUs "
-            f"(whole containers of {GPUS_PER_COMPUTE_CONTAINER})",
+            f"{o.gpus_requested} x {gpu} requested → {servers} server"
+            f"{'s' if servers != 1 else ''} ({o.gpus_delivered} GPUs) in {n} "
+            f"compute container{'s' if n != 1 else ''}",
         ),
         ("Grid", f"{m} grid container{'s' if m != 1 else ''}, 1000 kVA Trihal each"),
         (

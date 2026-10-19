@@ -105,6 +105,7 @@ def _resolution() -> ModuleResolution:
         deployment_id=UUID("12345678-1234-1234-1234-123456789abc"),
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=1,
+        gpu_node_count=7,
         grid_container_count=1,
         pcs_count=0,
         bess_coupling=BessCoupling.AC_COUPLED,

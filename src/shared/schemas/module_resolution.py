@@ -23,6 +23,7 @@ class ModuleResolution(BaseModel):
     deployment_profile: DeploymentProfile
 
     compute_container_count: int = Field(ge=1)
+    gpu_node_count: int = Field(ge=1)  # servers; containers full but the last
     grid_container_count: int = Field(ge=1)  # primary + feeders
     pcs_count: int = Field(ge=0)  # dc_ext PCS on the battery pad, else 0
 

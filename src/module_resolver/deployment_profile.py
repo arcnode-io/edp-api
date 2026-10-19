@@ -14,7 +14,8 @@ from src.shared.enums import (
     SourcingTier,
 )
 
-GPUS_PER_COMPUTE_CONTAINER: Final[int] = 56  # 7 nodes x 8 GPUs (H100_SXM and B200)
+GPUS_PER_NODE: Final[int] = 8  # one HGX board (H100_SXM and B200)
+NODES_PER_COMPUTE_CONTAINER: Final[int] = 7  # a full container; the last may hold fewer
 
 PROFILE: Final[dict[tuple[DeploymentContext, BessCoupling], DeploymentProfile]] = {
     # Commercial — 3 hardware variants, one per BESS coupling.

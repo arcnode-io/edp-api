@@ -69,10 +69,12 @@ def draw_compute_sheet(msp: Modelspace, bom: Bom) -> None:
         "CMP-SWITCH-003",
     ]
     k.equipment_list(msp, bom, equipment, 15, 120)
+    partial = k.partial_container_note(bom)
     for i, note in enumerate(
         [
             "NOTES",
             "1. A/B dual-path from one source, not 2N: both paths share one feeder (ADR-005).",
+            *([f"2. {partial}."] if partial else []),
         ]
     ):
         k.text(msp, 15, 52 - i * 5, note, h=2.5 if i == 0 else 2.2)

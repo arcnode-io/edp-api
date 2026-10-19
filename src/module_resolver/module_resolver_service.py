@@ -1,10 +1,8 @@
 """ConfiguratorPayload -> ModuleResolution. Pure; no external deps."""
 
-from math import ceil
-
 from src.module_resolver.deployment_profile import (
     EMS_TARGET_FROM_PARTITION,
-    GPUS_PER_COMPUTE_CONTAINER,
+    GPUS_PER_NODE,
     PROFILE,
     TIER_FROM_CONTEXT,
 )
@@ -16,12 +14,13 @@ from src.shared.enums import (
 )
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 from src.shared.schemas.module_resolution import ModuleResolution
+from src.sizing.compute_nodes import compute_container_count, gpu_node_count
 from src.sizing.pcs_sizing import bess_power_need_mw, pcs_count
+from src.sizing.compute_nodes import site_peak_mw
 from src.sizing.sizing_internals import (
     firm_onsite_mw,
     grid_container_count,
     grid_peak_mw,
-    site_peak_mw,
 )
 
 
@@ -30,11 +29,12 @@ class ModuleResolverService:
 
     def resolve(self, payload: ConfiguratorPayload) -> ModuleResolution:
         """Apply decision tables + rules to produce the canonical ModuleResolution."""
-        count = self._container_count(payload)
+        nodes = gpu_node_count(payload.target_gpu_count)
         return ModuleResolution(
             deployment_id=payload.deployment_id,
             deployment_profile=self._profile(payload),
-            compute_container_count=count,
+            compute_container_count=compute_container_count(nodes),
+            gpu_node_count=nodes,
             grid_container_count=self._grid_container_count(payload),
             pcs_count=self._pcs_count(payload),
             bess_coupling=payload.bess_coupling,
@@ -42,7 +42,7 @@ class ModuleResolverService:
             sourcing_tier=self._sourcing_tier(payload),
             ems_target=self._ems_target(payload),
             gpu_variant=payload.gpu_variant,
-            gpu_count=count * GPUS_PER_COMPUTE_CONTAINER,
+            gpu_count=nodes * GPUS_PER_NODE,
             climate_zone=payload.climate_zone,
             onsite_generation=payload.onsite_generation,
             ride_through_hours=payload.ride_through_hours,
@@ -53,10 +53,6 @@ class ModuleResolverService:
     def _profile(self, payload: ConfiguratorPayload) -> DeploymentProfile:
         # Future business rules slot in here.
         return PROFILE[(payload.deployment_context, payload.bess_coupling)]
-
-    def _container_count(self, payload: ConfiguratorPayload) -> int:
-        # Future rules: tier-min container count, climate derate, etc.
-        return ceil(payload.target_gpu_count / GPUS_PER_COMPUTE_CONTAINER)
 
     def _grid_container_count(self, payload: ConfiguratorPayload) -> int:
         peak = site_peak_mw(payload.gpu_variant, payload.target_gpu_count)

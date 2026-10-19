@@ -174,6 +174,7 @@ def _resolution(
         deployment_id=DEPLOYMENT_ID,
         deployment_profile=DeploymentProfile.COMMERCIAL_AC,
         compute_container_count=container_count,
+        gpu_node_count=container_count * 7,
         grid_container_count=grid_container_count,
         pcs_count=0,
         bess_coupling=BessCoupling.AC_COUPLED,

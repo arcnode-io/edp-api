@@ -269,3 +269,20 @@ def test_the_customers_battery_is_in_the_device_data(
         if d.parent is not None and d.template.startswith("bess")
     }
     assert batteries == {(module, template)}
+
+
+def test_the_last_container_holds_only_the_servers_ordered() -> None:
+    # Arrange — 8 servers: C1 full, C2 one server (fixture tops out at 3)
+    service = DtmGeneratorService(_make_client(), template_catalog=_real_catalog())
+    resolution = _resolution(container_count=2).model_copy(update={"gpu_node_count": 8})
+
+    # Act
+    dtm = service.generate(
+        profile="commercial_ac", resolution=resolution, manifest=_manifest()
+    )
+
+    # Assert
+    actual = sorted(
+        d.display_name or "" for d in dtm.devices.values() if d.template == "gpu_node"
+    )
+    assert actual == ["C1-NODE-1", "C1-NODE-2", "C1-NODE-3", "C2-NODE-1"]

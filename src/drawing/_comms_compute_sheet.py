@@ -58,12 +58,14 @@ def draw_compute_sheet(msp: Modelspace, dtm: Dtm, bom: Bom) -> None:
         "CMP-SWITCH-001",
     ]
     k.equipment_list(msp, bom, equipment, 15, 128)
+    partial = k.partial_container_note(bom)
     for i, note in enumerate(
         [
             "NOTES",
             "1. Server BMCs, PDUs, CDU and the SN5600 management port share the 1 GbE",
             "   management switch; the SN5600 data plane is not drawn (ADR-019).",
             *_COOLER_NOTE[cooler],
+            *([f"3. {partial}."] if partial else []),
         ]
     ):
         k.text(msp, 15, 62 - i * 5, note, h=2.5 if i == 0 else 2.2)

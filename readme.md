@@ -301,7 +301,7 @@ class ConfiguratorPayload(BaseModel):
 
     primary_workload: PrimaryWorkload
     gpu_variant: GpuVariant
-    target_gpu_count: int = Field(ge=1)   # round-up to full container handles small values
+    target_gpu_count: int = Field(ge=1)   # rounds up to whole servers of 8 GPUs
 
     bess_coupling: BessCoupling
     bess_capacity_mwh: float = Field(gt=0)   # every site has a BESS
