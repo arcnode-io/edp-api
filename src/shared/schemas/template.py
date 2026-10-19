@@ -5,7 +5,8 @@ SNMP OIDs). DTMs reference templates by slug; per-instance Devices contribute
 deployment specifics (host, port, parent, display_name).
 Protocol-level binding types live in template_protocols.py; the Measurement
 channel + its Publisher live in measurement.py; range/threshold types live in
-measurement_ranges.py. This module re-exports the full surface so existing
+measurement_ranges.py; Command and Fanout live in template_command.py.
+This module re-exports the full surface so existing
 imports keep working.
 """
 
@@ -19,6 +20,7 @@ from src.shared.schemas.alarm import Alarm
 from src.shared.schemas.install_task import CxLevel, InstallTask
 from src.shared.schemas.measurement import Measurement, Publisher
 from src.shared.schemas.measurement_ranges import Bounds, Thresholds
+from src.shared.schemas.template_command import Command, Fanout
 from src.shared.schemas.template_heartbeat import Heartbeat
 from src.shared.schemas.template_protocols import (
     Binding,
@@ -62,49 +64,6 @@ class TemplateKind(StrEnum):
 
     LEAF = "leaf"
     MODULE = "module"
-
-
-class Fanout(StrEnum):
-    """Who handles a command that has no direct protocol binding.
-
-    LOCAL_PROCESS: a named local process distributes one logical command
-    out to real child devices (e.g. a module-level setpoint fanned out to
-    its racks).
-    DER_CONTROL_API: a virtual singleton receiver (ems-der-control-api) —
-    no children, nothing polled, but same "no binding" shape. Mirrors
-    Publisher's identical LOCAL_PROCESS/DER_CONTROL_API pairing for
-    measurements (measurement.py).
-    """
-
-    LOCAL_PROCESS = "local_process"
-    DER_CONTROL_API = "der_control_api"
-
-
-class Command(BaseModel):
-    """One channel a device receives. Either bound to a protocol or
-    fanned out by a local process."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    verb: Literal["set", "reset", "clear", "start", "stop", "enable", "disable"]
-    target: str
-    unit: str
-    payload: Literal["float", "bool", "enum", "trigger"]
-    display_name_default: str | None = None
-    binding: Binding | None = None
-    fanout: Fanout | None = None
-
-    @model_validator(mode="after")
-    def _binding_xor_fanout(self) -> "Command":
-        """Each command MUST have exactly one of binding or fanout."""
-        has_binding = self.binding is not None
-        has_fanout = self.fanout is not None
-        if has_binding == has_fanout:
-            raise ValueError(
-                "command requires exactly one of `binding:` (gateway-bound) "
-                "or `fanout:` (line-controller-handled)"
-            )
-        return self
 
 
 class ContainsEntry(BaseModel):

@@ -8,6 +8,7 @@ across A and B (ADR-005: A/B dual-path from one source, not 2N).
 from ezdxf.layouts import Modelspace
 
 from src.bom_generator.bom_models import Bom
+from src.bom_generator.bom_ref_des import typical
 from src.drawing import _draw_kit as k
 
 _PANEL_BUS_Y: float = 245.0
@@ -58,7 +59,7 @@ def draw_compute_sheet(msp: Modelspace, bom: Bom) -> None:
     k.wire(msp, (200, 182), (200, 158))
 
     k.dashed_rect(msp, 22, 132, 400, 270)
-    k.text(msp, 24, 135, f"COMPUTE CONTAINER C1-C{n} (TYPICAL OF {n})", h=2.5)
+    k.text(msp, 24, 135, f"COMPUTE CONTAINER {typical('C', 1, n)}", h=2.5)
     equipment = [
         "CMP-PNL-001",
         "CMP-PDU-001",

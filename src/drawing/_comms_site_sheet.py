@@ -9,6 +9,7 @@ from ezdxf.layouts import Modelspace
 
 from src.dtm.device_roles import BESS_MODULE_TEMPLATES
 from src.bom_generator.bom_models import Bom
+from src.bom_generator.bom_ref_des import containers
 from src.drawing import _draw_kit as k
 from src.bom_generator.bom_ref_des import compress
 from src.drawing._comms_devices import device_lines, networked_children
@@ -40,7 +41,9 @@ def draw_site_sheet(msp: Modelspace, dtm: Dtm, bom: Bom) -> None:
         boxes.append(
             [f"G2-G{m} MGMT SWITCHES x{m - 1}", "RELAY BEHIND EACH", "TYPICAL"]
         )
-    boxes.append([f"C1-C{n} MGMT SWITCH UPLINKS x{n}", "VIA CG PLATE", "SHEET 2"])
+    boxes.append(
+        [f"{containers('C', 1, n)} MGMT SWITCH UPLINKS x{n}", "VIA CG PLATE", "SHEET 2"]
+    )
 
     xs = [_DROP_X0 + i * _DROP_PITCH for i in range(len(boxes))]
     k.wire(msp, (xs[0], _LAN_Y), (xs[-1], _LAN_Y))

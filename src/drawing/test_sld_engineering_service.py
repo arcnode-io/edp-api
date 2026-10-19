@@ -153,3 +153,11 @@ def test_a_partial_last_container_is_called_out() -> None:
 
     # Assert
     assert "C2 HOLDS 1 SERVER ON PDU A1/B1; ITS OTHER PDU SPACES STAY EMPTY" in texts
+
+
+def test_a_one_container_site_names_c1_not_a_range() -> None:
+    # Act
+    texts = _texts(_sld("commercial_ac", compute_qty=1, grid_qty=1))
+
+    # Assert
+    assert ("COMPUTE CONTAINER C1 |" in f"{texts} |", "C1-C1" in texts) == (True, False)

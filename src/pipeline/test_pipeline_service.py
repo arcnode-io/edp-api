@@ -587,11 +587,11 @@ def test_all_reserved_artifact_kinds_now_get_real_bytes() -> None:
 
 
 def test_attach_offers_merges_distributor_offers_onto_catalog_lines() -> None:
-    """`_attach_offers` populates each catalog line's `offers` from enrichment.
+    """`attach_offers` populates each catalog line's `offers` from enrichment.
 
     Direct unit-level test of the merge helper — the higher-level
     pipeline tests use an empty bom.yaml fixture so wouldn't exercise
-    the catalog-line path. This test gives `_attach_offers` a real Bom
+    the catalog-line path. This test gives `attach_offers` a real Bom
     with one catalog + one custom-fab line and asserts only the catalog
     line gets offers (custom-fab plates have no distributor).
     """
@@ -605,7 +605,7 @@ def test_attach_offers_merges_distributor_offers_onto_catalog_lines() -> None:
     )
     from src.bom_enrichment.enrichment_service import EnrichmentService
     from src.bom_generator.bom_models import Bom, BomLineItem, ProcurementPath
-    from src.pipeline.pipeline_service import _attach_offers
+    from src.pipeline.pipeline_bom import attach_offers
 
     class _MockClient(DistributorClient):
         @property
@@ -655,7 +655,7 @@ def test_attach_offers_merges_distributor_offers_onto_catalog_lines() -> None:
     )
 
     # Act
-    _attach_offers(bom, EnrichmentService([_MockClient()]))
+    attach_offers(bom, EnrichmentService([_MockClient()]))
 
     # Assert — catalog line got an offer; custom-fab line did NOT
     catalog_line = next(

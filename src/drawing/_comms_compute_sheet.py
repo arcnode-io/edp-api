@@ -3,6 +3,7 @@
 from ezdxf.layouts import Modelspace
 
 from src.bom_generator.bom_models import Bom
+from src.bom_generator.bom_ref_des import typical
 from src.drawing import _draw_kit as k
 from src.drawing._comms_devices import device_lines, networked_children
 from src.dtm.device_roles import COMPUTE_MODULE_TEMPLATES
@@ -49,7 +50,7 @@ def draw_compute_sheet(msp: Modelspace, dtm: Dtm, bom: Bom) -> None:
             k.box(msp, x, lan_y - 17, 42, 13, device_lines(dtm, device))
 
     k.dashed_rect(msp, 12, 140, 405, 262)
-    k.text(msp, 14, 143, f"COMPUTE CONTAINER C1-C{n} (TYPICAL OF {n})", h=2.5)
+    k.text(msp, 14, 143, f"COMPUTE CONTAINER {typical('C', 1, n)}", h=2.5)
     equipment = [
         "CMP-SWITCH-003",
         k.ordered(bom, "CMP-NODE-001", "CMP-NODE-002"),

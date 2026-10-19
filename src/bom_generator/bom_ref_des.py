@@ -35,6 +35,12 @@ def containers(prefix: str, first: int, last: int) -> str:
     return f"{prefix}{first}" if first == last else f"{prefix}{first}-{prefix}{last}"
 
 
+def typical(prefix: str, first: int, last: int) -> str:
+    """Drawing label for containers drawn once: C1, or C1-C10 (TYPICAL OF 10)."""
+    span = containers(prefix, first, last)
+    return span if first == last else f"{span} (TYPICAL OF {last - first + 1})"
+
+
 def compress(tags: list[str]) -> str:
     """Consecutive numbered tags collapse: NODE-1..NODE-7 → "NODE-1…7"."""
     runs: list[list[str]] = []

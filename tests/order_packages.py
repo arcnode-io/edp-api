@@ -8,7 +8,7 @@ from typing import Final, cast
 from uuid import uuid4
 
 from src.bom_generator.bom_generator_service import BomGeneratorService
-from src.bom_generator.bom_models import Bom, BomOrder
+from src.bom_generator.bom_models import Bom
 from src.bom_generator.cable_hose_lines import cable_hose_lines
 from src.bom_generator.manifest_client import ManifestClient
 from src.cable_hose_schedule.cable_hose_schedule_models import CableHoseSchedule
@@ -18,7 +18,7 @@ from src.dtm.template_loader import TemplateLoader
 from src.module_resolver.module_resolver_service import ModuleResolverService
 from src.shared.schemas.configurator_payload import ConfiguratorPayload
 from src.shared.schemas.dtm import Dtm
-from src.pipeline.pipeline_service import _context_string
+from src.pipeline.pipeline_bom import bom_order, context_string
 from tests.assemblies_checkout import AssembliesCheckoutClient
 
 BASE: Final[dict] = {
@@ -84,20 +84,10 @@ def package_for(
         deployment_id=payload.deployment_id,
         profile=resolution.deployment_profile.value,
         gpu_variant=resolution.gpu_variant,
-        order=BomOrder(
-            customer=payload.operator_org,
-            site=payload.deployment_site_name,
-            deployment_context=payload.deployment_context.value,
-            gpu_variant=payload.gpu_variant.value,
-            gpus_requested=payload.target_gpu_count,
-            gpus_delivered=resolution.gpu_count,
-            bess_capacity_mwh=payload.bess_capacity_mwh,
-            bess_coupling=payload.bess_coupling.value,
-            pcs_qty=resolution.pcs_count,
-        ),
+        order=bom_order(payload, resolution),
         compute_container_qty=resolution.compute_container_count,
         grid_container_qty=resolution.grid_container_count,
-        deployment_context=_context_string(payload.deployment_context),
+        deployment_context=context_string(payload.deployment_context),
         field_lines=cable_hose_lines(schedule),
     )
     return payload, bom, dtm, schedule

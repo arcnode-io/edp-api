@@ -12,6 +12,7 @@ from ezdxf.document import Drawing
 from ezdxf.layouts import Modelspace
 
 from src.dtm.device_roles import GPU_NODE_TEMPLATES
+from src.bom_generator.bom_ref_des import typical
 from src.drawing import _pid_kit as k
 from src.drawing._pid_symbols import ensure_cdu_block, ensure_dlc_plate_block
 from src.shared.schemas.dtm import Dtm
@@ -78,7 +79,7 @@ def draw_rack_sheet(msp: Modelspace, doc: Drawing, dtm: Dtm) -> None:
         msp,
         17,
         bottom + 3,
-        f"COMPUTE CONTAINER C1-C{n} (TYPICAL OF {n}) — RACK (SECONDARY) LOOP",
+        f"COMPUTE CONTAINER {typical('C', 1, n)} — RACK (SECONDARY) LOOP",
         h=2.5,
         left=True,
     )

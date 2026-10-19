@@ -11,6 +11,7 @@ from typing import Final
 from ezdxf.document import Drawing
 from ezdxf.layouts import Modelspace
 
+from src.bom_generator.bom_ref_des import typical
 from src.drawing import _pid_kit as k
 from src.drawing._pid_symbols import (
     ensure_buffer_tank_block,
@@ -100,7 +101,7 @@ def draw_facility_sheet(msp: Modelspace, doc: Drawing, dtm: Dtm) -> None:
         msp,
         17,
         275,
-        f"PRIMARY LOOP — ONE PER COMPUTE CONTAINER, C1-C{n} (TYPICAL OF {n})",
+        f"PRIMARY LOOP — ONE PER COMPUTE CONTAINER, {typical('C', 1, n)}",
         h=2.5,
         left=True,
     )
