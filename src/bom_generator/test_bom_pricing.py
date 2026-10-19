@@ -159,3 +159,24 @@ def test_price_book_carries_installer_material_by_cable_type() -> None:
 
     # Assert
     assert actual == 15
+
+
+def test_an_installer_run_is_priced_from_the_field_list_and_counted() -> None:
+    # Arrange — the installer buys this material, so it belongs in the budget
+    run = BomLineItem(
+        section=BomSection.FIELD,
+        ref_des="W-1…W-20",
+        part_number="Cat6 STP",
+        vendor="Installer",
+        description="Cat6 STP, cut to field-measured length per run",
+        qty=20,
+        uom="run",
+        procurement_path=ProcurementPath.FIELD_SUPPLIED,
+    )
+    book = PriceBook(field={"Cat6 STP": [_break(15, 1, PriceSource.ESTIMATE)]})
+
+    # Act
+    actual = order_budget([book_price(run, book, 20)]).total_usd
+
+    # Assert
+    assert actual == 300

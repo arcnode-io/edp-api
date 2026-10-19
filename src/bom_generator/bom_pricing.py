@@ -16,6 +16,7 @@ PURCHASED: Final[frozenset[ProcurementPath]] = frozenset(
         ProcurementPath.CATALOG,
         ProcurementPath.ENGINEERED_TO_ORDER,
         ProcurementPath.CUSTOM_FABRICATION,
+        ProcurementPath.FIELD_SUPPLIED,
     }
 )
 # How far each kind of price is trusted, as a ± fraction
@@ -37,7 +38,13 @@ def book_price(line: BomLineItem, book: PriceBook, order_qty: int) -> BomLineIte
     `order_qty` is the whole order's quantity of this part (a plate sits
     in several sections), which picks the quantity break.
     """
-    breaks = book.prices.get(price_key(line))
+    # Reason: installer material is keyed by cable/hose type, apart from parts
+    lists = (
+        book.field
+        if line.procurement_path == ProcurementPath.FIELD_SUPPLIED
+        else book.prices
+    )
+    breaks = lists.get(price_key(line))
     if line.procurement_path not in PURCHASED or not breaks:
         return line
     # Reason: breaks are ascending by min_qty; the last one reached wins
