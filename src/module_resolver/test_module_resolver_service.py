@@ -1,62 +1,19 @@
 """ModuleResolverService unit tests. AAA pattern, table-driven over the 11 profiles."""
 
-from uuid import UUID
-
 import pytest
 
 from src.module_resolver.module_resolver_service import ModuleResolverService
 from src.shared.enums import (
     AwsPartition,
     BessCoupling,
-    ClimateZone,
     DeploymentContext,
     DeploymentProfile,
     EmsTarget,
-    GpuVariant,
-    GridPath,
-    OnsiteGenerationType,
-    PrimaryWorkload,
     SourcingTier,
 )
-from src.shared.schemas.configurator_grid import (
-    Grid,
-    OnsiteGeneration,
-    Site,
-    SiteLocation,
+from src.module_resolver.module_resolver_test_support import (
+    _payload,
 )
-from src.shared.schemas.configurator_payload import ConfiguratorPayload
-
-DEPLOYMENT_ID: UUID = UUID("00000000-0000-0000-0000-000000000001")
-
-_OFF_GRID = Grid(path=GridPath.OFF_GRID)
-
-
-def _payload(
-    *,
-    context: DeploymentContext = DeploymentContext.COMMERCIAL,
-    coupling: BessCoupling = BessCoupling.AC_COUPLED,
-    capacity_mwh: float = 5.0,
-    gpu_count: int = 56,
-    partition: AwsPartition = AwsPartition.STANDARD,
-    grid: Grid = _OFF_GRID,
-) -> ConfiguratorPayload:
-    return ConfiguratorPayload(
-        deployment_id=DEPLOYMENT_ID,
-        operator_org="acme",
-        deployment_site_name="brookside dc-1",
-        contact_email="ops@example.com",
-        primary_workload=PrimaryWorkload.AI_TRAINING,
-        gpu_variant=GpuVariant.H100_SXM,
-        target_gpu_count=gpu_count,
-        bess_coupling=coupling,
-        bess_capacity_mwh=capacity_mwh,
-        climate_zone=ClimateZone.TEMPERATE,
-        deployment_context=context,
-        aws_partition=partition,
-        site=Site(location=SiteLocation(lat=32.7, lon=-96.8), country="US"),
-        onsite_generation=OnsiteGeneration(type=OnsiteGenerationType.NONE),
-        grid=grid,
-    )
 
 
 def test_resolves_commercial_ac_profile() -> None:
@@ -134,48 +91,6 @@ def test_resolves_full_profile_matrix(
     assert actual.deployment_profile == expected
 
 
-def test_rounds_up_to_whole_servers_not_whole_containers() -> None:
-    """100 GPUs -> 13 servers of 8 (104 GPUs) in 2 containers: 7 + 6."""
-    # Arrange
-    service = ModuleResolverService()
-    payload = _payload(gpu_count=100)
-
-    # Act
-    actual = service.resolve(payload)
-
-    # Assert
-    assert (
-        actual.gpu_node_count,
-        actual.gpu_count,
-        actual.compute_container_count,
-    ) == (13, 104, 2)
-
-
-def test_one_server_order_is_one_partial_container() -> None:
-    # Arrange
-    service = ModuleResolverService()
-    payload = _payload(gpu_count=8)
-
-    # Act
-    actual = service.resolve(payload)
-
-    # Assert
-    assert (actual.gpu_node_count, actual.compute_container_count) == (1, 1)
-
-
-def test_grid_container_count_follows_compute_load() -> None:
-    """17 H100 containers x 62.6 kW = 1.06 MW -> 2 grid containers."""
-    # Arrange
-    service = ModuleResolverService()
-    payload = _payload(gpu_count=17 * 56)
-
-    # Act
-    actual = service.resolve(payload)
-
-    # Assert
-    assert actual.grid_container_count == 2
-
-
 def test_derives_sourcing_tier_and_ems_target() -> None:
     """sovereign_government + govcloud -> federal_civilian + aws_govcloud."""
     # Arrange
@@ -202,30 +117,3 @@ def test_carries_the_site_compute_shed_choice() -> None:
     actual = service.resolve(payload)
     # Assert
     assert actual.compute_shed_enabled is True
-
-
-def test_dc_ext_pcs_count_follows_the_battery_not_the_grid_containers() -> None:
-    """90 H100 containers off grid: 6.174 MW → 6 PCS, though 8 grid containers."""
-    # Arrange
-    service = ModuleResolverService()
-    payload = _payload(
-        coupling=BessCoupling.DC_EXTERNAL_PCS, capacity_mwh=10, gpu_count=90 * 56
-    )
-
-    # Act
-    actual = service.resolve(payload)
-
-    # Assert
-    assert (actual.grid_container_count, actual.pcs_count) == (8, 6)
-
-
-def test_no_pcs_unless_dc_ext() -> None:
-    # Arrange
-    service = ModuleResolverService()
-    payload = _payload(coupling=BessCoupling.AC_COUPLED)
-
-    # Act
-    actual = service.resolve(payload)
-
-    # Assert
-    assert actual.pcs_count == 0

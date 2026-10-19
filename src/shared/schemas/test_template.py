@@ -5,36 +5,16 @@ from pydantic import ValidationError
 
 from src.shared.schemas.template import (
     ContainsEntry,
-    CxLevel,
     DeviceTemplate,
     Fanout,
-    InstallTask,
     Measurement,
-    ModbusBinding,
     Publisher,
     TemplateKind,
 )
-
-
-def _mb() -> ModbusBinding:
-    return ModbusBinding(
-        protocol="modbus_tcp", function_code=4, address=100, data_type="int16"
-    )
-
-
-def _mv() -> dict[str, Measurement]:
-    """Single float voltage measurement — reused across validator tests."""
-    return {"v": Measurement(unit="volts", type="float", binding=_mb())}
-
-
-def _ms() -> dict[str, Measurement]:
-    """Single publisher SOC measurement — reused in module validator tests."""
-    return {
-        "soc": Measurement(
-            unit="percent", type="float", publisher=Publisher.LOCAL_PROCESS
-        )
-    }
-
+from src.shared.schemas.template_test_support import (
+    _mb,
+    _mv,
+)
 
 # --- Enum sanity ---
 
@@ -133,175 +113,4 @@ def test_template_slug_format_rejected() -> None:
             equipment_id="GRD-MTR-001",
             description="test",
             measurements=_mv(),
-        )
-
-
-# --- Kind-vs-equipment_id validators ---
-
-
-def test_device_template_leaf_requires_equipment_id() -> None:
-    with pytest.raises(ValidationError, match="equipment_id required"):
-        DeviceTemplate(
-            template="poi_meter",
-            kind=TemplateKind.LEAF,
-            equipment_id=None,
-            description="test",
-            measurements=_mv(),
-        )
-
-
-def test_device_template_module_rejects_equipment_id() -> None:
-    with pytest.raises(ValidationError, match="equipment_id forbidden"):
-        DeviceTemplate(
-            template="bess_module",
-            kind=TemplateKind.MODULE,
-            equipment_id="GRD-MTR-001",
-            description="test",
-            contains=[],
-            measurements=_ms(),
-        )
-
-
-# --- Must-have-channels validator ---
-
-
-def test_module_template_must_declare_measurements_or_commands() -> None:
-    with pytest.raises(ValidationError, match="must declare at least one"):
-        DeviceTemplate(
-            template="empty_module",
-            kind=TemplateKind.MODULE,
-            description="test",
-            contains=[ContainsEntry(template="poi_meter", qty=1)],
-        )
-
-
-def test_leaf_template_without_channels_is_passive() -> None:
-    # Arrange / Act — e.g. switchgear: drawn on the SLD, never polled
-    t = DeviceTemplate(
-        template="switchgear",
-        kind=TemplateKind.LEAF,
-        equipment_id="GRD-SWG-001",
-        vendor="ABB",
-        model="SafeGear",
-        description="test",
-    )
-    # Assert
-    assert t.measurements == {}
-    assert t.commands == {}
-
-
-# --- Leaf vendor/model required; module vendor/model forbidden ---
-
-
-def test_device_template_leaf_requires_vendor_and_model() -> None:
-    with pytest.raises(ValidationError, match="vendor required"):
-        DeviceTemplate(
-            template="poi_meter",
-            kind=TemplateKind.LEAF,
-            equipment_id="GRD-MTR-001",
-            model="ION9000",
-            description="test",
-            measurements=_mv(),
-        )
-    with pytest.raises(ValidationError, match="model required"):
-        DeviceTemplate(
-            template="poi_meter",
-            kind=TemplateKind.LEAF,
-            equipment_id="GRD-MTR-001",
-            vendor="Schneider",
-            description="test",
-            measurements=_mv(),
-        )
-
-
-def test_device_template_module_rejects_vendor_and_model() -> None:
-    with pytest.raises(ValidationError, match="vendor forbidden"):
-        DeviceTemplate(
-            template="bess_module",
-            kind=TemplateKind.MODULE,
-            vendor="Acme",
-            description="test",
-            measurements=_ms(),
-        )
-    with pytest.raises(ValidationError, match="model forbidden"):
-        DeviceTemplate(
-            template="bess_module",
-            kind=TemplateKind.MODULE,
-            model="X1",
-            description="test",
-            measurements=_ms(),
-        )
-
-
-# --- Leaf rejects contains ---
-
-
-def test_device_template_leaf_rejects_contains() -> None:
-    with pytest.raises(ValidationError, match="contains forbidden"):
-        DeviceTemplate(
-            template="poi_meter",
-            kind=TemplateKind.LEAF,
-            equipment_id="GRD-MTR-001",
-            vendor="Schneider",
-            model="ION9000",
-            description="test",
-            contains=[ContainsEntry(template="sub_module", qty=1)],
-            measurements=_mv(),
-        )
-
-
-# --- install_tasks ---
-
-
-def test_device_template_carries_install_tasks() -> None:
-    # Arrange / Act
-    t = DeviceTemplate(
-        template="pdu",
-        kind=TemplateKind.LEAF,
-        equipment_id="CMP-PDU-001",
-        vendor="Server Technology",
-        model="PRO3X",
-        description="rack PDU",
-        measurements=_mv(),
-        install_tasks=[
-            InstallTask(
-                name="mount",
-                est_minutes=20,
-                crew_role="electrician",
-                cx_level=CxLevel.L1,
-            ),
-            InstallTask(
-                name="wire_input",
-                depends_on=["mount"],
-                est_minutes=30,
-                crew_role="electrician",
-                cx_level=CxLevel.L2,
-            ),
-        ],
-    )
-    # Assert
-    assert len(t.install_tasks) == 2
-    assert t.install_tasks[1].depends_on == ["mount"]
-    assert t.install_tasks[1].cx_level == CxLevel.L2
-
-
-def test_install_task_depends_on_must_be_known() -> None:
-    with pytest.raises(ValidationError, match="depends_on"):
-        DeviceTemplate(
-            template="pdu",
-            kind=TemplateKind.LEAF,
-            equipment_id="CMP-PDU-001",
-            vendor="Server Technology",
-            model="PRO3X",
-            description="rack PDU",
-            measurements=_mv(),
-            install_tasks=[
-                InstallTask(
-                    name="mount",
-                    depends_on=["nonexistent"],
-                    est_minutes=20,
-                    crew_role="electrician",
-                    cx_level=CxLevel.L1,
-                ),
-            ],
         )

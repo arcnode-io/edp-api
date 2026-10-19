@@ -9,7 +9,7 @@ from src.bom_generator.bom_models import BomLineItem, BomSection, ProcurementPat
 from src.bom_generator.bom_pricing import book_price, live_price, order_budget
 from src.bom_generator.bom_test_support import ORDER
 from src.bom_generator.pricing_models import PriceBook, PriceBreak, PriceSource
-from src.bom_generator.test_bom_generator_service import (
+from src.bom_generator.bom_generator_test_support import (
     _make_manifest,
     _make_mock_client,
 )

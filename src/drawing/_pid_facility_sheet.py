@@ -13,11 +13,11 @@ from ezdxf.layouts import Modelspace
 
 from src.bom_generator.bom_ref_des import typical
 from src.drawing import _pid_kit as k
+from src.drawing._pid_fittings import ensure_pump_block
 from src.drawing._pid_symbols import (
     ensure_buffer_tank_block,
     ensure_cdu_block,
     ensure_dry_cooler_block,
-    ensure_pump_block,
 )
 from src.shared.schemas.dtm import Dtm
 

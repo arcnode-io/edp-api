@@ -8,7 +8,8 @@ from ezdxf.enums import TextEntityAlignment
 from ezdxf.layouts import Modelspace
 
 from src.dtm.device_roles import COMPUTE_MODULE_TEMPLATES
-from src.drawing._pid_symbols import ensure_instrument_bubble, ensure_offsheet_block
+from src.drawing._pid_fittings import ensure_instrument_bubble
+from src.drawing._pid_symbols import ensure_offsheet_block
 from src.shared.schemas.dtm import Device, Dtm
 
 LAYER_PROCESS: Final[str] = "PROCESS"  # pipes + equipment outlines
