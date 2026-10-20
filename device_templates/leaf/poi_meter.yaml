@@ -63,6 +63,21 @@ measurements:
       data_type: float32
       word_order: high_low
 
+  # UNVERIFIED: 3110 is the listing quoted publicly for map 004.005.000;
+  # Schneider's zip (FAQ FA362601) is behind a login. Same convention as 3060.
+  frequency:
+    unit: hertz
+    type: float
+    poll_rate_hz: 10
+    display_name_default: "POI Frequency"
+    bounds: { min: 55.0, max: 65.0, nominal: 60.0 }
+    binding:
+      protocol: modbus_tcp
+      function_code: 3
+      address: 3110  # Frequency, FLOAT32 Hz
+      data_type: float32
+      word_order: high_low
+
   thd_voltage_a:
     unit: percent
     type: float

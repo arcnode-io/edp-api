@@ -30,6 +30,7 @@ def test_load_real_catalog_includes_poi_meter() -> None:
         "thd_voltage_a": (21330, "float32"),
         "thd_voltage_b": (21332, "float32"),
         "thd_voltage_c": (21334, "float32"),
+        "frequency": (3110, "float32"),
     }
     actual = {}
     for name in expected:
@@ -116,3 +117,22 @@ def test_load_real_catalog_includes_pv_inverter() -> None:
         c.template == "pv_inverter" and c.qty == "scalable"
         for c in grid_module.contains
     )
+
+
+def test_grid_module_rollups_come_from_the_poi_meter() -> None:
+    """Net power and frequency are synthetics over the one POI meter."""
+    # Arrange
+    repo_root = Path(__file__).resolve().parents[2]
+    catalog = TemplateLoader(root=repo_root / "device_templates").load_catalog()
+    # Act
+    measurements = catalog["grid_module"].measurements
+    actual = {
+        name: (b.operation, b.source_measurement, b.child_template)
+        for name in ("net_active_power", "grid_frequency")
+        if isinstance(b := measurements[name].binding, SyntheticBinding)
+    }
+    # Assert
+    assert actual == {
+        "net_active_power": ("sum", "active_power", "poi_meter"),
+        "grid_frequency": ("mean", "frequency", "poi_meter"),
+    }
